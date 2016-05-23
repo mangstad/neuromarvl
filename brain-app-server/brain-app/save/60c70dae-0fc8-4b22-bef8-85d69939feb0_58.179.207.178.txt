@@ -1,0 +1,1 @@
+{"loadExampleData":true,"saveApps":[{"surfaceModel":"icbm","view":"#view-top-left","setDataSetView":"#view-top-left","edgeCount":"286","showingTopologyNetwork":true,"networkType":"flatten-to-2d","circularLableAttribute":"default"},{},{},{}],"nodeColorContinuousMin":"#FFFF00","nodeColorContinuousMax":"#FF0000","nodeColorAttribute":"strength","nodeSizeOrColor":"node-color"}

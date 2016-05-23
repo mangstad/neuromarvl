@@ -1,0 +1,126 @@
+MedialFG
+vlOFC (11)
+vlOFC
+OFC (47)
+OFC (47)
+IFG
+IFG
+IFG
+Middle (10)
+Middle (10)
+Middle (9)
+Middle (46)
+Middle (46)
+dlPFC
+SFG
+SFG (6)
+SFG
+rACC
+rACC(32)
+ACC (32)
+dACC
+dACC(32)
+dACC (24)
+dACC (24)
+Insula/OFC
+Insula/OFC
+Insula
+Insula
+Insula
+Insula
+INS(47)
+INS(47)
+INS(47)
+Insula
+Insula
+SupTemp/Insula
+N.Accumbens
+N.Accumbens
+N.Accumbens
+Caudate
+Caudate
+Caudate
+Caudate
+Putamen
+Putamen
+Putamen
+Putamen
+Putamen
+Putamen
+Pallidus
+Pallidus
+Pallidus
+Pallidus
+Pallidus
+VTA
+VTA
+VTA
+Midbrain
+Thalamus
+Thalamus
+Thalamus
+Thalamus
+Thalamus
+Thalamus
+Hipocampus
+Amy
+Parahipocampal
+Parahipocampal
+Parahipocampal
+Precentral
+Precentral
+Precentral
+Precentral
+Precentral
+SMA
+SMA
+Postcentral
+Postcentral
+Postcentral
+Temporal
+Inferior Temporal
+Temporal
+Supramarginal (40)
+Supramarginal (40)
+Supramarginal
+Supramarginal
+Angular
+Angular
+IntraParietal
+Parietal
+Parietal
+PCC (24-31)
+PCC (31)
+PCC (31)
+PCC (31)
+Precuneus
+Precuneus
+Precuneus
+Precuneus
+Precuneus
+Precuneus
+Precuneus
+Precuneus
+Precuneus
+Precuneus
+Fusiform
+Fusiform
+Fusiform
+Fusiform
+Cerebellum
+Cerebellum
+Cerebellum
+Cerebellum
+Cerebellum
+Occipital
+Occipital
+Occipital
+Occipital
+Occipital
+Occipital
+Occipital
+Occipital
+Occipital
+Occipital
+Occipital
+Occipital

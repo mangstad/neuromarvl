@@ -1,0 +1,82 @@
+Left bank ssts
+Left caudal anterior cingulate
+Left caudal middle frontal
+Left cuneus
+Left entorhinal
+Left fusiform
+Left inferior parietal
+Left inferior temporal
+Left isthmus cingulate
+Left lateral occipital
+Left lateral orbitofrontal
+Left lingual
+Left medial orbitofrontal
+Left middle temporal
+Left parahippocampal
+Left paracentral
+Left parsopercularis
+Left parsorbitalis
+Left parstriangularis
+Left pericalcarine
+Left postcentral
+Left posterior cingulate
+Left precentral
+Left precuneus
+Left rostral anterior cingulate
+Left rostral middle frontal
+Left superior frontal
+Left superior parietal
+Left superior temporal
+Left supramarginal
+Left frontal pole
+Left temporal pole
+Left transverse temporal
+Left insula
+Left Thalamus-Proper
+Left Caudate
+Left Putamen
+Left Pallidum
+Left Hippocampus
+Left Amygdala
+Left Accumbens-area
+Right bank ssts
+Right caudal anterior cingulate
+Right caudal middle frontal
+Right cuneus
+Right entorhinal
+Right fusiform
+Right inferior parietal
+Right inferior temporal
+Right isthmus cingulate
+Right lateral occipital
+Right lateral orbitofrontal
+Right lingual
+Right medial orbitofrontal
+Right middle temporal
+Right parahippocampal
+Right paracentral
+Right parsopercularis
+Right parsorbitalis
+Right parstriangularis
+Right pericalcarine
+Right postcentral
+Right posterior cingulate
+Right precentral
+Right precuneus
+Right rostral anterior cingulate
+Right rostral middle frontal
+Right superior frontal
+Right superior parietal
+Right superior temporal
+Right supramarginal
+Right frontal pole
+Right temporal pole
+Right transverse temporal
+Right insula
+Right Thalamus-Proper
+Right Caudate
+Right Putamen
+Right Pallidum
+Right Hippocampus
+Right Amygdala
+Right Accumbens-area

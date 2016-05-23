@@ -1,0 +1,5 @@
+C:\Users\Mingzheng\Documents\GitHub\brain-app-server\brain-app-server\bin\brain-app-server.dll.config
+C:\Users\Mingzheng\Documents\GitHub\brain-app-server\brain-app-server\bin\brain-app-server.dll
+C:\Users\Mingzheng\Documents\GitHub\brain-app-server\brain-app-server\bin\brain-app-server.pdb
+C:\Users\Mingzheng\Documents\GitHub\brain-app-server\brain-app-server\obj\Release\brain-app-server.dll
+C:\Users\Mingzheng\Documents\GitHub\brain-app-server\brain-app-server\obj\Release\brain-app-server.pdb

@@ -1,0 +1,29 @@
+C:\Users\Mingzheng\Documents\GitHub\brain-app-server\brain-app-server\bin\brain-app-server.dll.config
+C:\Users\Mingzheng\Documents\GitHub\brain-app-server\brain-app-server\bin\brain-app-server.dll
+C:\Users\Mingzheng\Documents\GitHub\brain-app-server\brain-app-server\bin\brain-app-server.pdb
+C:\Users\Mingzheng\Documents\GitHub\brain-app-server\brain-app-server\obj\Debug\brain-app-server.dll
+C:\Users\Mingzheng\Documents\GitHub\brain-app-server\brain-app-server\obj\Debug\brain-app-server.pdb
+C:\Users\tnpha6\Documents\Visual Studio 2013\Projects\brain-app-server\brain-app-server\bin\brain-app-server.dll.config
+C:\Users\tnpha6\Documents\Visual Studio 2013\Projects\brain-app-server\brain-app-server\bin\brain-app-server.dll
+C:\Users\tnpha6\Documents\Visual Studio 2013\Projects\brain-app-server\brain-app-server\bin\brain-app-server.pdb
+C:\Users\tnpha6\Documents\Visual Studio 2013\Projects\brain-app-server\brain-app-server\obj\Debug\brain-app-server.csprojResolveAssemblyReference.cache
+C:\Users\tnpha6\Documents\Visual Studio 2013\Projects\brain-app-server\brain-app-server\obj\Debug\brain-app-server.dll
+C:\Users\tnpha6\Documents\Visual Studio 2013\Projects\brain-app-server\brain-app-server\obj\Debug\brain-app-server.pdb
+C:\Users\An\Documents\Visual Studio 2013\brain-app-server\brain-app-server\bin\brain-app-server.dll.config
+C:\Users\An\Documents\Visual Studio 2013\brain-app-server\brain-app-server\bin\brain-app-server.dll
+C:\Users\An\Documents\Visual Studio 2013\brain-app-server\brain-app-server\bin\brain-app-server.pdb
+C:\Users\An\Documents\Visual Studio 2013\brain-app-server\brain-app-server\obj\Debug\brain-app-server.csprojResolveAssemblyReference.cache
+C:\Users\An\Documents\Visual Studio 2013\brain-app-server\brain-app-server\obj\Debug\brain-app-server.dll
+C:\Users\An\Documents\Visual Studio 2013\brain-app-server\brain-app-server\obj\Debug\brain-app-server.pdb
+D:\Development\brain-app-server\brain-app-server\bin\brain-app-server.dll.config
+D:\Development\brain-app-server\brain-app-server\bin\brain-app-server.dll
+D:\Development\brain-app-server\brain-app-server\bin\brain-app-server.pdb
+D:\Development\brain-app-server\brain-app-server\obj\Debug\brain-app-server.csprojResolveAssemblyReference.cache
+D:\Development\brain-app-server\brain-app-server\obj\Debug\brain-app-server.dll
+D:\Development\brain-app-server\brain-app-server\obj\Debug\brain-app-server.pdb
+C:\Users\nmsmi\Documents\Brain project\thanh repo\brain-app-server\obj\Debug\brain-app-server.csprojResolveAssemblyReference.cache
+C:\Users\nmsmi\Documents\Brain project\thanh repo\brain-app-server\obj\Debug\brain-app-server.dll
+C:\Users\nmsmi\Documents\Brain project\thanh repo\brain-app-server\obj\Debug\brain-app-server.pdb
+C:\Users\nmsmi\Documents\Brain project\thanh repo\brain-app-server\bin\brain-app-server.dll.config
+C:\Users\nmsmi\Documents\Brain project\thanh repo\brain-app-server\bin\brain-app-server.dll
+C:\Users\nmsmi\Documents\Brain project\thanh repo\brain-app-server\bin\brain-app-server.pdb

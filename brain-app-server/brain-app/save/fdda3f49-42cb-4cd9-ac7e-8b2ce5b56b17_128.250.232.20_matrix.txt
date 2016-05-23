@@ -1,0 +1,102 @@
+% clear all
+% close all
+% 
+% 
+% load NBS_input_CH
+% %load MTR_NBS_input_CH
+% fa_ch=all_matrices_dti;
+% load NBS_input_RO
+% %load MTR_NBS_input_RO
+% fa_ro=all_matrices_dti;
+% 
+% 
+% d=cat(3,fa_ch,fa_ro);
+% d=log(d+1); 
+% 
+% 
+%  bin=sum(~~d,3); %martin 2014 suggests that >25 people need to ave a connnection for it not to be spurious
+%  bin(bin<35)=0; bin=bin>0==1; 
+% for i=1:size(d,3)
+%     d(:,:,i)=d(:,:,i).*bin; % replace  d with FA/MTR, save bin and x by FA/MTR. 
+% end
+% imagesc(sum(d,3));
+% 
+% txt1=dlmread('designMatrix_Chronic_olderHC.txt');
+% txt2=dlmread('designMatrix_RO_youngHC.txt');
+% txt=[txt1;txt2]; 
+% % 
+% ind_ch=find(txt1(:,1)==1); 
+% ind_old=find(txt1(:,2)==1); 
+% ind_ro=find(txt2(:,1)==1)+length(txt1); 
+% ind_young=find(txt2(:,2)==1)+length(txt1);
+% 
+% % for i=1:size(d,3)
+% %     tmp=d(:,:,i); 
+% %     ttl(i)=sum(tmp(:)); 
+% % end
+% % y=[mean(ttl(ind_young)),mean(ttl(ind_ro)),mean(ttl(ind_old)),mean(ttl(ind_ch))];
+% % bar(y)
+% 
+% 
+% N=length(ind_ch)+length(ind_old); 
+% design=zeros(N,2);
+% design(:,1)=1; 
+% design(1:length(ind_ch),2)=1; 
+% 
+% N=length(ind_ro)+length(ind_young); 
+% design_ro=zeros(N,2);
+% design_ro(:,1)=1; 
+% design_ro(1:length(ind_ro),2)=1; 
+% 
+% d_ch=d(:,:,[ind_ch;ind_old]);
+% d_control=d(:,:,[ind_old;ind_young]);
+% d_ro=d(:,:,[ind_ro;ind_young]);
+% save nbs_dti.mat d_ch
+% save nbs_dti_control.mat d_control
+% save nbs_dti_RO.mat d_ro
+% % dlmwrite('design_aal.txt',design,'delimiter',' ','precision','%.2f')
+% dlmwrite('design_aal_ro.txt',design_ro,'delimiter',' ','precision','%.2f')
+% 
+% pause
+%Load NBS
+%load nbs_ch_results
+load test_dti
+ind_sig=find(full(nbs.NBS.con_mat{1})); 
+
+f=zeros(size(d,3),length(ind_sig)); 
+a=zeros(3,length(ind_sig)); 
+for i=1:length(ind_sig)
+    for j=1:size(d,3)
+        tmp=d(:,:,j); 
+        f(j,i)=tmp(ind_sig(i)); 
+    end
+    a(:,i)=[mean(f(ind_ch,i));
+            mean(f(ind_ro,i));
+            mean(f(ind_young,i))]; 
+end
+obs=sum((a(2,:)>a(1,:)) & (a(3,:)>a(2,:)))/size(a,2); 
+%obs is the number of the significant connection in chronic versus older
+%for which the relation ch < ro < yc
+
+ind_active=find(triu(bin,1));
+for n=1:500
+    ln=randperm(length(ind_active)); 
+    ind_sig_perm=ind_active(ln(1:length(ind_sig))); 
+    f=zeros(size(d,3),length(ind_sig_perm)); 
+    a=zeros(3,length(ind_sig_perm));
+    for i=1:length(ind_sig_perm)
+        for j=1:size(d,3)
+            tmp=d(:,:,j);
+            f(j,i)=tmp(ind_sig_perm(i));
+        end
+        a(:,i)=[mean(f(ind_ch,i));
+            mean(f(ind_ro,i));
+            mean(f(ind_young,i))];
+    end
+    perm(n)=sum((a(2,:)>a(1,:)) & (a(3,:)>a(2,:)))/size(a,2);
+    
+    %perm is the number of the significant connection in a random group 
+    %of connections  for which the relation ch < ro < yc
+end
+
+sum(perm>obs)/500

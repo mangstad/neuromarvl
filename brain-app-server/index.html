@@ -1,0 +1,662 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <title>Brain Data Viewer</title>
+
+    <link rel="stylesheet" type="text/css" href="extern/dc.css" />
+  
+    <!-- Latest compiled and minified CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css">
+    <link rel="stylesheet" href="extern/css/main.css" />
+    <link rel="stylesheet" href="extern/splashPage/splashPage.css" />
+    <link rel="stylesheet" href="extern/bootstrap-colorpicker/css/bootstrap-colorpicker.min.css" />
+    <link rel="stylesheet" href="extern/bootstrap-slider/css/bootstrap-slider.min.css" />
+</head>
+<body onload="defaultFunction()">
+    <div id="splashPage" class="overlay overlay-scale">
+        <div id="content">
+            <button type="button" class="overlay-close" onclick="toggleSplashPage()">Close</button>
+
+            <div id="title" align="center">
+                <span style="font-size:400%; color: #2c3e50;">NeuroMArVL</span>
+            </div>
+            <div id="credit" align="center">
+                <p style="font-size:150%; color: #2c3e50;">Developed by:</p>
+                <p style="font-size:150%; color: #2c3e50;">Tim Dwyer, Alex Fornito</p>
+                <p style="font-size:150%; color:#2c3e50;">Thanh Nhan Pham, Mingzheng Shi and Nicholas Smith </p>
+                <p style="font-size:150%; color: #2c3e50;">Monash University, 2015</p>
+            </div>
+
+            <div class="subheading">
+                <span style="font-size:200%; color: #2c3e50;">Example Visualisations</span>
+            </div>
+            <div class="row">
+                <a class="thumbnail" href="?save=e4e59658-c7c6-4092-b19c-14fbde2dd14b_58.178.236.210">
+                    <img src="extern/splashPage/images/BrainSurfaceMode1.jpg" />
+                </a>
+                <a class="thumbnail" href="?save=dfcba247-07ae-404e-b82b-c0811b5d4dd4_58.178.234.18">
+                    <img src="extern/splashPage/images/BrainSurfaceMode2.jpg" />
+                </a>
+                <a class="thumbnail" href="?save=664e89bc-ae33-4503-803b-f9bbd54e40b0_58.178.234.18">
+                    <img src="extern/splashPage/images/3DGraph.jpg" />
+                </a>
+
+            </div>
+
+           
+
+            <div class="row">
+                <a class="thumbnail" href="?save=d598e6ef-f38b-4895-a22b-aa1fddc0cde3_58.178.234.18">
+                    <img src="extern/splashPage/images/2DGraph.jpg" />
+                </a>
+                <a class="thumbnail" href="?save=5168206f-e59b-4301-9de1-7c25b4e570cd_211.27.92.117">
+                    <img src="extern/splashPage/images/CircularGraph.jpg" />
+                </a>
+                <a class="thumbnail" href="?save=40496078-effa-4ac3-9d3e-cb7f946e7dd1_137.147.133.145">
+                    <img src="extern/splashPage/images/multi-module.png" />
+                </a>
+
+            </div>
+            <div class="subheading">
+                <span style="font-size:200%; color: #2c3e50;">Features</span>
+            </div>
+            <div class="row">
+                <div class="thumbnail" style="height: 150px;">
+                    <div style="background-color: #fff; padding: 3px; position: relative; height: 100%; overflow:hidden;">
+                        <p style="font-size:120%"><strong>Sharing</strong></p>
+
+                        Allow neruoscientist to quickly share their visualisations on their own dataset with other scientists with just one click.
+                    </div>
+                </div>
+                <div class="thumbnail" style="height: 150px;">
+                    <div style="background-color: #fff; padding: 3px; position: relative; height: 100%; overflow:hidden;">
+                        <p style="font-size:120%"><strong>Batch Mode</strong></p>
+
+                        Allow neuroscientist to rapidly apply the current configuration to multiple different datasets. The generated visualisations will be downloaded to the local machine.
+                    </div>
+                </div>
+                <div class="thumbnail" style="height: 150px;">
+                    <div style="background-color: #fff; padding: 3px; position: relative; height: 100%; overflow:hidden;">
+                        <p style="font-size:120%"><strong>Export visualisations</strong></p>
+
+                        Visualisations can be export into SVG format for further editing.
+                    </div>
+
+                </div>
+            </div>
+
+            <br />
+            <br />
+            <br />
+
+            <div id="logos" class="row">
+                <img src="extern/splashPage/images/BMH.jpg" width="438" height="130" class="pull-left"/>
+                <img src="extern/splashPage/images/marvl.png" class="pull-right" />
+            </div>
+        </div>
+    </div>
+
+    <div id="control-panel-bottom">
+        <div class="btn btn-primary" style ="height: 50%; width: 100%;"onclick="toggleSplashPage()">Splash Page</div>
+        <div class="btn-group btn-group-justified bg-info" style="height: 50%; width: 100%;">
+            <div id="button-export-svg" class="btn btn-primary" data-toggle="tooltip" data-placement="top" title="Download Visualisations">
+                <span class="glyphicon glyphicon-download-alt" aria-hidden="true"></span>
+            </div>
+            <div id="button-save-settings" class="btn btn-primary" data-toggle="tooltip" data-placement="top" title="Save Settings">
+                <span class="glyphicon glyphicon glyphicon-floppy-save" aria-hidden="true"></span>
+            </div>
+            <div id="button-load-settings" class="btn btn-primary" data-toggle="tooltip" data-placement="top" title="Load Settings">
+                <span class="glyphicon glyphicon glyphicon-floppy-open" aria-hidden="true"></span>
+            </div>
+            <div id="button-save-app" class="btn btn-primary" data-toggle="tooltip" data-placement="top" title="Share Visualisations">
+                <span class="glyphicon glyphicon-send" aria-hidden="true"></span>
+            </div>
+        </div>
+    </div>
+    <input id="input-select-load-file" style="display:none;" type="file" />
+    <div id="control-panel" class="bg-info">
+        <ul class="nav nav-tabs">
+            <li id="tab1" role="presentation" class="active"><a href="#tab-1" data-toggle="tab">Surface</a></li>
+            <li id="tab2" role="presentation"><a href="#tab-2" data-toggle="tab">Data</a></li>
+            <li id="tab3" role="presentation"><a href="#tab-3" data-toggle="tab">Attribute</a></li>
+        </ul>
+        <div class="tab-content" style="height: 100%; ">
+            <div id="tab-1" class="tab-pane active">
+                <br/>
+                <label class="control-label">Model</label>
+                <select id="select-brain3d-model" class="form-control input-sm">
+                    <option value="icbm">ICBM152</option>
+                    <option value="ch2">CH2</option>
+                    <option value="ch2_inflated">CH2 Inflated</option>
+                    <option value="ch2_cerebellum">CH2 Cerebellum</option>
+                    <option value="upload">Upload</option>
+                    <option value="none">None</option>
+                </select>
+                <br />
+                <label class="control-label">Color</label>
+                <p style="margin-bottom: 0;">
+                    <input id="input-surface-color"
+                           class="color {pickerFace:3,
+                                         pickerFaceColor:'#feeebd',
+                                         styleElement:'input-surface-color-style'} form-control input-sm"
+                           value="E3E3E3"
+                           onchange="setBrainSurfaceColor(this.color);">
+                </p>
+                <br/>
+                <label class="control-label">Opacity</label>
+                <input id="div-surface-opacity-slider" data-slider-id='surface-opacity-slider' type="text"
+                       data-slider-min="0.0" data-slider-max="1" data-slider-step="0.02" data-slider-value="0.5" />
+                <br/>        
+                
+                    
+                <div id="div-upload-brain-model" style="display:none;">
+                    <span class="h3-span">Coordinates: </span><span id="label-model">empty</span>
+                    <input id="input-select-model" style="font-size:10px; width: 160px; margin-top: 5px;" type="file" />
+                    <button id="button-upload-model" style="font-size:10px;">Upload</button>
+                    <br />
+                </div>
+
+                <br />
+                <div id="brain3d-icon-back" class="icon"></div>
+                <div id="brain3d-icon-front" class="icon icon-front"
+                     data-toggle="tooltip" data-placement="bottom" title="Drag this to one of the views">3D Brain</div>
+
+                <br />
+                <div style="margin-left: 0px; margin-bottom: 10px;">
+                    view:
+                    <input type="checkbox" id="checkbox_yoking_view" style="width: 12px;">yoking orientation
+                </div>
+
+            </div>
+            <div id="tab-2" class="tab-pane">
+                <br />
+                <div class="btn-group btn-group-justified" data-toggle="btns">
+                    <a class="btn btn-sm btn-primary active" href="#div-set-data-tab" data-toggle="tab">Dataset</a>
+                    <a class="btn btn-sm btn-primary" href="#div-batching-tab" data-toggle="tab">Batching</a>
+                </div>
+                <div class="tab-content" style="height: 85%; overflow-x: hidden; overflow-y: auto;">
+                    
+                    <div id="div-set-data-tab" class="tab-pane active">
+                        <br />
+                        <button id="load-example-data" class="btn btn-sm btn-primary">Load Default Data</button>
+                        <br />
+                        <br />
+                        <label class="control-label">Node Coordinates</label>
+                        <input id="select-coords" style="display:none;" type="file" />
+                        <div class="input-group input-group-sm">
+                            <div class="input-group-addon glyphicon glyphicon glyphicon-info-sign status-changed" id="coords-status"
+                                 data-toggle="tooltip" data-placement="bottom" title="File is not uploaded"></div>
+                            <button id="button-select-coords" class="form-control btn-default">Coordinates File</button>
+                        </div>
+                        <br />
+                        <br />
+                        <label class="control-label">Connectivity Matrix</label>
+                        <input id="select-matrix" style="display:none;" type="file" />
+                        <div class="input-group input-group-sm">
+                            <div class="input-group-addon glyphicon glyphicon glyphicon-info-sign status-changed" id="matrix-status"
+                                 data-toggle="tooltip" data-placement="bottom" title="File is not uploaded"></div>
+                            <button id="button-select-matrix" class="form-control btn-default">Matrix File</button>
+                        </div>
+                        <br />
+                        <br />
+                        <label class="control-label">Node Attributes</label>
+                        <input id="select-attrs" style="display:none;" type="file" />
+                        <div class="input-group input-group-sm">
+                            <div class="input-group-addon glyphicon glyphicon glyphicon-info-sign status-changed" id="attrs-status"
+                                 data-toggle="tooltip" data-placement="bottom" title="File is not uploaded"></div>
+                            <button id="button-select-attrs" class="form-control btn-default">Attributes File</button>
+                        </div>
+                        <br />
+                        <br />
+                        <label class="control-label">Node Labels (optional)</label>
+                        <input id="select-labels" style="display:none;" type="file" />
+                        <div class="input-group input-group-sm">
+                            <div class="input-group-addon glyphicon glyphicon glyphicon-info-sign status-changed" id="labels-status"
+                                 data-toggle="tooltip" data-placement="bottom" title="File is not uploaded"></div>
+                            <button id="button-select-labels" class="form-control btn-default">Labels File</button>
+                        </div>
+                        <br />
+                        <br />
+                        <div id="dataset1-icon-back" class="icon"></div>
+                        <div id="dataset1-icon-front" class="icon icon-front"
+                             data-toggle="tooltip" data-placement="bottom" title="Drag this to one of the views">Show</div>
+
+                    </div>
+                    <div id="div-batching-tab" class="tab-pane">
+                       
+                        
+                        <br/>
+                        <label class="control-label">Connectivity Matrices</label>
+                        <input id="select-matrices-batching" style="display:none;" type="file" multiple/>
+                        <div id="div-batching-tab" class="tab-pane">
+                            <div class="input-group input-group-sm">
+                                <div class="input-group-addon glyphicon glyphicon glyphicon-info-sign status-changed" id="matrices-batching-status"
+                                     data-toggle="tooltip" data-placement="bottom" title="File is not uploaded"></div>
+                                <button id="button-select-matrices-batching" class="form-control btn-default">Matrices File</button>
+                            </div>
+                        </div>
+                        <br />
+                        <br />
+                        <label class="control-label">Node Attributes</label>
+                        <input id="select-attrs-batching" style="display:none;" type="file" multiple/>
+                        <div class="input-group input-group-sm">
+                            <div class="input-group-addon glyphicon glyphicon glyphicon-info-sign status-changed" id="attrs-batching-status"
+                                 data-toggle="tooltip" data-placement="bottom" title="File is not uploaded"></div>
+                            <button id="button-select-attrs-batching" class="form-control btn-default">Attribute Files</button>
+                        </div>
+                        <br/>
+                        <button id="btn-start-batching" class="btn btn-sm btn-primary">Batch</button>
+                    </div>
+
+                </div>
+
+            </div>
+            <div id="tab-3" class="tab-pane" style="height: 100%;" >
+                <br />
+                <div class="btn-group btn-group-justified" data-toggle="btns">
+                    <a class="btn btn-sm btn-primary active" href="#div-node-attribute-tab" data-toggle="tab">Node Attrs</a>
+                    <a class="btn btn-sm btn-primary" href="#div-edge-attribute-tab" data-toggle="tab">Edge Attrs</a>
+                </div>
+
+                <br>
+                <div class="tab-content" style="height: 85%; overflow-x: hidden; overflow-y: auto;">
+                    <div id="div-node-attribute-tab" class="tab-pane active">
+                        <div>
+                            <div id="div-set-node-scale" style="display: none; margin-bottom: 5px; ">
+                                <label class="control-label">Set</label>
+                                <select id="select-node-size-color" class="form-control input-sm">
+                                    <option value="node-size">Size</option>
+                                    <option value="node-color">Color</option>
+                                    <option value="node-default">None</option>
+                                </select> <label class="control-label">by</label>
+                                <select id="select-attribute" class="form-control input-sm"></select>
+                            </div>
+                        </div>
+                        <div id="div-node-size" style="display:none; margin-top: 20px; margin-left: 20px;">
+                            <p>
+                                <label class="control-label">range:</label>
+                                <label id="label_node_size_range"></label>
+                            </p>
+                            <input id="div-node-size-slider" data-slider-id='node-size-slider' type="text"
+                                   data-slider-min="0.01" data-slider-max="3" data-slider-step="0.02" data-slider-value="[0.5,1]" />
+                        </div>
+                        <div id="div-node-color-mode" style="display:none;"><input type="checkbox" id="checkbox-node-color-continuous" style="width: 12px;"> <strong>Treat as continuous</strong></div>
+                        <div id="div-node-color-pickers-discrete" style="display:none; margin-top: 20px; margin-left: 20px;">
+                            <p>
+                                <label class="control-label" style="display: inline-block;">Key</label>
+                                <select id="select-node-key" class="form-control input-sm" style="width: 80px; display: inline-block;"></select>
+                                <input id="input-node-color"
+                                       class="form-control input-sm color {pickerFace: 3,
+                                         pickerFaceColor: '#feeebd',
+                                         styleElement: 'input-node-color-style',
+                                         onImmediateChange: 'setSelectNodeKeyBackgroundColor(this); setNodeSizeOrColor();'}"
+                                       value="FFFF00"
+                                       onchange="setSelectNodeKeyBackgroundColor(this.color); setNodeSizeOrColor();">
+                            </p>
+                        </div>
+                        
+                        <div id="div-node-color-pickers" style="display:none; margin-top: 20px; margin-left: 20px;">
+                            <p style="margin-bottom: 0;">
+                                <label class="control-label" style="display: inline-block;">Min</label>
+                                <input id="input-min-color"
+                                       class="form-control input-sm color {pickerFace:3,
+                                         pickerFaceColor:'#feeebd',
+                                         styleElement:'input-min-color-style',
+                                         onImmediateChange: 'setNodeSizeOrColor();'}"
+                                       value="FFFF00"
+                                       style="display: inline-block; width: 100px;"
+                                       onchange="setNodeSizeOrColor();">
+                            </p>
+                            <p style="margin-top: 0;">
+                                <label class="control-label" style="display: inline-block;">Max</label>
+                                <input id="input-max-color"
+                                       class="form-control input-sm color {pickerFace:3,
+                                         pickerFaceColor:'#feeebd',
+                                         styleElement:'input-max-color-style',
+                                         onImmediateChange: 'setNodeSizeOrColor();'}"
+                                       value="FF0000"
+                                       style="display: inline-block; width: 100px;"
+                                       onchange="setNodeSizeOrColor();">
+                            </p>
+                        </div>
+                        <div id="div-charts" class="dc-data-count" style="width: 95%">
+                            <div id="barCharts"></div>
+                            <button id="button-apply-filter" title="Show only nodes that are selected above" style="font-size:10px;" disabled="true">Apply</button>
+                            <span class="filter-count"></span> selected out of <span class="total-count"></span> | <a href="javascript:dc.filterAll();dc.renderAll();">Reset</a>
+                        </div>
+                    </div>
+                    <div id="div-edge-attribute-tab" class="tab-pane">
+                        <div id="div-edge-size" style="margin-left: 0px; margin-bottom: 10px;">
+                            <p><strong>Edge size:</strong></p>
+                            <input id="div-edge-size-slider" data-slider-id='edge-size-slider' type="text" 
+                                   data-slider-min="0.01" data-slider-max="3" data-slider-step="0.02" data-slider-value="1" />
+                            <label id="label_edge_size"></label>
+                        </div>
+
+                        <p><input type="checkbox" id="checkbox-thickness-by-weight" style="width: 12px;"> <strong>Thickness by Weight</strong></p>
+
+                        <p style="margin-top: 5px; margin-bottom: 0;">
+                            Edge Direction:
+                            <select id="select-edge-direction" style="background-color: #feeebd;">
+                                <option value="none">None</option>
+                                <option value="arrow">Arrow</option>
+                                <option value="opacity">Transparency</option>
+                                <option value="gradient">Gradient</option>
+                                <option value="animation">Animation</option>
+                            </select>
+                        </p>
+                        <div id="div-edge-gradient-color-pickers" style="display:none; margin-top: 20px; margin-left: 20px;">
+                            <p style="margin-bottom: 0;">
+                                <label class="control-label" style="display: inline-block;">Start</label>
+                                <input id="input-edge-start-color"
+                                       class="form-control input-sm color {pickerFace:3,
+                                         pickerFaceColor:'#feeebd',
+                                         styleElement:'input-start-color-style',
+                                         onImmediateChange: 'setEdgeDirectionGradient();'}"
+                                       value="FF00"
+                                       style="display: inline-block; width: 100px;"
+                                       onchange="setEdgeDirectionGradient();">
+                            </p>
+                            <p style="margin-top: 0;">
+                                <label class="control-label" style="display: inline-block;">End</label>
+                                <input id="input-edge-end-color"
+                                       class="form-control input-sm color {pickerFace:3,
+                                         pickerFaceColor:'#feeebd',
+                                         styleElement:'input-end-color-style',
+                                         onImmediateChange: 'setEdgeDirectionGradient();'}"
+                                       value="0000FF"
+                                       style="display: inline-block; width: 100px;"
+                                       onchange="setEdgeDirectionGradient();">
+                            </p>
+                        </div>
+                        <div id="div-edge-color">
+                            <p style="margin-top: 5px; margin-bottom: 0;">
+                                Color Edges by:
+                                <select id="select-edge-color" style="background-color: #feeebd;">
+                                    <option value="none">none</option>
+                                    <option value="node">node</option>
+                                    <option value="weight">weight</option>
+                                </select>
+                            </p>
+                            <div id="div-edge-color-pickers" style="display: none; margin-top: 30px; margin-left: 40px;">
+                                <p><input type="checkbox" id="checkbox-edge-color-force-continuous" style="display:none; width: 12px;">Treat as continuous</p>
+                                <div id="div-edge-color-continuous">
+                                    <p><input type="checkbox" id="checkbox-edge-color-discretized" style="width: 12px;">Descretize continuous values</p>
+                                    <div id="div-edge-color-continuous-discretized">
+
+                                        Select number of category:
+                                        <select id="select-edge-color-number-discretized-category" style="background-color: #feeebd; margin-bottom: 10px;">
+                                            <option value="1">1</option>
+                                            <option value="2">2</option>
+                                            <option value="3">3</option>
+                                            <option value="4">4</option>
+                                            <option value="5">5</option>
+                                        </select>
+
+                                        <div id="div-edge-discretized-0">
+                                            From:<input id="input-edge-discretized-0-from" type="text" />
+                                            To:<input id="input-edge-discretized-0-to" type="text" />
+                                            <input id="input-edge-discretized-0-color"
+                                                   class="color {pickerFace: 3,
+                                                pickerFaceColor: '#2ecc71',
+                                                styleElement: 'input-node-color-style
+                                                onImmediateChange: 'setEdgeColorByWeight();'}"
+                                                   value="2ecc71"
+                                                   style="width: 80px; background-color: #feeebd; border: 1px solid grey"
+                                                   onchange="setEdgeColorByWeight();"> <!--setNodeSizeOrColor();">-->
+
+                                            <br>
+                                        </div>
+
+                                        <div id="div-edge-discretized-1">
+                                            From:<input id="input-edge-discretized-1-from" type="text" />
+                                            To:<input id="input-edge-discretized-1-to" type="text" />
+                                            <input id="input-edge-discretized-1-color"
+                                                   class="color {pickerFace: 3,
+                                                pickerFaceColor: '#3498db',
+                                                styleElement: 'input-node-color-style
+                                                onImmediateChange: 'setEdgeColorByWeight();'}"
+                                                   value="3498db"
+                                                   style="width: 80px; background-color: #feeebd; border: 1px solid grey"
+                                                   onchange="setEdgeColorByWeight();"> <!--setNodeSizeOrColor();">-->
+
+                                        </div>
+
+                                        <div id="div-edge-discretized-2">
+                                            From:<input id="input-edge-discretized-2-from" type="text" />
+                                            To:<input id="input-edge-discretized-2-to" type="text" />
+                                            <input id="input-edge-discretized-2-color"
+                                                   class="color {pickerFace: 3,
+                                                pickerFaceColor: '#9b59b6',
+                                                styleElement: 'input-node-color-style
+                                                onImmediateChange: 'setEdgeColorByWeight();'}"
+                                                   value="9b59b6"
+                                                   style="width: 80px; background-color: #feeebd; border: 1px solid grey"
+                                                   onchange="setEdgeColorByWeight();"> <!--setNodeSizeOrColor();">-->
+                                            <br>
+                                        </div>
+
+                                        <div id="div-edge-discretized-3">
+                                            From:<input id="input-edge-discretized-3-from" type="text" />
+                                            To:<input id="input-edge-discretized-3-to" type="text" />
+                                            <input id="input-edge-discretized-3-color"
+                                                   class="color {pickerFace: 3,
+                                                pickerFaceColor: '#f1c40f',
+                                                styleElement: 'input-node-color-style
+                                               onImmediateChange: 'setEdgeColorByWeight();'}"
+                                                   value=" f1c40f"
+                                                   style="width: 80px; background-color: #feeebd; border: 1px solid grey"
+                                                   onchange="setEdgeColorByWeight();"> <!--setNodeSizeOrColor();">-->
+
+                                        </div>
+
+                                        <div id="div-edge-discretized-4">
+                                            From:<input id="input-edge-discretized-4-from" type="text" />
+                                            To:<input id="input-edge-discretized-4-to" type="text" />
+                                            <input id="input-edge-discretized-4-color"
+                                                   class="color {pickerFace: 3,
+                                                pickerFaceColor: '#e74c3c',
+                                                styleElement: 'input-node-color-style
+                                                onImmediateChange: 'setEdgeColorByWeight();'}"
+                                                   value="e74c3c"
+                                                   style="width: 80px; background-color: #feeebd; border: 1px solid grey"
+                                                   onchange="setEdgeColorByWeight();"> <!--setNodeSizeOrColor();">-->
+                                            <br>
+                                        </div>
+
+                                    </div>
+                                    <div id="div-edge-color-continuous-normal">
+                                        <p style="margin-bottom: 0;">
+                                            min:
+                                            <input id="input-edge-min-color"
+                                                   class="color {pickerFace:3,
+                                         pickerFaceColor:'#feeebd',
+                                         styleElement:'input-edge-min-color-style',
+                                         onImmediateChange: 'setEdgeColorByWeight();'}"
+                                                   value="FFFF00"
+                                                   style="width: 80px; background-color: #feeebd; border: 1px solid grey"
+                                                   onchange="setEdgeColorByWeight();">
+                                            <input id="input-edge-min-color-style" style="width: 11px; height: 11px; border: 1px solid #000000" readonly>
+                                        </p>
+                                        <p style="margin-top: 0;">
+                                            max:
+                                            <input id="input-edge-max-color"
+                                                   class="color {pickerFace:3,
+                                         pickerFaceColor:'#feeebd',
+                                         styleElement:'input-edge-max-color-style',
+                                         onImmediateChange: 'setEdgeColorByWeight();'}"
+                                                   value="FF0000"
+                                                   style="width: 80px; background-color: #feeebd; border: 1px solid grey"
+                                                   onchange="setEdgeColorByWeight();">
+                                            <input id="input-edge-max-color-style" style="width: 11px; height: 11px; border: 1px solid #000000" readonly>
+                                            <br>
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div id="div-edge-color-discrete">
+                                    <p>
+                                        key:
+                                        <select id="select-edge-key" style="background-color: #feeebd"></select>
+                                        <input id="input-edge-color"
+                                               class="color {pickerFace: 3,
+                                         pickerFaceColor: '#feeebd',
+                                         styleElement: 'input-edge-color',
+                                         onImmediateChange: 'setSelectEdgeKeyBackgroundColor(this.color); setEdgeColorByWeight();'}"
+                                               value="FFFF00"
+                                               style="width: 80px; background-color: #feeebd; border: 1px solid grey"
+                                               onchange="setSelectEdgeKeyBackgroundColor(this.color); setEdgeColorByWeight();">
+
+                                        <br>
+                                    </p>
+
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
+   <!-- Page structure -->
+    <div id="outer-view-panel">
+        <div id="view-panel">
+            <div id="view-top-left" class="view"></div>
+            <div id="view-top-right" class="view"></div>
+            <div id="view-bottom-left" class="view"></div>
+            <div id="view-bottom-right" class="view"></div>
+        </div>
+        <div id="pin"></div>
+    </div>
+
+    <div id="leap-pointer"></div>
+
+    <div id="div-context-menu-color-picker" style="visibility:hidden;">
+        color:
+        <input id="input-context-menu-node-color"
+               class="color {pickerFace:3,
+                             pickerFaceColor:'#feeebd',
+                             styleElement:'input-context-menu-node-color-style',
+                             onImmediateChange: 'setNodeColorInContextMenu(this);'}"
+               value="FFFF00"
+               style="width: 80px; background-color: #feeebd; border: 1px solid grey"
+               onchange="setNodeColorInContextMenu(this.color);">
+        <input id="input-context-menu-node-color-style" style="width: 11px; height: 11px; border: 1px solid #000000" readonly>
+    </div>
+
+
+    <div class="modal" id="alertModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    <h4 id="alertModalTitle" class="modal-title">Modal title</h4>
+                </div>
+                <div class="modal-body">
+                    <div class="progress">
+                        <div id="progressBar" class="progress-bar progress-bar-info progress-bar-striped" role="progressbar" aria-valuenow="20" aria-valuemin="0" aria-valuemax="100" style="width: 20%">
+                            <span class="sr-only">20% Complete</span>
+                        </div>
+                       
+                    </div>
+                    <p id="alertModalMessage"></p> 
+                </div>
+                
+            </div><!-- /.modal-content -->
+        </div><!-- /.modal-dialog -->
+    </div><!-- /.modal -->
+
+    <div class="modal" id="exportModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    <h4 id="alertModalTitle" class="modal-title">Export Settings</h4>
+                </div>
+                <div class="modal-body">
+                    
+                    <label class="control-label">Type:</label>
+                    <select id="select-export-type" class="form-control" >
+                        <option value="svg">SVG</option>
+                        <option value="image">Image</option>
+                    </select>
+                    </br>
+                    <label class="control-label">View Port:</label>
+                    <select id="select-export-viewport" class="form-control">
+                        <option value="0">Top Left</option>
+                        <option value="1">Top Right</option>
+                        <option value="2">Bottom Left</option>
+                        <option value="3">Bottom Right</option>
+                    </select>
+
+
+                </div>
+                
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                    <button id="button-export-submit" type="button" class="btn btn-primary">Export</button>
+                </div>
+
+            </div><!-- /.modal-content -->
+        </div><!-- /.modal-dialog -->
+    </div><!-- /.modal -->
+
+    <div id="divAlerts">
+    </div>
+   
+
+    <!-- Required scripts -->
+
+    <script src="extern/jquery-1.10.2.min.js"></script>
+    <script src="extern/jquery-ui-1.10.4.custom/js/jquery-ui-1.10.4.custom.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/js/bootstrap.min.js"></script>
+
+    <script src="extern/three.js"></script>
+    <script src="extern/OBJLoader.js"></script>
+    <script src="extern/leap.js"></script>
+
+    <!-- Used for resource loading -->
+    <script src="extern/d3.v3.js" charset="utf-8"></script>
+    
+
+    <script src="extern/extra.js"></script>
+    <script src="extern/crossfilter.js"></script>
+    <script src="extern/dc.js"></script>
+    <script src="extern/yaml/js-yaml.min.js"></script>
+
+    <script src="extern/bootstrap-slider/bootstrap-slider.min.js"></script>
+    <script src="extern/jscolor/jscolor.js"></script>
+
+    <script src="extern/numeric-1.2.6.js"></script>
+    <script src="extern/packages.js"></script>
+
+    <script src="extern/cola.js"></script>
+    <script src="extern/d3adaptor.js"></script>
+
+    <!-- The main application script -->
+    <script src="brain-app/input.js"></script> 
+    <script src="brain-app/CommonUtilities.js"></script>
+    <script src="brain-app/graph.js"></script>
+    <script src="brain-app/brain3d.js"></script>
+    <script src="brain-app/brainapp.js"></script>
+
+    <script>
+    (function (i, s, o, g, r, a, m) {
+        i['GoogleAnalyticsObject'] = r; i[r] = i[r] || function () {
+            (i[r].q = i[r].q || []).push(arguments)
+        }, i[r].l = 1 * new Date(); a = s.createElement(o),
+        m = s.getElementsByTagName(o)[0]; a.async = 1; a.src = g; m.parentNode.insertBefore(a, m)
+    })(window, document, 'script', '//www.google-analytics.com/analytics.js', 'ga');
+
+    ga('create', 'UA-71650886-1', 'auto');
+    ga('send', 'pageview');
+
+    </script>
+    
+
+</body>
+</html>
+
