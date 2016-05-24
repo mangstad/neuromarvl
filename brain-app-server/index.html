@@ -321,7 +321,7 @@
                         </div>
                         <div id="div-charts" class="dc-data-count" style="width: 95%">
                             <div id="barCharts"></div>
-                            <button id="button-apply-filter" title="Show only nodes that are selected above" style="font-size:10px;" disabled="true">Apply</button>
+                            <button id="button-apply-filter" title="Show only nodes that are selected above" style="font-size:10px;" disabled>Apply</button>
                             <span class="filter-count"></span> selected out of <span class="total-count"></span> | <a href="javascript:dc.filterAll();dc.renderAll();">Reset</a>
                         </div>
                     </div>
@@ -444,7 +444,7 @@
                                                 pickerFaceColor: '#f1c40f',
                                                 styleElement: 'input-node-color-style
                                                onImmediateChange: 'setEdgeColorByWeight();'}"
-                                                   value=" f1c40f"
+                                                   value="f1c40f"
                                                    style="width: 80px; background-color: #feeebd; border: 1px solid grey"
                                                    onchange="setEdgeColorByWeight();"> <!--setNodeSizeOrColor();">-->
 
@@ -583,7 +583,7 @@
                         <option value="svg">SVG</option>
                         <option value="image">Image</option>
                     </select>
-                    </br>
+                    <br/>
                     <label class="control-label">View Port:</label>
                     <select id="select-export-viewport" class="form-control">
                         <option value="0">Top Left</option>
