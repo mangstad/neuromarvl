@@ -12,14 +12,14 @@ var cola;
                 this.distance = distance;
             }
             return Neighbour;
-        })();
+        }());
         var Node = (function () {
             function Node(id) {
                 this.id = id;
                 this.neighbours = [];
             }
             return Node;
-        })();
+        }());
         /**
          * calculates all-pairs shortest paths or shortest paths from a single node
          * @class Calculator
@@ -107,7 +107,7 @@ var cola;
                 return d;
             };
             return Calculator;
-        })();
+        }());
         shortestpaths.Calculator = Calculator;
     })(shortestpaths = cola.shortestpaths || (cola.shortestpaths = {}));
 })(cola || (cola = {}));

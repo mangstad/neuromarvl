@@ -2660,7 +2660,6 @@ class Graph2D {
                                 return pie([1]);
                             } else {
                                 return pie(tmp);
-                                console.log(tmp)
                             }   
                         })
                         .enter().append('path')
@@ -3308,7 +3307,6 @@ class Graph {
         if (!colorArray) return;
         if (colorArray.length != this.nodeMeshes.length) {
             throw "ERROR: ColorArray (" + colorArray.length + ") and NodeMeshes (" + this.nodeMeshes.length + ") do not match";
-            return;
         }
         this.nodeCurrentColor = colorArray.slice(0); // clone the array
         for (var i = 0; i < this.nodeMeshes.length; ++i) {

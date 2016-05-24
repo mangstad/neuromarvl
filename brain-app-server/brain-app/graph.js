@@ -1257,7 +1257,7 @@ var CircularGraph = (function () {
         }
     };
     return CircularGraph;
-})();
+}());
 var Graph2D = (function () {
     function Graph2D(id, jDiv, dataSet, svg, svgDefs, svgGroup, d3Zoom, commonData) {
         this.groupNodesBy = "none";
@@ -2291,7 +2291,6 @@ var Graph2D = (function () {
                     }
                     else {
                         return pie(tmp);
-                        console.log(tmp);
                     }
                 })
                     .enter().append('path')
@@ -2350,7 +2349,7 @@ var Graph2D = (function () {
             .attr("y", function (d) { return d.y; });
     };
     return Graph2D;
-})();
+}());
 var Graph = (function () {
     function Graph(parentObject, adjMatrix, nodeColorings, weightMatrix, labels, commonData) {
         this.edgeMaxWeight = Number.MIN_VALUE;
@@ -2853,7 +2852,6 @@ var Graph = (function () {
             return;
         if (colorArray.length != this.nodeMeshes.length) {
             throw "ERROR: ColorArray (" + colorArray.length + ") and NodeMeshes (" + this.nodeMeshes.length + ") do not match";
-            return;
         }
         this.nodeCurrentColor = colorArray.slice(0); // clone the array
         for (var i = 0; i < this.nodeMeshes.length; ++i) {
@@ -2935,7 +2933,7 @@ var Graph = (function () {
         this.parentObject.remove(this.rootObject);
     };
     return Graph;
-})();
+}());
 var Edge = (function () {
     function Edge(parentObject, sourceNode, targetNode, weight) {
         this.weight = weight;
@@ -3168,4 +3166,4 @@ var Edge = (function () {
         }
     };
     return Edge;
-})();
+}());

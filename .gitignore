@@ -1,0 +1,6 @@
+.vs
+brain-app-server/obj
+brain-app-server/bin
+brain-app-server/brain-app/*.js
+brain-app-server/brain-app/*.js.map
+

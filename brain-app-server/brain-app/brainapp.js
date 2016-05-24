@@ -33,7 +33,7 @@ var CommonData = (function () {
         this.surfaceCallbacks.forEach(function (c) { c(); });
     };
     return CommonData;
-})();
+}());
 // Holds data for a specific dataset, and sends notifications when data changes
 var DataSet = (function () {
     function DataSet() {
@@ -221,7 +221,7 @@ var DataSet = (function () {
         this.attCallbacks.forEach(function (c) { c(); });
     };
     return DataSet;
-})();
+}());
 var SaveFile = (function () {
     function SaveFile() {
         // user-uploaded file names
@@ -352,7 +352,7 @@ var SaveFile = (function () {
         }
     };
     return SaveFile;
-})();
+}());
 var SaveApp = (function () {
     function SaveApp() {
     }
@@ -389,7 +389,7 @@ var SaveApp = (function () {
         }
     };
     return SaveApp;
-})();
+}());
 // Parses, stores, and provides access to brain node attributes from a file
 var Attributes = (function () {
     function Attributes(text) {
@@ -514,7 +514,7 @@ var Attributes = (function () {
         return null;
     };
     return Attributes;
-})();
+}());
 var Loop = (function () {
     function Loop(loopable, limit) {
         var _this = this;
@@ -541,7 +541,7 @@ var Loop = (function () {
         requestAnimationFrame(mainLoop);
     }
     return Loop;
-})();
+}());
 ///////////////////////////////////////////////////////////////////////////////////
 // Set up jQuery UI layout objects ////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////
@@ -1626,7 +1626,7 @@ var PointerImageImpl = (function () {
         $('#leap-pointer').hide();
     };
     return PointerImageImpl;
-})();
+}());
 var pointerImage = new PointerImageImpl;
 // Set up the class that will manage which view should be receiving input
 var input = new InputTargetManager([tl_view, tr_view, bl_view, br_view], pointerImage);

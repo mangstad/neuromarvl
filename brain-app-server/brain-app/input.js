@@ -30,7 +30,7 @@ var PointerIndirection = (function () {
     function PointerIndirection() {
     }
     return PointerIndirection;
-})();
+}());
 // Holds the state of and the callbacks to be made for a particular input target
 var InputTarget = (function () {
     // Accepts the CSS ID of the div that is to represent the input target, and the extra borders
@@ -98,7 +98,7 @@ var InputTarget = (function () {
         return new THREE.Vector2((this.currentPointer.ptr.x - pos.left - this.leftBorder) / (target.width() - this.leftBorder - this.rightBorder) * 2 - 1, (pos.top + this.topBorder - this.currentPointer.ptr.y) / (target.height() - this.topBorder - this.bottomBorder) * 2 + 1);
     };
     return InputTarget;
-})();
+}());
 // Reads input and directs it to the currently-active input target.
 var InputTargetManager = (function () {
     // Accepts the CSS IDs of each of the divs that represent an input target, as well as an object that implements the interface for a Leap motion pointer
@@ -534,7 +534,7 @@ var InputTargetManager = (function () {
         };
     };
     return InputTargetManager;
-})();
+}());
 function averageOfVectors(vectors, numVectors) {
     var result = new Array();
     for (var i = 0; i < vectors[0].length; ++i) {

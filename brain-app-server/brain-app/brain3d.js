@@ -1168,7 +1168,6 @@ var Brain3DApp = (function () {
     Brain3DApp.prototype.setNodeColor = function (attribute, minColor, maxColor) {
         if (!attribute || !minColor || !maxColor) {
             throw "Invalid arguments for setNodeColor.";
-            return;
         }
         if (!this.dataSet || !this.dataSet.attributes) {
             alert("Dataset is not loaded or does not contain attributes.");
@@ -1177,7 +1176,6 @@ var Brain3DApp = (function () {
         var attrArray = this.dataSet.attributes.get(attribute);
         if (!attrArray) {
             throw "Attribute " + attribute + " does not exist.";
-            return;
         }
         var columnIndex = this.dataSet.attributes.columnNames.indexOf(attribute);
         // assume all positive numbers in the array
@@ -1200,7 +1198,6 @@ var Brain3DApp = (function () {
         }
         if (!colorArray) {
             throw "Encountered error in generating color array.";
-            return;
         }
         // update graphs
         if (this.physioGraph)
@@ -1585,7 +1582,7 @@ var Brain3DApp = (function () {
         this.renderer.render(this.scene, this.camera);
     };
     return Brain3DApp;
-})();
+}());
 /* Functions can be pushed to the coroutines array to be executed as if they are
  * occuring in parallel with the program execution.
  */

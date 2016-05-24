@@ -104,7 +104,7 @@ var PairingHeap = (function () {
         return this.merge(pairingNode, lessThan);
     };
     return PairingHeap;
-})();
+}());
 /**
  * @class PriorityQueue a min priority queue backed by a pairing heap
  */
@@ -189,4 +189,4 @@ var PriorityQueue = (function () {
         return this.root.count();
     };
     return PriorityQueue;
-})();
+}());

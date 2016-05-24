@@ -47,7 +47,7 @@ var cola;
             }
         };
         return Locks;
-    })();
+    }());
     cola.Locks = Locks;
     /**
      * Uses a gradient descent approach to reduce a stress or p-stress goal function over a graph with specified ideal edge lengths or a square matrix of dissimilarities.
@@ -408,7 +408,7 @@ var cola;
         };
         Descent.zeroDistance = 1e-10;
         return Descent;
-    })();
+    }());
     cola.Descent = Descent;
     // Linear congruential pseudo random number generator
     var PseudoRandom = (function () {
@@ -430,6 +430,6 @@ var cola;
             return min + this.getNext() * (max - min);
         };
         return PseudoRandom;
-    })();
+    }());
     cola.PseudoRandom = PseudoRandom;
 })(cola || (cola = {}));

@@ -1453,7 +1453,6 @@ class Brain3DApp implements Application, Loopable {
         
         if (!attribute || !minColor || !maxColor) {
             throw "Invalid arguments for setNodeColor."
-            return;
         }
         if (!this.dataSet || !this.dataSet.attributes) {
             alert("Dataset is not loaded or does not contain attributes.")
@@ -1462,7 +1461,6 @@ class Brain3DApp implements Application, Loopable {
         var attrArray = this.dataSet.attributes.get(attribute);
         if (!attrArray) {
             throw "Attribute " + attribute + " does not exist.";
-            return;
         }
         var columnIndex = this.dataSet.attributes.columnNames.indexOf(attribute);
 
@@ -1488,7 +1486,6 @@ class Brain3DApp implements Application, Loopable {
         }
         if (!colorArray) {
             throw "Encountered error in generating color array.";
-            return;
         }
 
         // update graphs

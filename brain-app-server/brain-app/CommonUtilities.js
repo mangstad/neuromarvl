@@ -137,4 +137,4 @@ var CommonUtilities = (function () {
     };
     CommonUtilities.alertNumber = 0;
     return CommonUtilities;
-})();
+}());
