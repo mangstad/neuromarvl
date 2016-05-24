@@ -14,7 +14,7 @@ module cola {
          * @param id index of node to be locked
          * @param x required position for node
          */
-        add(id: number, x: number[]) {
+        add(id: any, x: number[]) {
             if (isNaN(x[0]) || isNaN(x[1])) debugger;
             this.locks[id] = x;
         }
@@ -36,7 +36,7 @@ module cola {
          * perform an operation on each lock
          * @apply
          */
-        apply(f: (id: number, x: number[]) => void) {
+        apply(f: (id: any, x: number[]) => void) {
             for (var l in this.locks) {
                 f(l, this.locks[l]);
             }
