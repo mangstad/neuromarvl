@@ -4,6 +4,7 @@
     <NameOfLastUsedPublishProfile>brainapp</NameOfLastUsedPublishProfile>
     <ToolsVersionPromptShown>1.8</ToolsVersionPromptShown>
     <UseIISExpress>true</UseIISExpress>
+    <ProjectView>ShowAllFiles</ProjectView>
   </PropertyGroup>
   <PropertyGroup>
     <ReferencePath>C:\Users\tnpha6\Documents\Visual Studio 2013\Projects\brain-app-server\brain-app-server\</ReferencePath>

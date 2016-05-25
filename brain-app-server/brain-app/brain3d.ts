@@ -1,5 +1,5 @@
-/// <reference path="../extern/descent.ts"/>
-/// <reference path="../extern/shortestpaths.ts"/>
+/// <reference path="../extern/ts/descent.ts"/>
+/// <reference path="../extern/ts/shortestpaths.ts"/>
 /**
     This application uses similarity data between areas of the brain to construct a thresholded graph with edges
     between the most similar areas. It is designed to be embedded in a view defined in brainapp.html / brainapp.ts.
