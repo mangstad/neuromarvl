@@ -1652,7 +1652,9 @@ class Graph2D {
             if ((<any>obj).isNode) {
                 var nodeObject = new Object();
                 nodeObject["id"] = obj.id;
-                nodeObject["label"] = this.dataSet.brainLabels[obj.id];
+                if (this.dataSet.brainLabels) {
+                    nodeObject["label"] = this.dataSet.brainLabels[obj.id];
+                }
                 nodeObject["color"] = "#".concat(colaGraph.nodeMeshes[obj.id].material.color.getHexString());
                 nodeObject["radius"] = colaGraph.nodeMeshes[obj.id].scale.x * unitRadius;
 
@@ -2782,8 +2784,9 @@ class Graph {
                 new THREE.SphereGeometry(2, 10, 10),
                 new THREE.MeshLambertMaterial({ color: nodeColorings[i] })
                 );
-
-            this.nodeInfo[i]["label"] = this.createNodeLabel(labels[i], 6);
+            
+            var label = (!!labels && labels[i]) || "";
+            this.nodeInfo[i]["label"] = this.createNodeLabel(label, 6);
 
             // additional flag
             (<any>sphere).isNode = true; // A flag to identify the node meshes
