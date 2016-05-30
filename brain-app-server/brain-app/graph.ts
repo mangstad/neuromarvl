@@ -2191,7 +2191,7 @@ class Graph2D {
                         .flowLayout('y', 10)
             }
 
-                cola2D.start(30, 0, 30);
+            cola2D.start(30, 0, 30);
 
         }
     }

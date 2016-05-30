@@ -1873,10 +1873,14 @@ class Brain3DApp implements Application, Loopable {
 
             //if (this.showingCola)
             if (this.colaGraph.isVisible()) {
+                //TODO: This is very slow, for minimal impact - look at using regular 3D layout, e.g.:
+                //  http://marvl.infotech.monash.edu/webcola/examples/3dtree.html
+                //  http://marvl.infotech.monash.edu/webcola/examples/3dlayout.js
                 this.descent.rungeKutta(); // Do an iteration of the solver
             }
-            this.scene.updateMatrixWorld(true);
-            this.scene.updateMatrixWorld(true);
+            //this.scene.updateMatrixWorld(true);
+            //this.scene.updateMatrixWorld(true);
+            this.scene.updateMatrixWorld();     //TODO: Confirm that this change has no side effects
 
             if (this.svgMode && this.svgNeedsUpdate) {
                 this.update2DGraph();
