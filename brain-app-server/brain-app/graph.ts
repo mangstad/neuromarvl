@@ -2753,6 +2753,8 @@ class Graph {
     filteredNodeIDs: number[];
     nodeHasNeighbors: boolean[]; // used for cola graph only
 
+    // Shared for optimisation
+    _sphereGeometry: THREE.SphereGeometry = new THREE.SphereGeometry(2, 10, 10);
 
     allLabels: boolean = false;
 
@@ -2775,7 +2777,7 @@ class Graph {
 
         for (var i = 0; i < adjMatrix.length; ++i) {
             var sphere = this.nodeMeshes[i] = new THREE.Mesh(
-                new THREE.SphereGeometry(2, 10, 10),
+                this._sphereGeometry,
                 new THREE.MeshLambertMaterial({ color: nodeColorings[i] })
                 );
             
