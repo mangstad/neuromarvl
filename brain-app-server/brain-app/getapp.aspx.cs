@@ -12,7 +12,8 @@ namespace brain_app_server.brain_app
         protected void Page_Load(object sender, EventArgs e)
         {
             string filename = Request.Form["filename"];
-            string path = Server.MapPath("save") + "\\" + filename + ".txt";
+            string source = Request.Form["source"];
+            string path = Server.MapPath(source) + "\\" + filename + ".txt";
 
             string json = "";
             try

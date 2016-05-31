@@ -524,69 +524,67 @@ class CircularGraph {
         // Loop through all nodes of the Cola Graph
         for (var i = 0; i < children.length; i++) {
             var obj = children[i];
-            if ((<any>obj).isNode) {
 
-                if (!this.isDisplayAllNode && !(<any>obj).hasVisibleEdges) continue;
+            if (!this.isDisplayAllNode && !(<any>obj).hasVisibleEdges) continue;
 
-                // Create new empty node
-                var nodeObject = new Object();
-                nodeObject["id"] = obj.id; // id
-                if (this.dataSet.brainLabels) {
-                    nodeObject["label"] = this.dataSet.brainLabels[obj.id];
-                }
-
-                // for every attributes
-                for (var j = 0; j < this.dataSet.attributes.columnNames.length; j++) {
-
-                    var colname = this.dataSet.attributes.columnNames[j];
-                    var value = this.dataSet.attributes.get(colname)[obj.id];
-                    nodeObject[colname] = value;
-
-                    // add a special property for module id
-                    if (colname == 'module_id') {
-                        nodeObject['moduleID'] = this.dataSet.attributes.get(colname)[obj.id];
-                    }
-
-                    //  Get domain of the attributes (assume all positive numbers in the array)
-                    var columnIndex = this.dataSet.attributes.columnNames.indexOf(colname);
-                    var min = this.dataSet.attributes.getMin(columnIndex);
-                    var max = this.dataSet.attributes.getMax(columnIndex);
-
-                    // Scale value to between 0.05 to 1 
-                    var attrMap = d3.scale.linear().domain([min, max]).range([0.05, 1]);
-                    var scalevalue = attrMap(Math.max.apply(Math, value));
-                    nodeObject['scale_' + colname] = scalevalue;
-
-                    if (this.dataSet.attributes.info[colname].isDiscrete) { // if the attribute is discrete
-                        // Scale to group attirbutes 
-                        var values = this.dataSet.attributes.info[colname].distinctValues;
-                        nodeObject['bundle_group_' + colname] = values.indexOf(Math.max.apply(Math, value));
-
-                    } else { // if the attribute is continuous
-                        // Scale to group attirbutes 
-                        var bundleGroupMap = d3.scale.linear().domain([min, max]).range([0, 9.99]); // use 9.99 instead of 10 to avoid a group of a single element (that has the max attribute value)
-                        var bundleGroup = bundleGroupMap(Math.max.apply(Math, value)); // group
-                        bundleGroup = Math.floor(bundleGroup);
-                        nodeObject['bundle_group_' + colname] = bundleGroup;
-                    }
-                }
-
-                nodeObject["bundleByAttribute"] = bundleByAttribute;
-                if (bundleByAttribute == "none") {
-                    //nodeObject["name"] = "root.module" + nodeObject['moduleID'] + "." + obj.id;
-                    nodeObject["name"] = "root." + obj.id;
-                } else {
-                    nodeObject["name"] = "root." + bundleByAttribute + nodeObject['bundle_group_' + bundleByAttribute] + "." + obj.id;
-                }
-
-                nodeObject["color"] = this.colaGraph.nodeMeshes[obj.id].material.color.getHexString();
-
-                // Declare variables 
-                nodeObject["imports"] = [];
-                nodeObject["linkColors"] = [];
-                nodeObject["barWidths"] = []; // used to calculate the position of the label for each bar
-                this.svgNodeBundleArray.push(nodeObject);
+            // Create new empty node
+            var nodeObject = new Object();
+            nodeObject["id"] = obj.id; // id
+            if (this.dataSet.brainLabels) {
+                nodeObject["label"] = this.dataSet.brainLabels[obj.id];
             }
+
+            // for every attributes
+            for (var j = 0; j < this.dataSet.attributes.columnNames.length; j++) {
+
+                var colname = this.dataSet.attributes.columnNames[j];
+                var value = this.dataSet.attributes.get(colname)[obj.id];
+                nodeObject[colname] = value;
+
+                // add a special property for module id
+                if (colname == 'module_id') {
+                    nodeObject['moduleID'] = this.dataSet.attributes.get(colname)[obj.id];
+                }
+
+                //  Get domain of the attributes (assume all positive numbers in the array)
+                var columnIndex = this.dataSet.attributes.columnNames.indexOf(colname);
+                var min = this.dataSet.attributes.getMin(columnIndex);
+                var max = this.dataSet.attributes.getMax(columnIndex);
+
+                // Scale value to between 0.05 to 1 
+                var attrMap = d3.scale.linear().domain([min, max]).range([0.05, 1]);
+                var scalevalue = attrMap(Math.max.apply(Math, value));
+                nodeObject['scale_' + colname] = scalevalue;
+
+                if (this.dataSet.attributes.info[colname].isDiscrete) { // if the attribute is discrete
+                    // Scale to group attirbutes 
+                    var values = this.dataSet.attributes.info[colname].distinctValues;
+                    nodeObject['bundle_group_' + colname] = values.indexOf(Math.max.apply(Math, value));
+
+                } else { // if the attribute is continuous
+                    // Scale to group attirbutes 
+                    var bundleGroupMap = d3.scale.linear().domain([min, max]).range([0, 9.99]); // use 9.99 instead of 10 to avoid a group of a single element (that has the max attribute value)
+                    var bundleGroup = bundleGroupMap(Math.max.apply(Math, value)); // group
+                    bundleGroup = Math.floor(bundleGroup);
+                    nodeObject['bundle_group_' + colname] = bundleGroup;
+                }
+            }
+
+            nodeObject["bundleByAttribute"] = bundleByAttribute;
+            if (bundleByAttribute == "none") {
+                //nodeObject["name"] = "root.module" + nodeObject['moduleID'] + "." + obj.id;
+                nodeObject["name"] = "root." + obj.id;
+            } else {
+                nodeObject["name"] = "root." + bundleByAttribute + nodeObject['bundle_group_' + bundleByAttribute] + "." + obj.id;
+            }
+
+            nodeObject["color"] = this.colaGraph.nodeMeshes[obj.id].material.color.getHexString();
+
+            // Declare variables 
+            nodeObject["imports"] = [];
+            nodeObject["linkColors"] = [];
+            nodeObject["barWidths"] = []; // used to calculate the position of the label for each bar
+            this.svgNodeBundleArray.push(nodeObject);
         }
 
         // sort Node objects according the bundled attribute values
@@ -1644,66 +1642,66 @@ class Graph2D {
         this.nodes.splice(0, this.nodes.length);
         this.links.splice(0, this.links.length);
 
-        var children = colaGraph.rootObject.children;
+        var children = colaGraph.nodeMeshes;
 
         // Add Nodes to SVG graph (Positions are based on the projected position of the 3D graphs
         for (var i = 0; i < children.length; i++) {
             var obj = children[i];
-            if ((<any>obj).isNode) {
-                var nodeObject = new Object();
-                nodeObject["id"] = obj.id;
+            var nodeObject = new Object();
+            nodeObject["id"] = obj.id;
+            if (this.dataSet.brainLabels) {
                 nodeObject["label"] = this.dataSet.brainLabels[obj.id];
-                nodeObject["color"] = "#".concat(colaGraph.nodeMeshes[obj.id].material.color.getHexString());
-                nodeObject["radius"] = colaGraph.nodeMeshes[obj.id].scale.x * unitRadius;
-
-                // for every attributes
-                for (var j = 0; j < this.dataSet.attributes.columnNames.length; j++) {
-
-                    var colname = this.dataSet.attributes.columnNames[j];
-                    var value = this.dataSet.attributes.get(colname)[obj.id];
-                    nodeObject[colname] = value;
-
-                    // add a special property for module id
-                    if (colname == 'module_id') {
-                        nodeObject['moduleID'] = this.dataSet.attributes.get(colname)[obj.id];
-                    }
-
-                    //  Get domain of the attributes (assume all positive numbers in the array)
-                    var columnIndex = this.dataSet.attributes.columnNames.indexOf(colname);
-                    var min = this.dataSet.attributes.getMin(columnIndex);
-                    var max = this.dataSet.attributes.getMax(columnIndex);
-
-                    // Scale value to between 0.05 to 1 
-                    var attrMap = d3.scale.linear().domain([min, max]).range([0.05, 1]);
-                    var scalevalue = attrMap(Math.max.apply(Math, value));
-                    nodeObject['scale_' + colname] = scalevalue;
-
-                    if (dataSet.attributes.info[colname].isDiscrete) { // if the attribute is discrete
-                        // Scale to group attirbutes 
-                        var values = this.dataSet.attributes.info[colname].distinctValues;
-                        nodeObject['bundle_group_' + colname] = values.indexOf(value.indexOf(Math.max.apply(Math, value)));
-
-                    } else { // if the attribute is continuous
-                        // Scale to group attirbutes 
-                        var bundleGroupMap = d3.scale.linear().domain([min, max]).range([0, 9.99]); // use 9.99 instead of 10 to avoid a group of a single element (that has the max attribute value)
-                        var bundleGroup = bundleGroupMap(Math.max.apply(Math, value)); // group
-                        bundleGroup = Math.floor(bundleGroup);
-                        nodeObject['bundle_group_' + colname] = bundleGroup;
-                    }
-                }
-                var v = new THREE.Vector3(obj.position.x, obj.position.y, obj.position.z);
-                var matrixWorld = obj.matrixWorld;
-                //screenCoords.setFromMatrixPosition(matrixWorld); // not sure why this method is undefined; maybe we have an old version of three.js
-                (<any>screenCoords).getPositionFromMatrix(matrixWorld);
-                projector.projectVector(screenCoords, camera);
-
-                screenCoords.x = (screenCoords.x * widthHalf) + widthHalf;
-                screenCoords.y = - (screenCoords.y * heightHalf) + heightHalf;
-                nodeObject["x"] = screenCoords.x;
-                nodeObject["y"] = screenCoords.y;
-
-                this.nodes.push(nodeObject);
             }
+            nodeObject["color"] = "#".concat(colaGraph.nodeMeshes[obj.id].material.color.getHexString());
+            nodeObject["radius"] = colaGraph.nodeMeshes[obj.id].scale.x * unitRadius;
+
+            // for every attributes
+            for (var j = 0; j < this.dataSet.attributes.columnNames.length; j++) {
+
+                var colname = this.dataSet.attributes.columnNames[j];
+                var value = this.dataSet.attributes.get(colname)[obj.id];
+                nodeObject[colname] = value;
+
+                // add a special property for module id
+                if (colname == 'module_id') {
+                    nodeObject['moduleID'] = this.dataSet.attributes.get(colname)[obj.id];
+                }
+
+                //  Get domain of the attributes (assume all positive numbers in the array)
+                var columnIndex = this.dataSet.attributes.columnNames.indexOf(colname);
+                var min = this.dataSet.attributes.getMin(columnIndex);
+                var max = this.dataSet.attributes.getMax(columnIndex);
+
+                // Scale value to between 0.05 to 1 
+                var attrMap = d3.scale.linear().domain([min, max]).range([0.05, 1]);
+                var scalevalue = attrMap(Math.max.apply(Math, value));
+                nodeObject['scale_' + colname] = scalevalue;
+
+                if (dataSet.attributes.info[colname].isDiscrete) { // if the attribute is discrete
+                    // Scale to group attirbutes 
+                    var values = this.dataSet.attributes.info[colname].distinctValues;
+                    nodeObject['bundle_group_' + colname] = values.indexOf(value.indexOf(Math.max.apply(Math, value)));
+
+                } else { // if the attribute is continuous
+                    // Scale to group attirbutes 
+                    var bundleGroupMap = d3.scale.linear().domain([min, max]).range([0, 9.99]); // use 9.99 instead of 10 to avoid a group of a single element (that has the max attribute value)
+                    var bundleGroup = bundleGroupMap(Math.max.apply(Math, value)); // group
+                    bundleGroup = Math.floor(bundleGroup);
+                    nodeObject['bundle_group_' + colname] = bundleGroup;
+                }
+            }
+            var v = new THREE.Vector3(obj.position.x, obj.position.y, obj.position.z);
+            var matrixWorld = obj.matrixWorld;
+            //screenCoords.setFromMatrixPosition(matrixWorld); // not sure why this method is undefined; maybe we have an old version of three.js
+            (<any>screenCoords).getPositionFromMatrix(matrixWorld);
+            projector.projectVector(screenCoords, camera);
+
+            screenCoords.x = (screenCoords.x * widthHalf) + widthHalf;
+            screenCoords.y = - (screenCoords.y * heightHalf) + heightHalf;
+            nodeObject["x"] = screenCoords.x;
+            nodeObject["y"] = screenCoords.y;
+
+            this.nodes.push(nodeObject);
         }
 
         // Add Edges to SVG graph
@@ -1944,61 +1942,59 @@ class Graph2D {
         this.nodes.splice(0, this.nodes.length);
         this.links.splice(0, this.links.length);
 
-        var children = colaGraph.rootObject.children;
+        var children = colaGraph.nodeMeshes;
 
         // Add Nodes to SVG graph (Positions are based on the projected position of the 3D graphs
         for (var i = 0; i < children.length; i++) {
             var obj = children[i];
-            if ((<any>obj).isNode) {
-                var nodeObject = new Object();
-                nodeObject["id"] = obj.id;
-                nodeObject["color"] = "#".concat(colaGraph.nodeMeshes[obj.id].material.color.getHexString());
-                nodeObject["radius"] = colaGraph.nodeMeshes[obj.id].scale.x * unitRadius;
+            var nodeObject = new Object();
+            nodeObject["id"] = obj.id;
+            nodeObject["color"] = "#".concat(colaGraph.nodeMeshes[obj.id].material.color.getHexString());
+            nodeObject["radius"] = colaGraph.nodeMeshes[obj.id].scale.x * unitRadius;
 
-                // for every attributes
-                for (var j = 0; j < this.dataSet.attributes.columnNames.length; j++) {
+            // for every attributes
+            for (var j = 0; j < this.dataSet.attributes.columnNames.length; j++) {
 
-                    var colname = this.dataSet.attributes.columnNames[j];
-                    var value = this.dataSet.attributes.get(colname)[obj.id];
-                    nodeObject[colname] = value;
+                var colname = this.dataSet.attributes.columnNames[j];
+                var value = this.dataSet.attributes.get(colname)[obj.id];
+                nodeObject[colname] = value;
 
-                    // add a special property for module id
-                    if (colname == 'module_id') {
-                        nodeObject['moduleID'] = this.dataSet.attributes.get(colname)[obj.id];
-                    }
-
-                    //  Get domain of the attributes (assume all positive numbers in the array)
-                    var columnIndex = this.dataSet.attributes.columnNames.indexOf(colname);
-                    var min = this.dataSet.attributes.getMin(columnIndex);
-                    var max = this.dataSet.attributes.getMax(columnIndex);
-
-                    // Scale value to between 0.05 to 1 
-                    var attrMap = d3.scale.linear().domain([min, max]).range([0.05, 1]);
-                    var scalevalue = attrMap(Math.max.apply(Math, value));
-                    nodeObject['scale_' + colname] = scalevalue;
-
-                    if (this.dataSet.attributes.info[colname].isDiscrete) { // if the attribute is discrete
-                        // Scale to group attirbutes 
-                        var values = this.dataSet.attributes.info[colname].distinctValues;
-                        nodeObject['bundle_group_' + colname] = values.indexOf(value.indexOf(Math.max.apply(Math, value)));
-
-                    } else { // if the attribute is continuous
-                        // Scale to group attirbutes 
-                        var bundleGroupMap = d3.scale.linear().domain([min, max]).range([0, 9.99]); // use 9.99 instead of 10 to avoid a group of a single element (that has the max attribute value)
-                        var bundleGroup = bundleGroupMap(Math.max.apply(Math, value)); // group
-                        bundleGroup = Math.floor(bundleGroup);
-                        nodeObject['bundle_group_' + colname] = bundleGroup;
-                    }
+                // add a special property for module id
+                if (colname == 'module_id') {
+                    nodeObject['moduleID'] = this.dataSet.attributes.get(colname)[obj.id];
                 }
-                var v = new THREE.Vector3(obj.position.x, obj.position.y, obj.position.z);
-                var matrixWorld = obj.matrixWorld;
-                //screenCoords.setFromMatrixPosition(matrixWorld); // not sure why this method is undefined; maybe we have an old version of three.js
 
-                nodeObject["x"] = initX;
-                nodeObject["y"] = initY;
+                //  Get domain of the attributes (assume all positive numbers in the array)
+                var columnIndex = this.dataSet.attributes.columnNames.indexOf(colname);
+                var min = this.dataSet.attributes.getMin(columnIndex);
+                var max = this.dataSet.attributes.getMax(columnIndex);
 
-                this.nodes.push(nodeObject);
+                // Scale value to between 0.05 to 1 
+                var attrMap = d3.scale.linear().domain([min, max]).range([0.05, 1]);
+                var scalevalue = attrMap(Math.max.apply(Math, value));
+                nodeObject['scale_' + colname] = scalevalue;
+
+                if (this.dataSet.attributes.info[colname].isDiscrete) { // if the attribute is discrete
+                    // Scale to group attirbutes 
+                    var values = this.dataSet.attributes.info[colname].distinctValues;
+                    nodeObject['bundle_group_' + colname] = values.indexOf(value.indexOf(Math.max.apply(Math, value)));
+
+                } else { // if the attribute is continuous
+                    // Scale to group attirbutes 
+                    var bundleGroupMap = d3.scale.linear().domain([min, max]).range([0, 9.99]); // use 9.99 instead of 10 to avoid a group of a single element (that has the max attribute value)
+                    var bundleGroup = bundleGroupMap(Math.max.apply(Math, value)); // group
+                    bundleGroup = Math.floor(bundleGroup);
+                    nodeObject['bundle_group_' + colname] = bundleGroup;
+                }
             }
+            var v = new THREE.Vector3(obj.position.x, obj.position.y, obj.position.z);
+            var matrixWorld = obj.matrixWorld;
+            //screenCoords.setFromMatrixPosition(matrixWorld); // not sure why this method is undefined; maybe we have an old version of three.js
+
+            nodeObject["x"] = initX;
+            nodeObject["y"] = initY;
+
+            this.nodes.push(nodeObject);
         }
 
         // Add Edges to SVG graph
@@ -2195,7 +2191,7 @@ class Graph2D {
                         .flowLayout('y', 10)
             }
 
-                cola2D.start(30, 0, 30);
+            cola2D.start(30, 0, 30);
 
         }
     }
@@ -2757,6 +2753,8 @@ class Graph {
     filteredNodeIDs: number[];
     nodeHasNeighbors: boolean[]; // used for cola graph only
 
+    // Shared for optimisation
+    _sphereGeometry: THREE.SphereGeometry = new THREE.SphereGeometry(2, 10, 10);
 
     allLabels: boolean = false;
 
@@ -2779,14 +2777,14 @@ class Graph {
 
         for (var i = 0; i < adjMatrix.length; ++i) {
             var sphere = this.nodeMeshes[i] = new THREE.Mesh(
-                new THREE.SphereGeometry(2, 10, 10),
+                this._sphereGeometry,
                 new THREE.MeshLambertMaterial({ color: nodeColorings[i] })
                 );
-
-            this.nodeInfo[i]["label"] = this.createNodeLabel(labels[i], 6);
+            
+            var label = (!!labels && labels[i]) || "";
+            this.nodeInfo[i]["label"] = this.createNodeLabel(label, 6);
 
             // additional flag
-            (<any>sphere).isNode = true; // A flag to identify the node meshes
             (<any>sphere).hasVisibleEdges = true;
             sphere.id = i;
             this.rootObject.add(sphere);

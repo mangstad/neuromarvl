@@ -17,7 +17,7 @@
         }
         return node;
       }
-      console.log(classes);
+      //console.log(classes);
       classes.forEach(function(d) {
         find(d.name, d);
       });

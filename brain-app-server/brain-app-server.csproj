@@ -61,6 +61,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Properties\PublishProfiles\brainapp.pubxml" />
+    <Content Include="README.md" />
     <None Include="Web.Debug.config">
       <DependentUpon>Web.config</DependentUpon>
     </None>
@@ -76,6 +77,7 @@
     <Content Include="cola.v2.min.js" />
     <Content Include="cola.v3.min.js" />
     <Content Include="compiledtypescript.js" />
+    <Content Include="index.html" />
     <Content Include="linklengths.js" />
     <Content Include="style.css" />
     <Content Include="Web.config" />

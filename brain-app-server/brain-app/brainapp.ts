@@ -1227,7 +1227,7 @@ function changeFileStatus(file, status) {
     $('#' + file).tooltip('fixTitle');
 
 }
-function loadUploadedData(loadObj, view, func) {
+function loadUploadedData(loadObj, view, func, source = "save") {
     saveObj.loadExampleData = false;
     var status = {
         coordLoaded: false,
@@ -1242,7 +1242,7 @@ function loadUploadedData(loadObj, view, func) {
         }
     }
 
-    $.get('brain-app/save/' + loadObj.serverFileNameCoord, function (text) {
+    $.get('brain-app/' + source + '/' + loadObj.serverFileNameCoord, function (text) {
         parseCoordinates(text);
         //$('#shared-coords').css({ color: 'green' });
         $('#label-coords')
@@ -1251,7 +1251,7 @@ function loadUploadedData(loadObj, view, func) {
         status.coordLoaded = true;
         callback();
     });
-    $.get('brain-app/save/' + loadObj.serverFileNameMatrix, function (text) {
+    $.get('brain-app/' + source + '/' + loadObj.serverFileNameMatrix, function (text) {
         parseSimilarityMatrix(text, dataSet);
         //$('#d1-mat').css({ color: 'green' });
         $('#label-similarity-matrix')
@@ -1260,7 +1260,7 @@ function loadUploadedData(loadObj, view, func) {
         status.matrixLoaded = true;
         callback();
     });
-    $.get('brain-app/save/' + loadObj.serverFileNameAttr, function (text) {
+    $.get('brain-app/' + source + '/' + loadObj.serverFileNameAttr, function (text) {
         parseAttributes(text, dataSet);
         //$('#d1-att').css({ color: 'green' });
         $('#label-attributes')
@@ -1272,7 +1272,7 @@ function loadUploadedData(loadObj, view, func) {
     });
     // Check if Label file is uploaded
     if (loadObj.serverFileNameLabel) {
-        $.get('brain-app/save/' + loadObj.serverFileNameLabel, function (text) {
+        $.get('brain-app/' + source + '/' + loadObj.serverFileNameLabel, function (text) {
             parseLabels(text);
             //$('#shared-labels').css({ color: 'green' });
             $('#label-labels')
@@ -2771,28 +2771,32 @@ function initFromSaveFile() {
         showLoadingNotification();
 
         var p = query.split("=");
+        if (p.length < 2) return false;
+
         var json;
-        if (p[0] == 'save') {
-            $.post("brain-app/getapp.aspx",
-                {
-                    filename: p[1]
-                },
-                function (data, status) {
-                    if (status.toLowerCase() == "success") {
-                        initProject(data);
-                    }
-                    else {
-                        alert("Loading is: " + status + "\nData: " + data);
-                    }
-                });
-        }
+        // Only let source be from "save_examples" (if specified by "example") or default to "save".
+        var source = (p[0] == "example") ? "save_examples" : "save";
+        $.post("brain-app/getapp.aspx",
+            {
+                filename: p[1],
+                source
+            },
+            function (data, status) {
+                if (status.toLowerCase() == "success") {
+                    initProject(data, source);
+                }
+                else {
+                    alert("Loading is: " + status + "\nData: " + data);
+                }
+            }
+        );
         return true;
     } else {
         return false;
     }
 }
 
-function initProject(data: string) {
+function initProject(data: string, source = "save") {
 
     // Ensure that data is not empty
     if (data == null) return;
@@ -2830,7 +2834,7 @@ function initProject(data: string) {
                     initApp(id);
                     CommonUtilities.launchAlertMessage(CommonUtilities.alertType.SUCCESS,
                         "Uploaded dataset is loaded.");
-                });
+                }, source);
             }
 
         });

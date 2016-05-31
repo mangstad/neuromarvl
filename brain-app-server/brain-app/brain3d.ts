@@ -1,5 +1,5 @@
-/// <reference path="../extern/descent.ts"/>
-/// <reference path="../extern/shortestpaths.ts"/>
+/// <reference path="../extern/ts/descent.ts"/>
+/// <reference path="../extern/ts/shortestpaths.ts"/>
 /**
     This application uses similarity data between areas of the brain to construct a thresholded graph with edges
     between the most similar areas. It is designed to be embedded in a view defined in brainapp.html / brainapp.ts.
@@ -696,7 +696,6 @@ class Brain3DApp implements Application, Loopable {
                     sphereObject.position.y = boundingSphere.center.y;
                     sphereObject.position.z = boundingSphere.center.z;
                     sphereObject.visible = false;
-                    (<any>sphereObject).isBoundingSphere = true;
                     boundingSphereObject.add(sphereObject);
                 }
             });
@@ -762,7 +761,6 @@ class Brain3DApp implements Application, Loopable {
                     sphereObject.position.y = boundingSphere.center.y;
                     sphereObject.position.z = boundingSphere.center.z;
                     sphereObject.visible = false;
-                    (<any>sphereObject).isBoundingSphere = true;
                     boundingSphereObject.add(sphereObject);
                 }
             });
@@ -1753,13 +1751,12 @@ class Brain3DApp implements Application, Loopable {
         directionVector.normalize();
 
         var raycaster = new THREE.Raycaster(this.camera.position, directionVector, this.nearClip, this.farClip);
-        var intersected = raycaster.intersectObjects(this.scene.children, true);
-
-        for (var i = 0; i < intersected.length; ++i) {
-            if ((<any>intersected[i].object).isNode) { // Node objects have this special boolean flag
-                this.commonData.nodeIDUnderPointer[this.id] = intersected[i].object.id;
-                return intersected[i].object;
-            }       
+        var n = raycaster.intersectObjects(this.colaGraph.nodeMeshes)[0]
+            || raycaster.intersectObjects(this.physioGraph.nodeMeshes)[0]
+        ;
+        if (n) {
+            this.commonData.nodeIDUnderPointer[this.id] = n.object.id;
+            return n.object;
         }
 
         this.commonData.nodeIDUnderPointer[this.id] = -1;
@@ -1772,18 +1769,9 @@ class Brain3DApp implements Application, Loopable {
         var directionVector = pointerNDC.sub(this.camera.position);
         directionVector.normalize();
 
-        var raycaster = new THREE.Raycaster(this.camera.position, directionVector, this.nearClip, this.farClip);
-        var intersected = raycaster.intersectObjects(this.scene.children, true);
-
-        var inBoundingSphere = false;
-        for (var i = 0; i < intersected.length; ++i) {
-            if ((<any>intersected[i].object).isBoundingSphere) { // Node objects have this special boolean flag
-                inBoundingSphere = true;
-                break;
-            }
-        }
-
-        if ((this.networkType == '2D') || (this.networkType == 'circular')){
+        if ((this.networkType == '2D') || (this.networkType == 'circular')) {
+            var raycaster = new THREE.Raycaster(this.camera.position, directionVector, this.nearClip, this.farClip);
+            var inBoundingSphere = !!(raycaster.intersectObjects(this.brainSurfaceBoundingSphere.children)[0]);
             if (inBoundingSphere == true) {
                 this.svgControlMode = false;
                 this.svg.on(".zoom", null);
@@ -1885,10 +1873,14 @@ class Brain3DApp implements Application, Loopable {
 
             //if (this.showingCola)
             if (this.colaGraph.isVisible()) {
+                //TODO: This is very slow, for minimal impact - look at using regular 3D layout, e.g.:
+                //  http://marvl.infotech.monash.edu/webcola/examples/3dtree.html
+                //  http://marvl.infotech.monash.edu/webcola/examples/3dlayout.js
                 this.descent.rungeKutta(); // Do an iteration of the solver
             }
-            this.scene.updateMatrixWorld(true);
-            this.scene.updateMatrixWorld(true);
+            //this.scene.updateMatrixWorld(true);
+            //this.scene.updateMatrixWorld(true);
+            this.scene.updateMatrixWorld();     //TODO: Confirm that this change has no side effects
 
             if (this.svgMode && this.svgNeedsUpdate) {
                 this.update2DGraph();
