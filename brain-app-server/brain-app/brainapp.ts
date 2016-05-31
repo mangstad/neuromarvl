@@ -1286,9 +1286,10 @@ function loadUploadedData(loadObj, view, func, source = "save") {
 
 }
 
-$('#button-apply-filter').button().click(function () {
-    applyFilterButtonOnClick();
-});
+$('#button-apply-filter').button().click(applyFilterButtonOnClick);
+$('#button-apply-filter').button("disable");
+
+
 
 function setupAttributeTab() {
     if (dataSet.attributes) {
@@ -1312,7 +1313,10 @@ function setupAttributeTab() {
 }
 
 function applyFilterButtonOnClick() {
-    if (!dataSet.attributes.filteredRecords) return;
+    if (!dataSet.attributes.filteredRecords) {
+        $('#button-apply-filter').button("disable");
+        return;
+    }
 
     var fRecords = dataSet.attributes.filteredRecords;
     var idArray = new Array();
@@ -3222,14 +3226,16 @@ function setupCrossFilter(attrs: Attributes) {
 
         dataSet.attributes.filteredRecords = dimArray[0].top(Number.POSITIVE_INFINITY);
         dataSet.attributes.filteredRecordsHighlightChanged = true;
-        console.log(dimArray);
+        //console.log(dimArray);
         if (dataSet.attributes.filteredRecords) {
             //console.log(fcount + "). count: " + dataSet.attributes.filteredRecords.length);
             //fcount++; 
         }
-
-        $('#button-apply-filter').button({ disabled: false });
+        
+        $('#button-apply-filter').button("enable");
     }
+
+    $('#button-apply-filter').button("disable");
 
     // render all charts
     dc.renderAll();
