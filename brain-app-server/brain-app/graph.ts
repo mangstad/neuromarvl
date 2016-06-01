@@ -93,12 +93,9 @@ class CircularGraph {
             bar.exit().remove();
         }
 
-
-
         nodeDotBundle.exit().remove();
         nodeBundle.exit().remove();
         linkBundle.exit().remove();
-
     }
 
     // Define UI components of the settings 
@@ -669,8 +666,9 @@ class CircularGraph {
             .radius(function (d) {
                 return d.y;
             })
+            .angle(function (d) { return d.x / 180 * Math.PI; })
             .interpolate("bundle")
-            .angle(function (d) { return d.x / 180 * Math.PI; });
+        ;
 
         this.svgAllElements.attr("transform", "translate(" + width + "," + height + ")");
 

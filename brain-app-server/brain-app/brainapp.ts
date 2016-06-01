@@ -2807,6 +2807,7 @@ function initProject(data: string, source = "save") {
     if (data.length == 0) return;
 
     loadObj = <SaveFile>jQuery.parseJSON(data);
+    saveObj.loadExampleData = (source !== "save");
 
     var initViewPort = function (app, id) {
         loadBrainModel(file, function (object) {
