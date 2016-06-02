@@ -2728,6 +2728,7 @@ class Graph {
 
     // Nodes
     nodeMeshes: any[];
+    //nodeSprites: any[];
     nodePositions: number[][];
     nodeInfo: any[];
     nodeDefaultColor: number[];
@@ -2765,6 +2766,7 @@ class Graph {
 
         // Create all the node meshes
         this.nodeMeshes = Array(adjMatrix.length);
+        //this.nodeSprites = Array(adjMatrix.length);
         this.nodeInfo = Array.apply(null, Array(adjMatrix.length)).map(function (x, i) {
             return {
                 isSelected: false
@@ -2774,18 +2776,22 @@ class Graph {
         this.nodeCurrentColor = nodeColorings.slice(0); // clone the array
 
         for (var i = 0; i < adjMatrix.length; ++i) {
-            var sphere = this.nodeMeshes[i] = new THREE.Mesh(
-                this._sphereGeometry,
-                new THREE.MeshLambertMaterial({ color: nodeColorings[i] })
-                );
+            //var sphere = this.nodeMeshes[i] = new THREE.Mesh(
+            //    this._sphereGeometry,
+            //    new THREE.MeshLambertMaterial({ color: nodeColorings[i] })
+            //);
+            var sprite = this.nodeMeshes[i] = this.generateSprite(nodeColorings[i]);
             
             var label = (!!labels && labels[i]) || "";
             this.nodeInfo[i]["label"] = this.createNodeLabel(label, 6);
 
             // additional flag
-            (<any>sphere).hasVisibleEdges = true;
-            sphere.id = i;
-            this.rootObject.add(sphere);
+            //(<any>sphere).hasVisibleEdges = true;
+            //sphere.id = i;
+            //this.rootObject.add(sphere);
+            (<any>sprite).hasVisibleEdges = true;
+            sprite.id = i;
+            this.rootObject.add(sprite);
         }
 
         // Create all the edges
@@ -2809,9 +2815,11 @@ class Graph {
 
                     if (weightMatrix[i][j] > weightMatrix[j][i]) {
                         this.edgeList.push(adjMatrix[i][j] = new Edge(this.rootObject, this.nodeMeshes[i], this.nodeMeshes[j], weightMatrix[i][j])); // assume symmetric matrix
+                        //this.edgeList.push(adjMatrix[i][j] = new Edge(this.rootObject, this.nodeSprites[i], this.nodeSprites[j], weightMatrix[i][j])); // assume symmetric matrix
                         adjMatrix[j][i] = null;
                     } else {
                         this.edgeList.push(adjMatrix[j][i] = new Edge(this.rootObject, this.nodeMeshes[j], this.nodeMeshes[i], weightMatrix[j][i])); // assume symmetric matrix
+                        //this.edgeList.push(adjMatrix[j][i] = new Edge(this.rootObject, this.nodeSprites[j], this.nodeSprites[i], weightMatrix[j][i])); // assume symmetric matrix
                         adjMatrix[i][j] = null;
                     }
                 } else {
@@ -2826,6 +2834,35 @@ class Graph {
 
         this.edgeMatrix = adjMatrix;
     }
+
+
+    generateSprite(nodeColouring: number) {
+		var canvas = document.createElement('canvas');
+		canvas.width = 16;
+		canvas.height = 16;
+		var context = canvas.getContext('2d');
+		var gradient = context.createRadialGradient(canvas.width / 2, canvas.height / 2, 0, canvas.width / 2, canvas.height / 2, canvas.width / 2);
+		gradient.addColorStop(0, 'rgba(255,255,255,1)');
+		gradient.addColorStop(0.2, 'rgba(0,255,255,1)');
+		gradient.addColorStop(0.4, 'rgba(0,0,64,1)');
+		gradient.addColorStop(1, 'rgba(0,0,0,1)');
+		context.fillStyle = gradient;
+        context.fillRect(0, 0, canvas.width, canvas.height);
+        var texture = new THREE.Texture(canvas);
+        texture.needsUpdate = true;
+        //var spriteAlignment = THREE.SpriteAlignment.topLeft;
+        var material = new THREE.SpriteMaterial({
+            map: texture,
+            useScreenCoordinates: false,
+            //alignment: spriteAlignment
+        });
+        var sprite = new THREE.Sprite(material);
+        var multiplyScale = 0.5;
+        sprite.scale.set(canvas.width * multiplyScale, canvas.height * multiplyScale, 1);
+
+		return sprite;
+    }
+
 
     //////////////////////////////////////////////
     /////// Node's Functions /////////////////////
@@ -2878,6 +2915,7 @@ class Graph {
     setNodePositions(colaCoords: number[][]) {
         this.nodePositions = colaCoords;
         for (var i = 0; i < this.nodeMeshes.length; ++i) {
+            /*
             this.nodeMeshes[i].position.x = colaCoords[0][i];
             this.nodeMeshes[i].position.y = colaCoords[1][i];
             this.nodeMeshes[i].position.z = colaCoords[2][i];
@@ -2886,6 +2924,13 @@ class Graph {
             this.nodeInfo[i]["label"].position.x = this.nodeMeshes[i].position.x + 5;
             this.nodeInfo[i]["label"].position.y = this.nodeMeshes[i].position.y + 5;
             this.nodeInfo[i]["label"].position.z = this.nodeMeshes[i].position.z;
+            */
+            var x, y, z;
+            x = colaCoords[0][i];
+            y = colaCoords[1][i];
+            z = colaCoords[2][i];
+            this.nodeMeshes[i].position.set(x, y, z);
+            this.nodeInfo[i]["label"].position.set(x + 5, y + 5, z);
         }
     }
 
