@@ -43,7 +43,8 @@ class Brain3DApp implements Application, Loopable {
     camera;
     scene;
     renderer;
-    projector = new THREE.Projector();
+    //projector = new THREE.Projector();
+    cursor = new THREE.Vector2();
     descent: cola.Descent; // The handle to the constraint solver
 
     // Data/objects
@@ -587,13 +588,19 @@ class Brain3DApp implements Application, Loopable {
             if (this.svgControlMode) return; // 2D Flat Version of the network
             var pointer = this.input.localPointerPosition();
             var pointerNDC = new THREE.Vector3(pointer.x, pointer.y, 1);
+            /*
             this.projector.unprojectVector(pointerNDC, this.camera);
             var zoomVector = pointerNDC.sub(this.camera.position).normalize().multiplyScalar(this.CAMERA_ZOOM_SPEED);
+            */
+            pointerNDC.unproject(this.camera);
+            pointerNDC.sub(this.camera.position);
 
             if (delta < 0) {
-                this.camera.position.add(zoomVector);
+                //this.camera.position.add(zoomVector);
+                this.camera.position.addVectors(this.camera.position, pointerNDC.setLength(1));
             } else {
-                this.camera.position.sub(zoomVector);
+                //this.camera.position.sub(zoomVector);
+                this.camera.position.addVectors(this.camera.position, pointerNDC.setLength(-1));
             }
 
 
@@ -685,7 +692,7 @@ class Brain3DApp implements Application, Loopable {
                         fragmentShader: normalShader.fragmentShader,
                         transparent: true
                     })));
-                    clonedObject.renderDepth = 2;
+                    //clonedObject.renderDepth = 2;
 
                     child.geometry.computeBoundingSphere();
                     var boundingSphere = child.geometry.boundingSphere;
@@ -726,14 +733,14 @@ class Brain3DApp implements Application, Loopable {
                         fragmentShader: normalShader.fragmentShader,
                         transparent: true
                     }));
-                    leftBrain.renderDepth = 2;
+                    //leftBrain.renderDepth = 2;
                     var rightBrain = new THREE.Mesh(child.geometry.clone(), new THREE.ShaderMaterial(<any>{
                         uniforms: this.rightUniforms,
                         vertexShader: normalShader.vertexShader,
                         fragmentShader: normalShader.fragmentShader,
                         transparent: true
                     }));
-                    rightBrain.renderDepth = 2;
+                    //rightBrain.renderDepth = 2;
 
                     var box = new THREE.Box3()['setFromObject'](model);
                     leftBrain.rotation.z = 3.14 / 2;
@@ -1745,12 +1752,17 @@ class Brain3DApp implements Application, Loopable {
     }
 
     getNodeUnderPointer(pointer) {
+        /*
         var pointerNDC = new THREE.Vector3(pointer.x, pointer.y, 1);
         this.projector.unprojectVector( pointerNDC, this.camera);
         var directionVector = pointerNDC.sub(this.camera.position);
         directionVector.normalize();
 
         var raycaster = new THREE.Raycaster(this.camera.position, directionVector, this.nearClip, this.farClip);
+        */
+        var raycaster = new THREE.Raycaster();
+        raycaster.setFromCamera(pointer, this.camera);
+
         var n = raycaster.intersectObjects(this.colaGraph.nodeMeshes)[0]
             || raycaster.intersectObjects(this.physioGraph.nodeMeshes)[0]
         ;
@@ -1764,13 +1776,18 @@ class Brain3DApp implements Application, Loopable {
     }
 
     getBoundingSphereUnderPointer(pointer) {
+        /*
         var pointerNDC = new THREE.Vector3(pointer.x, pointer.y, 1);
         this.projector.unprojectVector(pointerNDC, this.camera);
         var directionVector = pointerNDC.sub(this.camera.position);
         directionVector.normalize();
+        */
 
         if ((this.networkType == '2D') || (this.networkType == 'circular')) {
-            var raycaster = new THREE.Raycaster(this.camera.position, directionVector, this.nearClip, this.farClip);
+            //var raycaster = new THREE.Raycaster(this.camera.position, directionVector, this.nearClip, this.farClip);
+            var raycaster = new THREE.Raycaster();
+            raycaster.setFromCamera(pointer, this.camera);
+
             var inBoundingSphere = !!(raycaster.intersectObjects(this.brainSurfaceBoundingSphere.children)[0]);
             if (inBoundingSphere == true) {
                 this.svgControlMode = false;

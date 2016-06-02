@@ -1631,7 +1631,7 @@ class Graph2D {
         var widthHalf = width / 2;
         var heightHalf = height / 2;
 
-        var projector = new THREE.Projector();
+        //var projector = new THREE.Projector();
         var screenCoords = new THREE.Vector3();
 
         var unitRadius = 5;
@@ -1692,7 +1692,8 @@ class Graph2D {
             var matrixWorld = obj.matrixWorld;
             //screenCoords.setFromMatrixPosition(matrixWorld); // not sure why this method is undefined; maybe we have an old version of three.js
             (<any>screenCoords).getPositionFromMatrix(matrixWorld);
-            projector.projectVector(screenCoords, camera);
+            //projector.projectVector(screenCoords, camera);
+            screenCoords.project(camera);
 
             screenCoords.x = (screenCoords.x * widthHalf) + widthHalf;
             screenCoords.y = - (screenCoords.y * heightHalf) + heightHalf;
@@ -1933,7 +1934,7 @@ class Graph2D {
         var initX = 3 / 5 * width;
         var initY = 1 / 2 * height;
 
-        var projector = new THREE.Projector();
+        //var projector = new THREE.Projector();
 
         var unitRadius = 5;
 
@@ -2205,7 +2206,7 @@ class Graph2D {
         var widthHalf = width / 2;
         var heightHalf = height / 2;
 
-        var projector = new THREE.Projector();
+        //var projector = new THREE.Projector();
         var screenCoords = new THREE.Vector3();
 
         var unitRadius = 5;
@@ -2853,7 +2854,7 @@ class Graph {
         //var spriteAlignment = THREE.SpriteAlignment.topLeft;
         var material = new THREE.SpriteMaterial({
             map: texture,
-            useScreenCoordinates: false,
+            //useScreenCoordinates: false,
             //alignment: spriteAlignment
         });
         var sprite = new THREE.Sprite(material);

@@ -2755,7 +2755,9 @@ var manager = new THREE.LoadingManager();
 manager.onProgress = function (item, loaded, total) {
     console.log(item, loaded, total);
 };
+
 var loader = new (<any>THREE).OBJLoader(manager);
+
 var brainSurfaceColor: string = "0xe3e3e3";
 
 var saveObj = new SaveFile();
@@ -3078,6 +3080,8 @@ function removeLoadingNotification() {
 // new THREE.Mesh() objects by the application wishing to use the model.
 function loadBrainModel(file: string, callback) {
     loader.load('examples/graphdata/' + file, function (object) {
+    //loader.setPath('examples/graphdata/');
+    //loader.load(file, function (object) {
         if (!object) {
             CommonUtilities.launchAlertMessage(CommonUtilities.alertType.ERROR, "Failed to load brain surface.");
             return;
@@ -3086,8 +3090,6 @@ function loadBrainModel(file: string, callback) {
         var surfaceColor = parseInt(brainSurfaceColor);
 
         callback(object);
-
-
     });
 }
 
