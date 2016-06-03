@@ -169,12 +169,14 @@ class Brain3DApp implements Application, Loopable {
         this.brainObject = new THREE.Object3D();
         this.brainContainer = new THREE.Object3D();
         this.brainContainer.add(this.brainObject);
-        this.brainContainer.position = new THREE.Vector3(-this.graphOffset, 0, 0);
+        //this.brainContainer.position = new THREE.Vector3(-this.graphOffset, 0, 0);
+        this.brainContainer.position.set(-this.graphOffset, 0, 0);
         this.brainContainer.lookAt(this.camera.position);
         this.scene.add(this.brainContainer);
 
         this.colaObject = new THREE.Object3D();
-        this.colaObject.position = new THREE.Vector3(-this.graphOffset, 0, 0);
+        //this.colaObject.position = new THREE.Vector3(-this.graphOffset, 0, 0);
+        this.colaObject.position.set(-this.graphOffset, 0, 0);
         this.scene.add(this.colaObject);
 
         // Register the data callbacks
@@ -264,9 +266,11 @@ class Brain3DApp implements Application, Loopable {
         // Set up renderer, and add the canvas and the slider to the div
         this.renderer = new THREE.WebGLRenderer({
             antialias: true,
-            preserveDrawingBuffer: true
+            preserveDrawingBuffer: true,
+            alpha: true
         });
-        this.renderer.sortObjects = true;
+        //this.renderer.sortObjects = true;
+        //this.renderer.setClearColor(0xffffff, 0)
 
         this.renderer.setSize(jDiv.width(), (jDiv.height() - sliderSpace));
         jDiv.append($('<span id="close-brain-app-' + this.id + '" title="Close" class="view-panel-span"  data-toggle="tooltip" data-placement="bottom">x</span>')
@@ -571,19 +575,22 @@ class Brain3DApp implements Application, Loopable {
             this.camera.fov = this.defaultFov;
             this.camera.updateProjectionMatrix();
 
-            this.brainContainer.position = new THREE.Vector3(-this.graphOffset, 0, 0);
+            //this.brainContainer.position = new THREE.Vector3(-this.graphOffset, 0, 0);
+            this.brainContainer.position.set(-this.graphOffset, 0, 0);
             this.brainContainer.lookAt(this.camera.position);
             this.brainObject.rotation.set(0, 0, 0);
 
             //if (this.showingCola) {
             //if (this.colaGraph.isVisible()) {
-            this.colaObject.position = new THREE.Vector3(this.graphOffset, 0, 0);
+            //this.colaObject.position = new THREE.Vector3(this.graphOffset, 0, 0);
+            this.colaObject.position.set(this.graphOffset, 0, 0);
             this.colaObject.rotation.set(0, 0, 0);
             //}   
         });
 
         /* Interact with mouse wheel will zoom in and out the 3D Model */
         this.input.regMouseWheelCallback((delta: number) => {
+            const ZOOM_FACTOR = 10;
 
             if (this.svgControlMode) return; // 2D Flat Version of the network
             var pointer = this.input.localPointerPosition();
@@ -597,10 +604,10 @@ class Brain3DApp implements Application, Loopable {
 
             if (delta < 0) {
                 //this.camera.position.add(zoomVector);
-                this.camera.position.addVectors(this.camera.position, pointerNDC.setLength(1));
+                this.camera.position.addVectors(this.camera.position, pointerNDC.setLength(ZOOM_FACTOR));
             } else {
                 //this.camera.position.sub(zoomVector);
-                this.camera.position.addVectors(this.camera.position, pointerNDC.setLength(-1));
+                this.camera.position.addVectors(this.camera.position, pointerNDC.setLength(-ZOOM_FACTOR));
             }
 
 
@@ -699,9 +706,13 @@ class Brain3DApp implements Application, Loopable {
                     var material = child.material;
                     var sphereGeometry = new THREE.SphereGeometry(boundingSphere.radius + 10, 10, 10);
                     var sphereObject = new THREE.Mesh(sphereGeometry.clone(), material.clone());
+                    /*
                     sphereObject.position.x = boundingSphere.center.x;
                     sphereObject.position.y = boundingSphere.center.y;
                     sphereObject.position.z = boundingSphere.center.z;
+                    */
+                    sphereObject.position.copy(boundingSphere.center);
+
                     sphereObject.visible = false;
                     boundingSphereObject.add(sphereObject);
                 }
@@ -764,9 +775,13 @@ class Brain3DApp implements Application, Loopable {
                     var material = child.material;
                     var sphereGeometry = new THREE.SphereGeometry(boundingSphere.radius + 10, 10, 10);
                     var sphereObject = new THREE.Mesh(sphereGeometry.clone(), material.clone());
+                    /*
                     sphereObject.position.x = boundingSphere.center.x;
                     sphereObject.position.y = boundingSphere.center.y;
                     sphereObject.position.z = boundingSphere.center.z;
+                    */
+                    sphereObject.position.copy(boundingSphere.center);
+
                     sphereObject.visible = false;
                     boundingSphereObject.add(sphereObject);
                 }
@@ -1291,18 +1306,19 @@ class Brain3DApp implements Application, Loopable {
         $('#graph-view-slider-' + this.id).prop('disabled', true); 
 
         if (switchNetworkType == true) {
-            this.colaObject.position = colaObjectTarget;
+            //this.colaObject.position = colaObjectTarget;
+            this.colaObject.position.copy(colaObjectTarget);
         } else {
-            this.colaObject.position = colaObjectOrigin;
+            //this.colaObject.position = colaObjectOrigin;
+            this.colaObject.position.copy(colaObjectOrigin);
         }
-
-        
 
         setCoroutine({ currentTime: 0, endTime: this.modeLerpLength }, (o, deltaTime) => {
             o.currentTime += deltaTime;
 
             if (o.currentTime >= o.endTime) { // The animation has finished
-                this.colaObject.position = colaObjectTarget;
+                //this.colaObject.position = colaObjectTarget;
+                this.colaObject.position.copy(colaObjectTarget);
                 this.colaGraph.setNodePositions(nodeCoordTarget);
 
                 if (transitionFinish) {
@@ -1319,13 +1335,16 @@ class Brain3DApp implements Application, Loopable {
                 }
                 
                 return true;
-            }else { // Update the animation
+            }
+            else { // Update the animation
                 var percentDone = o.currentTime / o.endTime;
                 this.needUpdate = true;
                 this.colaGraph.setNodePositionsLerp(nodeCoordOrigin, nodeCoordTarget, percentDone);
 
                 if (switchNetworkType == false) {
-                    this.colaObject.position = colaObjectOrigin.clone().add(colaObjectTarget.clone().sub(colaObjectOrigin).multiplyScalar(percentDone));
+                    //this.colaObject.position = colaObjectOrigin.clone().add(colaObjectTarget.clone().sub(colaObjectOrigin).multiplyScalar(percentDone));
+                    var pos = colaObjectOrigin.clone().add(colaObjectTarget.clone().sub(colaObjectOrigin).multiplyScalar(percentDone));
+                    this.colaObject.position.set(pos.x, pos.y, pos.z);
                 }
 
                 return false;
@@ -1680,6 +1699,7 @@ class Brain3DApp implements Application, Loopable {
 
         // Set up the two graphs
         var edgeMatrix = this.dataSet.adjMatrixFromEdgeCount(maxEdgesShowable); // Don''t create more edges than we will ever be showing
+        console.log(edgeMatrix);///JM
         if (this.physioGraph) this.physioGraph.destroy();
         this.physioGraph = new Graph(this.brainObject, edgeMatrix, this.nodeColorings, this.dataSet.simMatrix, this.dataSet.brainLabels, this.commonData);
 

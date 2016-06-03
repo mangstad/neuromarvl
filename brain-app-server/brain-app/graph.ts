@@ -2906,7 +2906,11 @@ class Graph {
                */
 
         // method 2:
-        var spriteMaterial = new THREE.SpriteMaterial(<any>{ map: texture, useScreenCoordinates: false, depthTest: false });
+        var spriteMaterial = new THREE.SpriteMaterial(<any>{
+            map: texture,
+            //useScreenCoordinates: false,
+            depthTest: false
+        });
         var sprite = new THREE.Sprite(spriteMaterial);
         sprite.scale.set(canvas.width / multiplyScale, canvas.height / multiplyScale, 1);
 
@@ -2938,7 +2942,9 @@ class Graph {
     // Lerp between the physio and Cola positions of the nodes
     // 0 <= t <= 1
     setNodePositionsLerp(colaCoords1: number[][], colaCoords2: number[][], t: number) {
+        
         for (var i = 0; i < this.nodeMeshes.length; ++i) {
+            /*
             this.nodeMeshes[i].position.x = colaCoords1[0][i] * (1 - t) + colaCoords2[0][i] * t;
             this.nodeMeshes[i].position.y = colaCoords1[1][i] * (1 - t) + colaCoords2[1][i] * t;
             this.nodeMeshes[i].position.z = colaCoords1[2][i] * (1 - t) + colaCoords2[2][i] * t;
@@ -2947,6 +2953,13 @@ class Graph {
             this.nodeInfo[i]["label"].position.x = this.nodeMeshes[i].position.x + 5;
             this.nodeInfo[i]["label"].position.y = this.nodeMeshes[i].position.y + 5;
             this.nodeInfo[i]["label"].position.z = this.nodeMeshes[i].position.z;
+            */
+            var x, y, z;
+            x = colaCoords1[0][i] * (1 - t) + colaCoords2[0][i] * t;
+            y = colaCoords1[1][i] * (1 - t) + colaCoords2[1][i] * t;
+            z = colaCoords1[2][i] * (1 - t) + colaCoords2[2][i] * t;
+            this.nodeMeshes[i].position.set(x, y, z);
+            this.nodeInfo[i]["label"].position.set(x + 5, y + 5, z);
         }
     }
 
@@ -3590,11 +3603,12 @@ class Edge {
             depthWrite: false
         });
         this.shape = new THREE.Mesh(this.geometry, material);
-        this.shape.renderDepth = 3; // Draw line BEFORE transparent brain model is drawn
+        //this.shape.renderDepth = 3; // Draw line BEFORE transparent brain model is drawn
         this.pointer = new THREE.Mesh(this.cone, new THREE.MeshBasicMaterial({
             color: 0x000000
         }));
-        this.pointer.position = new THREE.Vector3(0, this.unitLength * 2 / 5, 0);
+        //this.pointer.position = new THREE.Vector3(0, this.unitLength * 2 / 5, 0);
+        this.pointer.position.set(0, this.unitLength * 2 / 5, 0);
         this.pointer.visible = false;
         this.shape.add(this.pointer);
 
@@ -3622,11 +3636,11 @@ class Edge {
             depthWrite: false
         });
         this.shape = new THREE.Line(this.geometry, material);
-        this.shape.renderDepth = 3; // Draw line BEFORE transparent brain model is drawn
+        //this.shape.renderDepth = 3; // Draw line BEFORE transparent brain model is drawn
         this.pointer = new THREE.Mesh(this.cone, new THREE.MeshBasicMaterial({
             color: 0x000000
         }));
-        this.pointer.position = new THREE.Vector3(0, this.unitLength * 2 / 5, 0);
+        this.pointer.position.set(0, this.unitLength * 2 / 5, 0);
         this.pointer.visible = false;
         this.shape.add(this.pointer);
 
@@ -3723,7 +3737,8 @@ class Edge {
         var m = new THREE.Vector3();
     
         m.addVectors(a, b).divideScalar(2);
-        this.shape.position = m;
+        //this.shape.position = m;
+        this.shape.position.set(m.x, m.y, m.z);
         var origVec = new THREE.Vector3(0, 1, 0);         //vector of cylinder
         var targetVec = new THREE.Vector3();
         targetVec.subVectors(b, a);
@@ -3744,9 +3759,10 @@ class Edge {
         axis.crossVectors(origVec, targetVec);
         axis.normalize();
         
-        var quaternion = new THREE.Quaternion();
-        quaternion.setFromAxisAngle(axis, angle);
-        this.shape.quaternion = quaternion;
+        //var quaternion = new THREE.Quaternion();
+        //quaternion.setFromAxisAngle(axis, angle);
+        //this.shape.quaternion = quaternion;
+        this.shape.quaternion.setFromAxisAngle(axis, angle);
 
         /* update color of the edge */
         if (this.isColorChanged) {
