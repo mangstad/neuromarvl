@@ -21,7 +21,7 @@ THREE.OBJLoader.prototype = {
 		var loader = new THREE.XHRLoader( scope.manager );
 		loader.setPath( this.path );
 		loader.load( url, function ( text ) {
-
+		    //console.log(text);///JM
 			onLoad( scope.parse( text ) );
 
 		}, onProgress, onError );
@@ -394,7 +394,9 @@ THREE.OBJLoader.prototype = {
 
 		}
 
-		console.timeEnd( 'OBJLoader' );
+		console.timeEnd('OBJLoader');
+
+		console.log(objects);///JM
 
 		return container;
 

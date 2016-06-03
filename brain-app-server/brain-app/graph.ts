@@ -3604,6 +3604,7 @@ class Edge {
         });
         this.shape = new THREE.Mesh(this.geometry, material);
         //this.shape.renderDepth = 3; // Draw line BEFORE transparent brain model is drawn
+        this.shape.renderOrder = 0; // Draw line BEFORE transparent brain model is drawn
         this.pointer = new THREE.Mesh(this.cone, new THREE.MeshBasicMaterial({
             color: 0x000000
         }));
@@ -3637,6 +3638,7 @@ class Edge {
         });
         this.shape = new THREE.Line(this.geometry, material);
         //this.shape.renderDepth = 3; // Draw line BEFORE transparent brain model is drawn
+        this.shape.renderOrder = 0; // Draw line BEFORE transparent brain model is drawn
         this.pointer = new THREE.Mesh(this.cone, new THREE.MeshBasicMaterial({
             color: 0x000000
         }));

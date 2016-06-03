@@ -692,20 +692,32 @@ class Brain3DApp implements Application, Loopable {
                         mode: { type: 'f', value: 0.0 }
                     };
                     uniformList.push(this.uniforms);
-           
+
+                    /*
                     clonedObject.add(new THREE.Mesh(child.geometry.clone(), new THREE.ShaderMaterial(<any>{
                         uniforms: this.uniforms,
                         vertexShader: normalShader.vertexShader,
                         fragmentShader: normalShader.fragmentShader,
                         transparent: true
                     })));
+                    */
+                    var material = new THREE.MeshLambertMaterial({
+                        color: 0x888888,
+                        transparent: true,
+                        opacity: 0.3,
+                        depthWrite: false,
+                        depthTest: false,
+                        side: THREE.FrontSide
+                    });
+                    clonedObject.add(new THREE.Mesh(child.geometry.clone(), material));
                     //clonedObject.renderDepth = 2;
+                    clonedObject.renderOrder = 0.5;
 
                     child.geometry.computeBoundingSphere();
                     var boundingSphere = child.geometry.boundingSphere;
-                    var material = child.material;
+                    //var material = child.material;
                     var sphereGeometry = new THREE.SphereGeometry(boundingSphere.radius + 10, 10, 10);
-                    var sphereObject = new THREE.Mesh(sphereGeometry.clone(), material.clone());
+                    var sphereObject = new THREE.Mesh(sphereGeometry.clone(), child.material.clone());
                     /*
                     sphereObject.position.x = boundingSphere.center.x;
                     sphereObject.position.y = boundingSphere.center.y;
@@ -745,6 +757,7 @@ class Brain3DApp implements Application, Loopable {
                         transparent: true
                     }));
                     //leftBrain.renderDepth = 2;
+                    leftBrain.renderOrder = 0.5;
                     var rightBrain = new THREE.Mesh(child.geometry.clone(), new THREE.ShaderMaterial(<any>{
                         uniforms: this.rightUniforms,
                         vertexShader: normalShader.vertexShader,
@@ -752,6 +765,7 @@ class Brain3DApp implements Application, Loopable {
                         transparent: true
                     }));
                     //rightBrain.renderDepth = 2;
+                    rightBrain.renderOrder = 0.5;
 
                     var box = new THREE.Box3()['setFromObject'](model);
                     leftBrain.rotation.z = 3.14 / 2;
@@ -1699,7 +1713,6 @@ class Brain3DApp implements Application, Loopable {
 
         // Set up the two graphs
         var edgeMatrix = this.dataSet.adjMatrixFromEdgeCount(maxEdgesShowable); // Don''t create more edges than we will ever be showing
-        console.log(edgeMatrix);///JM
         if (this.physioGraph) this.physioGraph.destroy();
         this.physioGraph = new Graph(this.brainObject, edgeMatrix, this.nodeColorings, this.dataSet.simMatrix, this.dataSet.brainLabels, this.commonData);
 
