@@ -531,7 +531,8 @@ class Brain3DApp implements Application, Loopable {
 
             // If the pointer is poiting to any node in 2D or 3D graph
             if (node || (nodeIDUnderPointer != -1)) {
-                this.commonData.selectedNode = (node) ? node.id : nodeIDUnderPointer;
+                //this.commonData.selectedNode = (node) ? node.id : nodeIDUnderPointer;
+                this.commonData.selectedNode = (node) ? node.userData.id : nodeIDUnderPointer;
 
                 // Select the new node
                 this.physioGraph.selectNode(this.commonData.selectedNode, false, false);

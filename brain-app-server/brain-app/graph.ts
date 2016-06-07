@@ -311,7 +311,7 @@ class CircularGraph {
 
         //------------------------------------------------------------------------------------------------
         // Generate updated data
-        var nodeJson = JSON.parse(JSON.stringify(this.svgNodeBundleArray));
+        var nodeJson = JSON.parse(JSON.stringify(this.svgNodeBundleArray));     // Is this really happening?
         var bundle = d3.layout.bundle();
         var diameter = 800,
             radius = diameter / 2,
@@ -2810,6 +2810,7 @@ class Graph {
             //    this._sphereGeometry,
             //    new THREE.MeshLambertMaterial({ color: nodeColorings[i] })
             //);
+            console.log();///jm
             var sprite = this.nodeMeshes[i] = this.generateSprite(nodeColorings[i]);
             
             var label = (!!labels && labels[i]) || "";
@@ -2867,7 +2868,8 @@ class Graph {
 
 
     generateSprite(nodeColouring: number) {
-		var canvas = document.createElement('canvas');
+        var canvas = document.createElement('canvas');
+        /*
 		canvas.width = 16;
 		canvas.height = 16;
 		var context = canvas.getContext('2d');
@@ -2878,6 +2880,18 @@ class Graph {
 		gradient.addColorStop(1, 'rgba(0,0,0,1)');
 		context.fillStyle = gradient;
         context.fillRect(0, 0, canvas.width, canvas.height);
+        */
+        canvas.width = 64;
+        canvas.height = 64;
+        var context = canvas.getContext('2d');
+        var gradient = context.createRadialGradient(canvas.width / 2, canvas.height / 2, 0, canvas.width / 2, canvas.height / 2, canvas.width / 2);
+        gradient.addColorStop(0, 'rgba(255,255,255,1)');
+        gradient.addColorStop(0.2, 'rgba(255,255,255,0.8)');
+        gradient.addColorStop(0.4, 'rgba(64,64,64,0.6)');
+        gradient.addColorStop(1, 'rgba(0,0,0,0)');
+        context.fillStyle = gradient;
+        context.fillRect(0, 0, canvas.width, canvas.height);
+
         var texture = new THREE.Texture(canvas);
         texture.needsUpdate = true;
         //var spriteAlignment = THREE.SpriteAlignment.topLeft;
@@ -2887,8 +2901,8 @@ class Graph {
             //alignment: spriteAlignment
         });
         var sprite = new THREE.Sprite(material);
-        var multiplyScale = 0.5;
-        sprite.scale.set(canvas.width * multiplyScale, canvas.height * multiplyScale, 1);
+        //var multiplyScale = 0.5;
+        //sprite.scale.set(canvas.width * multiplyScale, canvas.height * multiplyScale, 1);
 
 		return sprite;
     }

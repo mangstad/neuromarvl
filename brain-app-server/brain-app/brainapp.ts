@@ -1920,7 +1920,8 @@ function getNodeScaleArray(attribute: string) {
     var max = dataSet.attributes.getMax(columnIndex);
 
     var scaleArray: number[];
-    var scaleFactor = 0.5;
+    //var scaleFactor = 0.5;
+    var scaleFactor = 1;
 
     scaleArray = attrArray.map((value) => { return scaleFactor * value[0]; });
 
