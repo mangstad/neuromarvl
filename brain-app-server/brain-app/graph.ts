@@ -520,27 +520,34 @@ class CircularGraph {
 
         // Loop through all nodes of the Cola Graph
         for (var i = 0; i < children.length; i++) {
-            var obj = children[i];
+            //var obj = children[i];
+            var d = children[i].userData;
 
-            if (!this.isDisplayAllNode && !(<any>obj).hasVisibleEdges) continue;
+            //if (!this.isDisplayAllNode && !(<any>obj).hasVisibleEdges) continue;
+            if (!this.isDisplayAllNode && !d.hasVisibleEdges) continue;
 
             // Create new empty node
             var nodeObject = new Object();
-            nodeObject["id"] = obj.id; // id
+            //nodeObject["id"] = obj.id; // id
+            nodeObject["id"] = d.id;
+
             if (this.dataSet.brainLabels) {
-                nodeObject["label"] = this.dataSet.brainLabels[obj.id];
+                //nodeObject["label"] = this.dataSet.brainLabels[obj.id];
+                nodeObject["label"] = this.dataSet.brainLabels[d.id];
             }
 
             // for every attributes
             for (var j = 0; j < this.dataSet.attributes.columnNames.length; j++) {
 
                 var colname = this.dataSet.attributes.columnNames[j];
-                var value = this.dataSet.attributes.get(colname)[obj.id];
+                //var value = this.dataSet.attributes.get(colname)[obj.id];
+                var value = this.dataSet.attributes.get(colname)[d.id];
                 nodeObject[colname] = value;
 
                 // add a special property for module id
                 if (colname == 'module_id') {
-                    nodeObject['moduleID'] = this.dataSet.attributes.get(colname)[obj.id];
+                    //nodeObject['moduleID'] = this.dataSet.attributes.get(colname)[obj.id];
+                    nodeObject['moduleID'] = this.dataSet.attributes.get(colname)[d.id];
                 }
 
                 //  Get domain of the attributes (assume all positive numbers in the array)
@@ -570,12 +577,15 @@ class CircularGraph {
             nodeObject["bundleByAttribute"] = bundleByAttribute;
             if (bundleByAttribute == "none") {
                 //nodeObject["name"] = "root.module" + nodeObject['moduleID'] + "." + obj.id;
-                nodeObject["name"] = "root." + obj.id;
+                //nodeObject["name"] = "root." + obj.id;
+                nodeObject["name"] = "root." + d.id;
             } else {
-                nodeObject["name"] = "root." + bundleByAttribute + nodeObject['bundle_group_' + bundleByAttribute] + "." + obj.id;
+                //nodeObject["name"] = "root." + bundleByAttribute + nodeObject['bundle_group_' + bundleByAttribute] + "." + obj.id;
+                nodeObject["name"] = "root." + bundleByAttribute + nodeObject['bundle_group_' + bundleByAttribute] + "." + d.id;
             }
 
-            nodeObject["color"] = this.colaGraph.nodeMeshes[obj.id].material.color.getHexString();
+            //nodeObject["color"] = this.colaGraph.nodeMeshes[obj.id].material.color.getHexString();
+            nodeObject["color"] = this.colaGraph.nodeMeshes[d.id].material.color.getHexString();
 
             // Declare variables 
             nodeObject["imports"] = [];
@@ -1645,24 +1655,32 @@ class Graph2D {
         // Add Nodes to SVG graph (Positions are based on the projected position of the 3D graphs
         for (var i = 0; i < children.length; i++) {
             var obj = children[i];
+            var d = obj.userData;
+
             var nodeObject = new Object();
-            nodeObject["id"] = obj.id;
+            //nodeObject["id"] = obj.id;
+            nodeObject["id"] = d.id;
             if (this.dataSet.brainLabels) {
-                nodeObject["label"] = this.dataSet.brainLabels[obj.id];
+                //nodeObject["label"] = this.dataSet.brainLabels[obj.id];
+                nodeObject["label"] = this.dataSet.brainLabels[d.id];
             }
-            nodeObject["color"] = "#".concat(colaGraph.nodeMeshes[obj.id].material.color.getHexString());
-            nodeObject["radius"] = colaGraph.nodeMeshes[obj.id].scale.x * unitRadius;
+            //nodeObject["color"] = "#".concat(colaGraph.nodeMeshes[obj.id].material.color.getHexString());
+            //nodeObject["radius"] = colaGraph.nodeMeshes[obj.id].scale.x * unitRadius;
+            nodeObject["color"] = "#".concat(colaGraph.nodeMeshes[d.id].material.color.getHexString());
+            nodeObject["radius"] = colaGraph.nodeMeshes[d.id].scale.x * unitRadius;
 
             // for every attributes
             for (var j = 0; j < this.dataSet.attributes.columnNames.length; j++) {
 
                 var colname = this.dataSet.attributes.columnNames[j];
-                var value = this.dataSet.attributes.get(colname)[obj.id];
+                //var value = this.dataSet.attributes.get(colname)[obj.id];
+                var value = this.dataSet.attributes.get(colname)[d.id];
                 nodeObject[colname] = value;
 
                 // add a special property for module id
                 if (colname == 'module_id') {
-                    nodeObject['moduleID'] = this.dataSet.attributes.get(colname)[obj.id];
+                    //nodeObject['moduleID'] = this.dataSet.attributes.get(colname)[obj.id];
+                    nodeObject['moduleID'] = this.dataSet.attributes.get(colname)[d.id];
                 }
 
                 //  Get domain of the attributes (assume all positive numbers in the array)
@@ -1688,10 +1706,12 @@ class Graph2D {
                     nodeObject['bundle_group_' + colname] = bundleGroup;
                 }
             }
-            var v = new THREE.Vector3(obj.position.x, obj.position.y, obj.position.z);
-            var matrixWorld = obj.matrixWorld;
+            //var v = new THREE.Vector3(obj.position.x, obj.position.y, obj.position.z);
+            //var matrixWorld = obj.matrixWorld;
+
             //screenCoords.setFromMatrixPosition(matrixWorld); // not sure why this method is undefined; maybe we have an old version of three.js
-            (<any>screenCoords).getPositionFromMatrix(matrixWorld);
+            //(<any>screenCoords).getPositionFromMatrix(matrixWorld);
+            (<any>screenCoords).getPositionFromMatrix(obj.matrixWorld);
             //projector.projectVector(screenCoords, camera);
             screenCoords.project(camera);
 
@@ -1713,13 +1733,15 @@ class Graph2D {
                 linkObject["width"] = edge.shape.scale.x;
 
                 for (var j = 0; j < this.nodes.length; j++) {
-                    if (this.nodes[j].id == edge.sourceNode.id) {
+                    //if (this.nodes[j].id == edge.sourceNode.id) {
+                    if (this.nodes[j].id == edge.sourceNode.userData.id) {
                         linkObject["source"] = this.nodes[j];
                         linkObject["x1"] = this.nodes[j].x;
                         linkObject["y1"] = this.nodes[j].y;
                     }
 
-                    if (this.nodes[j].id == edge.targetNode.id) {
+                    //if (this.nodes[j].id == edge.targetNode.id) {
+                    if (this.nodes[j].id == edge.targetNode.userData.id) {
                         linkObject["target"] = this.nodes[j];
                         linkObject["x2"] = this.nodes[j].x;
                         linkObject["y2"] = this.nodes[j].y;
@@ -1945,22 +1967,29 @@ class Graph2D {
 
         // Add Nodes to SVG graph (Positions are based on the projected position of the 3D graphs
         for (var i = 0; i < children.length; i++) {
-            var obj = children[i];
+            //var obj = children[i];
+            var d = children[i].userData;
+
             var nodeObject = new Object();
-            nodeObject["id"] = obj.id;
-            nodeObject["color"] = "#".concat(colaGraph.nodeMeshes[obj.id].material.color.getHexString());
-            nodeObject["radius"] = colaGraph.nodeMeshes[obj.id].scale.x * unitRadius;
+            //nodeObject["id"] = obj.id;
+            //nodeObject["color"] = "#".concat(colaGraph.nodeMeshes[obj.id].material.color.getHexString());
+            //nodeObject["radius"] = colaGraph.nodeMeshes[obj.id].scale.x * unitRadius;
+            nodeObject["id"] = d.id;
+            nodeObject["color"] = "#".concat(colaGraph.nodeMeshes[d.id].material.color.getHexString());
+            nodeObject["radius"] = colaGraph.nodeMeshes[d.id].scale.x * unitRadius;
 
             // for every attributes
             for (var j = 0; j < this.dataSet.attributes.columnNames.length; j++) {
 
                 var colname = this.dataSet.attributes.columnNames[j];
-                var value = this.dataSet.attributes.get(colname)[obj.id];
+                //var value = this.dataSet.attributes.get(colname)[obj.id];
+                var value = this.dataSet.attributes.get(colname)[d.id];
                 nodeObject[colname] = value;
 
                 // add a special property for module id
                 if (colname == 'module_id') {
-                    nodeObject['moduleID'] = this.dataSet.attributes.get(colname)[obj.id];
+                    //nodeObject['moduleID'] = this.dataSet.attributes.get(colname)[obj.id];
+                    nodeObject['moduleID'] = this.dataSet.attributes.get(colname)[d.id];
                 }
 
                 //  Get domain of the attributes (assume all positive numbers in the array)
@@ -1986,8 +2015,8 @@ class Graph2D {
                     nodeObject['bundle_group_' + colname] = bundleGroup;
                 }
             }
-            var v = new THREE.Vector3(obj.position.x, obj.position.y, obj.position.z);
-            var matrixWorld = obj.matrixWorld;
+            //var v = new THREE.Vector3(obj.position.x, obj.position.y, obj.position.z);
+            //var matrixWorld = obj.matrixWorld;
             //screenCoords.setFromMatrixPosition(matrixWorld); // not sure why this method is undefined; maybe we have an old version of three.js
 
             nodeObject["x"] = initX;
@@ -2790,8 +2819,8 @@ class Graph {
             //(<any>sphere).hasVisibleEdges = true;
             //sphere.id = i;
             //this.rootObject.add(sphere);
-            (<any>sprite).hasVisibleEdges = true;
-            sprite.id = i;
+            sprite.userData.hasVisibleEdges = true;
+            sprite.userData.id = i;
             this.rootObject.add(sprite);
         }
 
@@ -3254,7 +3283,8 @@ class Graph {
 
         // reset node's hasVisibleEdges flag
         for (var i = 0; i < len - 1; ++i) {
-            this.nodeMeshes[i].hasVisibleEdges = false;
+            //this.nodeMeshes[i].hasVisibleEdges = false;
+            this.nodeMeshes[i].userData.hasVisibleEdges = false;
         }
         // reset Edges' Visibilities 
         for (var i = 0; i < len - 1; ++i) {
@@ -3267,8 +3297,10 @@ class Graph {
                         edge.setVisible(false);
 
                     } else if (visMatrix[i][j] === 1 || visMatrix[j][i] === 1) {
-                        this.nodeMeshes[i].hasVisibleEdges = true;
-                        this.nodeMeshes[j].hasVisibleEdges = true;
+                        //this.nodeMeshes[i].hasVisibleEdges = true;
+                        //this.nodeMeshes[j].hasVisibleEdges = true;
+                        this.nodeMeshes[i].userData.hasVisibleEdges = true;
+                        this.nodeMeshes[j].userData.hasVisibleEdges = true;
                         edge.setVisible(true);
                     } else {
                         edge.setVisible(false);

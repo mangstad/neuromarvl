@@ -1800,7 +1800,9 @@ class Brain3DApp implements Application, Loopable {
             || raycaster.intersectObjects(this.physioGraph.nodeMeshes)[0]
         ;
         if (n) {
-            this.commonData.nodeIDUnderPointer[this.id] = n.object.id;
+            //this.commonData.nodeIDUnderPointer[this.id] = n.object.id;
+            this.commonData.nodeIDUnderPointer[this.id] = n.object.userData.id;
+
             return n.object;
         }
 
@@ -1848,7 +1850,8 @@ class Brain3DApp implements Application, Loopable {
 
             // Check if pointer is over 3D Model
             var node = this.getNodeUnderPointer(this.input.localPointerPosition());
-            var nodeIDUnderPointer = (node) ? node.id : -1;
+            //var nodeIDUnderPointer = node ? node.id : -1;
+            var nodeIDUnderPointer = node ? node.userData.id : -1;
             this.getBoundingSphereUnderPointer(this.input.localPointerPosition());
 
             // Check if pointer is over 2D Model in all view
@@ -1863,7 +1866,6 @@ class Brain3DApp implements Application, Loopable {
             // If the pointer is poiting to any node in 2D or 3D graph
             if (this.selectedNodeID !== nodeIDUnderPointer){
                 if (nodeIDUnderPointer !== -1) {
-
                     // If we already have a node ID selected, deselect it
                     if (this.selectedNodeID >= 0) {
                         this.physioGraph.deselectNode(this.selectedNodeID);
@@ -1871,7 +1873,8 @@ class Brain3DApp implements Application, Loopable {
                     }
 
                     if (node) {
-                        this.selectedNodeID = node.id;
+                        //this.selectedNodeID = node.id;
+                        this.selectedNodeID = node.userData.id;
                     }
                     else {
                         this.selectedNodeID = nodeIDUnderPointer;

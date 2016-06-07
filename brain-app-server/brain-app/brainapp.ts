@@ -3089,8 +3089,6 @@ function loadBrainModel(file: string, callback) {
 
         var surfaceColor = parseInt(brainSurfaceColor);
 
-        console.log(object);///JM
-
         callback(object);
     });
 }
