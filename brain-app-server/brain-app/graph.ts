@@ -2908,8 +2908,11 @@ class Graph {
         var context = canvas.getContext('2d');
         context.font = "Bold " + varFontSize + "px Arial";
 
-        canvas.width = context.measureText(text).width;
-        canvas.height = varFontSize;
+        //canvas.width = context.measureText(text).width;
+        //canvas.height = varFontSize;
+        // Canvas dimensions expected to be a power of 2
+        canvas.width = this.nextPowerOf2(context.measureText(text).width);
+        canvas.height = this.nextPowerOf2(varFontSize);
 
         context.font = varFontSize + "px Arial";
         context.fillStyle = "rgba(0,0,0,1)";
@@ -2944,6 +2947,16 @@ class Graph {
         sprite.scale.set(canvas.width / multiplyScale, canvas.height / multiplyScale, 1);
 
         return sprite;
+    }
+
+    nextPowerOf2(n: number) {
+        var i = 0;
+        var s = 0;
+        while (s < n) {
+            i++;
+            s = Math.pow(2, i);
+        }
+        return s;
     }
 
     setNodePositions(colaCoords: number[][]) {
