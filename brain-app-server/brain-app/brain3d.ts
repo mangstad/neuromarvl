@@ -680,21 +680,29 @@ class Brain3DApp implements Application, Loopable {
         this.brainObject.remove(this.brainSurface);
         var clonedObject = new THREE.Object3D();
         var boundingSphereObject = new THREE.Object3D();
-        
+
+        var basicMaterial = new THREE.MeshLambertMaterial({
+            color: 0x888888,
+            transparent: true,
+            opacity: 0.3,
+            depthWrite: false,
+            depthTest: false,
+            side: THREE.FrontSide
+        });
+
         // Default mode: full brain model 
         if (mode == 0) {
             
             // Clone the mesh - we can't share it between different canvases without cloning it
             this.brainModelOrigin.traverse(function (child) {
                 if (child instanceof THREE.Mesh) {
-
+                    /*
                     this.uniforms = {
                         opacity: { type: "f", value: 0.5 },
                         mode: { type: 'f', value: 0.0 }
                     };
                     uniformList.push(this.uniforms);
 
-                    /*
                     clonedObject.add(new THREE.Mesh(child.geometry.clone(), new THREE.ShaderMaterial(<any>{
                         uniforms: this.uniforms,
                         vertexShader: normalShader.vertexShader,
@@ -702,15 +710,9 @@ class Brain3DApp implements Application, Loopable {
                         transparent: true
                     })));
                     */
-                    var material = new THREE.MeshLambertMaterial({
-                        color: 0x888888,
-                        transparent: true,
-                        opacity: 0.3,
-                        depthWrite: false,
-                        depthTest: false,
-                        side: THREE.FrontSide
-                    });
-                    clonedObject.add(new THREE.Mesh(child.geometry.clone(), material));
+
+                    clonedObject.add(new THREE.Mesh(child.geometry.clone(), basicMaterial));
+
                     //clonedObject.renderDepth = 2;
                     clonedObject.renderOrder = 0.5;
 
@@ -745,6 +747,7 @@ class Brain3DApp implements Application, Loopable {
             
             this.brainModelOrigin.traverse(function (child) {
                 if (child instanceof THREE.Mesh) {
+                    /*
                     this.leftUniforms = {
                         opacity: { type: "f", value: 0.5 },
                         mode: { type: 'f', value: -1.0 }
@@ -765,15 +768,33 @@ class Brain3DApp implements Application, Loopable {
                         fragmentShader: normalShader.fragmentShader,
                         transparent: true
                     }));
-                    //leftBrain.renderDepth = 2;
-                    leftBrain.renderOrder = 0.5;
+                    leftBrain.renderDepth = 2;
                     var rightBrain = new THREE.Mesh(child.geometry.clone(), new THREE.ShaderMaterial(<any>{
                         uniforms: this.rightUniforms,
                         vertexShader: normalShader.vertexShader,
                         fragmentShader: normalShader.fragmentShader,
                         transparent: true
                     }));
-                    //rightBrain.renderDepth = 2;
+                    rightBrain.renderDepth = 2;
+                    */
+                    // Need to edit geometries to "slice" them in half
+                    //if (!child.geometry.vertices) return;
+                    var leftGeometry = child.geometry.clone();
+                    var newFaces = [];
+                    for (var face of leftGeometry.faces) {
+                        if ((leftGeometry.vertices[face.a].x < 0)
+                            || (leftGeometry.vertices[face.b].x < 0)
+                            || (leftGeometry.vertices[face.c].x < 0)
+                        ) {
+                            newFaces.push(face);
+                        }
+                    }
+                    leftGeometry.faces = newFaces;
+                    leftGeometry.elementsNeedUpdate = true;
+                    var leftBrain = new THREE.Mesh(leftGeometry, basicMaterial);
+                    leftBrain.renderOrder = 0.5;
+                    var rightGeometry = child.geometry.clone();
+                    var rightBrain = new THREE.Mesh(rightGeometry, basicMaterial);
                     rightBrain.renderOrder = 0.5;
 
                     var box = new THREE.Box3()['setFromObject'](model);
