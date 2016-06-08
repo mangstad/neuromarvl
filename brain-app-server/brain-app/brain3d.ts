@@ -717,8 +717,16 @@ class Brain3DApp implements Application, Loopable {
                     child.geometry.computeBoundingSphere();
                     var boundingSphere = child.geometry.boundingSphere;
                     //var material = child.material;
+                    /*
+                    var material = child.material;
                     var sphereGeometry = new THREE.SphereGeometry(boundingSphere.radius + 10, 10, 10);
                     var sphereObject = new THREE.Mesh(sphereGeometry.clone(), child.material.clone());
+                    */
+                    var sphereMaterial = child.material.clone();
+                    sphereMaterial.visible = false;
+                    //sphereMaterial.needsUpdate = true;
+                    var sphereGeometry = new THREE.SphereGeometry(boundingSphere.radius + 10, 10, 10);
+                    var sphereObject = new THREE.Mesh(sphereGeometry, sphereMaterial);
                     /*
                     sphereObject.position.x = boundingSphere.center.x;
                     sphereObject.position.y = boundingSphere.center.y;
@@ -726,7 +734,7 @@ class Brain3DApp implements Application, Loopable {
                     */
                     sphereObject.position.copy(boundingSphere.center);
 
-                    sphereObject.visible = false;
+                    //sphereObject.visible = false;
                     boundingSphereObject.add(sphereObject);
                 }
             });
@@ -787,9 +795,15 @@ class Brain3DApp implements Application, Loopable {
 
                     child.geometry.computeBoundingSphere();
                     var boundingSphere = child.geometry.boundingSphere;
+                    /*
                     var material = child.material;
                     var sphereGeometry = new THREE.SphereGeometry(boundingSphere.radius + 10, 10, 10);
                     var sphereObject = new THREE.Mesh(sphereGeometry.clone(), material.clone());
+                    */
+                    var material = child.material.clone();
+                    material.visible = false;
+                    var sphereGeometry = new THREE.SphereGeometry(boundingSphere.radius + 10, 10, 10);
+                    var sphereObject = new THREE.Mesh(sphereGeometry, material);
                     /*
                     sphereObject.position.x = boundingSphere.center.x;
                     sphereObject.position.y = boundingSphere.center.y;
@@ -797,7 +811,7 @@ class Brain3DApp implements Application, Loopable {
                     */
                     sphereObject.position.copy(boundingSphere.center);
 
-                    sphereObject.visible = false;
+                    //sphereObject.visible = false;
                     boundingSphereObject.add(sphereObject);
                 }
             });
@@ -811,7 +825,7 @@ class Brain3DApp implements Application, Loopable {
         this.brainObject.add(this.brainSurface);
         
 
-        boundingSphereObject.visible = false;
+        //boundingSphereObject.visible = false;
         this.brainSurfaceBoundingSphere = boundingSphereObject;
         this.brainObject.add(this.brainSurfaceBoundingSphere);
         this.surfaceLoaded = true;
@@ -1824,7 +1838,8 @@ class Brain3DApp implements Application, Loopable {
             var raycaster = new THREE.Raycaster();
             raycaster.setFromCamera(pointer, this.camera);
 
-            var inBoundingSphere = !!(raycaster.intersectObjects(this.brainSurfaceBoundingSphere.children)[0]);
+            //var inBoundingSphere = !!(raycaster.intersectObjects(this.brainSurfaceBoundingSphere.children)[0]);
+            var inBoundingSphere = !!(raycaster.intersectObject(this.brainSurfaceBoundingSphere, true).length);
             if (inBoundingSphere == true) {
                 this.svgControlMode = false;
                 this.svg.on(".zoom", null);

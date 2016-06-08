@@ -1711,7 +1711,7 @@ class Graph2D {
 
             //screenCoords.setFromMatrixPosition(matrixWorld); // not sure why this method is undefined; maybe we have an old version of three.js
             //(<any>screenCoords).getPositionFromMatrix(matrixWorld);
-            (<any>screenCoords).getPositionFromMatrix(obj.matrixWorld);
+            (<any>screenCoords).setFromMatrixPosition(obj.matrixWorld);
             //projector.projectVector(screenCoords, camera);
             screenCoords.project(camera);
 
