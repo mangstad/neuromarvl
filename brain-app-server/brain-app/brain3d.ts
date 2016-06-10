@@ -778,22 +778,32 @@ class Brain3DApp implements Application, Loopable {
                     rightBrain.renderDepth = 2;
                     */
                     // Need to edit geometries to "slice" them in half
-                    //if (!child.geometry.vertices) return;
-                    var leftGeometry = child.geometry.clone();
-                    var newFaces = [];
-                    for (var face of leftGeometry.faces) {
-                        if ((leftGeometry.vertices[face.a].x < 0)
-                            || (leftGeometry.vertices[face.b].x < 0)
-                            || (leftGeometry.vertices[face.c].x < 0)
-                        ) {
-                            newFaces.push(face);
+                    // Each face is represented by a group 9 values (3 vertices * 3 dimensions). Move to other side if any face touches the right side (i.e. x > 0).
+                    var leftPositions = Array.prototype.slice.call(child.geometry.getAttribute("position").array);
+                    var rightPositions = [];
+                    const FACE_CHUNK = 9;
+                    const VERT_CHUNK = 3;
+                    let i = leftPositions.length - VERT_CHUNK;      // Start from last x position
+                    while (i -= VERT_CHUNK) {
+                        if (leftPositions[i] > 0) {
+                            // Move whole face to other geometry
+                            var faceStart = Math.floor(i / FACE_CHUNK) * FACE_CHUNK;
+                            rightPositions.push(...leftPositions.splice(faceStart, FACE_CHUNK));
+                            i = faceStart;
                         }
                     }
-                    leftGeometry.faces = newFaces;
-                    leftGeometry.elementsNeedUpdate = true;
+
+                    var leftGeometry = new THREE.BufferGeometry;
+                    leftGeometry.addAttribute("position", new THREE.BufferAttribute(new Float32Array(leftPositions), VERT_CHUNK));
+                    leftGeometry.computeVertexNormals();
+                    leftGeometry.computeFaceNormals();
                     var leftBrain = new THREE.Mesh(leftGeometry, basicMaterial);
                     leftBrain.renderOrder = 0.5;
-                    var rightGeometry = child.geometry.clone();
+
+                    var rightGeometry = new THREE.BufferGeometry;
+                    rightGeometry.addAttribute("position", new THREE.BufferAttribute(new Float32Array(rightPositions), VERT_CHUNK));
+                    rightGeometry.computeVertexNormals();
+                    rightGeometry.computeFaceNormals();
                     var rightBrain = new THREE.Mesh(rightGeometry, basicMaterial);
                     rightBrain.renderOrder = 0.5;
 
