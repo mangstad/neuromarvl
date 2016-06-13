@@ -303,27 +303,33 @@ class Brain3DApp implements Application, Loopable {
                 .click(function () { varAutoRotationOnChange("anticlockwise"); }))
 
 
-        // Circular Graph
+            // Circular Graph
             .append($('<div id="div-svg-' + this.id + '"></div>')
                 .css({ 'position': 'absolute', 'width': '100%', 'height': '100%', 'top': 0, 'left': 0, 'z-index': 10 }))
 
             .append(this.renderer.domElement)
             .append('<p>Showing <label id="count-' + this.id + '">0</label> edges (<label id=percentile-' + this.id + '>0</label>th percentile)</p>')
 
-        // Edge count Slider at the bottom of the application
-            .append($('<input id="edge-count-slider-' + this.id + '" type="range" min="1" max="' + maxEdgesShowable + '" value="' + initialEdgesShown + '" disabled="true"/>')
+            // Edge count Slider at the bottom of the application
+            .append($('<input id="edge-count-slider-' + this.id + '" type="range" min="1" max="' + maxEdgesShowable + '" value="' + initialEdgesShown +
+                    'data-toggle="tooltip" data-placement="top" title="Adjust count of visible edges" disabled="true"/>')
                 .css({ 'display': 'inline-block', 'width': '300px', 'position': 'relative', 'margin-right': 10, 'z-index': 1000 })
                 .mousedown(function () { varSliderMouseEvent("mousedown"); })
                 .mouseup(function () { varSliderMouseEvent("mouseup"); })
-                .on("input change", function () { varEdgeCountSliderOnChange($(this).val()); }))
+                .on("input change", function () { varEdgeCountSliderOnChange($(this).val()); })
+            )
 
-        // Show Network button
-            .append($('<button id="button-show-network-' + this.id + '">Show Network</button>').css({ 'margin-left': '10px', 'font-size': '12px', 'position': 'relative', 'z-index': 1000 })
-                .click(function () { varShowNetwork(false); }))
+            // Show Network button
+            .append($('<button id="button-show-network-' + this.id + ' data-toggle="tooltip" data-placement="top" title="Show side-by-side graph representation">Show Network</button>')
+                .css({ 'margin-left': '10px', 'font-size': '12px', 'optposition': 'relative', 'z-index': 1000 })
+                .click(function () { varShowNetwork(false); })
+            )
 
-        // Select Network type dropdown
-            .append($('<select id="select-network-type-' + this.id + '" disabled="true"></select>').css({ 'margin-left': '5px', 'font-size': '12px', 'width': '80px', 'position': 'relative', 'z-index': 1000 })
-                .on("change", function () { varNetworkTypeOnChange($(this).val()); }));
+            // Select Network type dropdown
+            .append($('<select id="select-network-type-' + this.id + '"data-toggle="tooltip" data-placement="top" title="Select the graph view type" disabled="true"></select>').css({ 'margin-left': '5px', 'font-size': '12px', 'width': '80px', 'position': 'relative', 'z-index': 1000 })
+                .on("change", function () { varNetworkTypeOnChange($(this).val()); })
+            )
+        ;
 
         $("[data-toggle='tooltip']").tooltip(<any>{ container: 'body' });
 
