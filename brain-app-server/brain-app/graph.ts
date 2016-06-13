@@ -8,6 +8,8 @@ d3.selection.prototype.moveToBack = function () {
     });
 };
 
+const RENDER_ORDER_EDGE = 0.1;
+
 class CircularGraph {
     id: number;
     jDiv;
@@ -93,12 +95,9 @@ class CircularGraph {
             bar.exit().remove();
         }
 
-
-
         nodeDotBundle.exit().remove();
         nodeBundle.exit().remove();
         linkBundle.exit().remove();
-
     }
 
     // Define UI components of the settings 
@@ -300,12 +299,12 @@ class CircularGraph {
                     for (var j = 0; j < this.svgNodeBundleArray.length; j++) {
 
                         // If this node is the source of the link
-                        if (this.svgNodeBundleArray[j].id == edge.sourceNode.id) {
-                            this.svgNodeBundleArray[j].linkColors[edge.targetNode.id] = edge.color;
+                        if (this.svgNodeBundleArray[j].id == edge.sourceNode.userData.id) {
+                            this.svgNodeBundleArray[j].linkColors[edge.targetNode.userData.id] = edge.color;
                         }
                         // If this node is the Target of the link
-                        if (this.svgNodeBundleArray[j].id == edge.targetNode.id) {
-                            this.svgNodeBundleArray[j].linkColors[edge.sourceNode.id] = edge.color;
+                        if (this.svgNodeBundleArray[j].id == edge.targetNode.userData.id) {
+                            this.svgNodeBundleArray[j].linkColors[edge.sourceNode.userData.id] = edge.color;
                         }
                     }
                 }
@@ -314,7 +313,7 @@ class CircularGraph {
 
         //------------------------------------------------------------------------------------------------
         // Generate updated data
-        var nodeJson = JSON.parse(JSON.stringify(this.svgNodeBundleArray));
+        var nodeJson = JSON.parse(JSON.stringify(this.svgNodeBundleArray));     // Is this really happening?
         var bundle = d3.layout.bundle();
         var diameter = 800,
             radius = diameter / 2,
@@ -523,27 +522,28 @@ class CircularGraph {
 
         // Loop through all nodes of the Cola Graph
         for (var i = 0; i < children.length; i++) {
-            var obj = children[i];
-
-            if (!this.isDisplayAllNode && !(<any>obj).hasVisibleEdges) continue;
+            var d = children[i].userData;
+            
+            if (!this.isDisplayAllNode && !d.hasVisibleEdges) continue;
 
             // Create new empty node
             var nodeObject = new Object();
-            nodeObject["id"] = obj.id; // id
+            nodeObject["id"] = d.id;
+
             if (this.dataSet.brainLabels) {
-                nodeObject["label"] = this.dataSet.brainLabels[obj.id];
+                nodeObject["label"] = this.dataSet.brainLabels[d.id];
             }
 
             // for every attributes
             for (var j = 0; j < this.dataSet.attributes.columnNames.length; j++) {
 
                 var colname = this.dataSet.attributes.columnNames[j];
-                var value = this.dataSet.attributes.get(colname)[obj.id];
+                var value = this.dataSet.attributes.get(colname)[d.id];
                 nodeObject[colname] = value;
 
                 // add a special property for module id
                 if (colname == 'module_id') {
-                    nodeObject['moduleID'] = this.dataSet.attributes.get(colname)[obj.id];
+                    nodeObject['moduleID'] = this.dataSet.attributes.get(colname)[d.id];
                 }
 
                 //  Get domain of the attributes (assume all positive numbers in the array)
@@ -572,13 +572,12 @@ class CircularGraph {
 
             nodeObject["bundleByAttribute"] = bundleByAttribute;
             if (bundleByAttribute == "none") {
-                //nodeObject["name"] = "root.module" + nodeObject['moduleID'] + "." + obj.id;
-                nodeObject["name"] = "root." + obj.id;
+                nodeObject["name"] = "root." + d.id;
             } else {
-                nodeObject["name"] = "root." + bundleByAttribute + nodeObject['bundle_group_' + bundleByAttribute] + "." + obj.id;
+                nodeObject["name"] = "root." + bundleByAttribute + nodeObject['bundle_group_' + bundleByAttribute] + "." + d.id;
             }
-
-            nodeObject["color"] = this.colaGraph.nodeMeshes[obj.id].material.color.getHexString();
+            
+            nodeObject["color"] = this.colaGraph.nodeMeshes[d.id].material.color.getHexString();
 
             // Declare variables 
             nodeObject["imports"] = [];
@@ -606,25 +605,25 @@ class CircularGraph {
                 for (var j = 0; j < this.svgNodeBundleArray.length; j++) {
 
                     // If this node is the source of the link
-                    if (this.svgNodeBundleArray[j].id == edge.sourceNode.id) {
+                    if (this.svgNodeBundleArray[j].id == edge.sourceNode.userData.id) {
                         var moduleID = -1;
                         var bundleGroupID = -1;
 
                         // for every node in the array again (to find the target node of this link)
                         for (var k = 0; k < this.svgNodeBundleArray.length; k++) {
-                            if (this.svgNodeBundleArray[k].id == edge.targetNode.id) {
+                            if (this.svgNodeBundleArray[k].id == edge.targetNode.userData.id) {
 
                                 if (bundleByAttribute == "none") {
                                     moduleID = this.svgNodeBundleArray[k].moduleID;
-                                    var nodeName = "root." + edge.targetNode.id;
+                                    var nodeName = "root." + edge.targetNode.userData.id;
                                 }
                                 else {
                                     bundleGroupID = this.svgNodeBundleArray[k]['bundle_group_' + bundleByAttribute];
-                                    var nodeName = "root." + bundleByAttribute + bundleGroupID + "." + edge.targetNode.id;
+                                    var nodeName = "root." + bundleByAttribute + bundleGroupID + "." + edge.targetNode.userData.id;
 
                                 }
                                 this.svgNodeBundleArray[j].imports.push(nodeName); // add target nodes to this node
-                                this.svgNodeBundleArray[j].linkColors[edge.targetNode.id] = edge.color;
+                                this.svgNodeBundleArray[j].linkColors[edge.targetNode.userData.id] = edge.color;
                                 break;
                             }
                         }
@@ -669,8 +668,9 @@ class CircularGraph {
             .radius(function (d) {
                 return d.y;
             })
+            .angle(function (d) { return d.x / 180 * Math.PI; })
             .interpolate("bundle")
-            .angle(function (d) { return d.x / 180 * Math.PI; });
+        ;
 
         this.svgAllElements.attr("transform", "translate(" + width + "," + height + ")");
 
@@ -1234,7 +1234,6 @@ class CircularGraph {
             }
 
             //$(bar.colorPicker).insertAfter('#select-circular-layout-attribute-'+ bar.id +'-' + this.id);
-            //console.log((<any>document.getElementById('input-circular-layout-bar' + bar.id + '-color')));
         }
         $('#div-circular-layout-menu-' + this.id).zIndex(1000);
         $('#div-circular-layout-menu-' + this.id).css({ left: l, top: t, height: 'auto' });
@@ -1331,8 +1330,6 @@ class CircularGraph {
     }
 
     mouseOutedCircularLayout(d) {
-        //this.commonData.nodeIDUnderPointer[4] = -1;
-
         var selectedID = this.commonData.selectedNode;
 
         if (selectedID == -1) {
@@ -1632,10 +1629,7 @@ class Graph2D {
         var height = this.jDiv.height() - sliderSpace;
         var widthHalf = width / 2;
         var heightHalf = height / 2;
-
-        var projector = new THREE.Projector();
         var screenCoords = new THREE.Vector3();
-
         var unitRadius = 5;
 
         // Reset nodes and links
@@ -1647,24 +1641,26 @@ class Graph2D {
         // Add Nodes to SVG graph (Positions are based on the projected position of the 3D graphs
         for (var i = 0; i < children.length; i++) {
             var obj = children[i];
+            var d = obj.userData;
+
             var nodeObject = new Object();
-            nodeObject["id"] = obj.id;
+            nodeObject["id"] = d.id;
             if (this.dataSet.brainLabels) {
-                nodeObject["label"] = this.dataSet.brainLabels[obj.id];
+                nodeObject["label"] = this.dataSet.brainLabels[d.id];
             }
-            nodeObject["color"] = "#".concat(colaGraph.nodeMeshes[obj.id].material.color.getHexString());
-            nodeObject["radius"] = colaGraph.nodeMeshes[obj.id].scale.x * unitRadius;
+            nodeObject["color"] = "#".concat(colaGraph.nodeMeshes[d.id].material.color.getHexString());
+            nodeObject["radius"] = colaGraph.nodeMeshes[d.id].scale.x * unitRadius;
 
             // for every attributes
             for (var j = 0; j < this.dataSet.attributes.columnNames.length; j++) {
 
                 var colname = this.dataSet.attributes.columnNames[j];
-                var value = this.dataSet.attributes.get(colname)[obj.id];
+                var value = this.dataSet.attributes.get(colname)[d.id];
                 nodeObject[colname] = value;
 
                 // add a special property for module id
                 if (colname == 'module_id') {
-                    nodeObject['moduleID'] = this.dataSet.attributes.get(colname)[obj.id];
+                    nodeObject['moduleID'] = this.dataSet.attributes.get(colname)[d.id];
                 }
 
                 //  Get domain of the attributes (assume all positive numbers in the array)
@@ -1690,11 +1686,8 @@ class Graph2D {
                     nodeObject['bundle_group_' + colname] = bundleGroup;
                 }
             }
-            var v = new THREE.Vector3(obj.position.x, obj.position.y, obj.position.z);
-            var matrixWorld = obj.matrixWorld;
-            //screenCoords.setFromMatrixPosition(matrixWorld); // not sure why this method is undefined; maybe we have an old version of three.js
-            (<any>screenCoords).getPositionFromMatrix(matrixWorld);
-            projector.projectVector(screenCoords, camera);
+            (<any>screenCoords).setFromMatrixPosition(obj.matrixWorld);
+            screenCoords.project(camera);
 
             screenCoords.x = (screenCoords.x * widthHalf) + widthHalf;
             screenCoords.y = - (screenCoords.y * heightHalf) + heightHalf;
@@ -1714,13 +1707,12 @@ class Graph2D {
                 linkObject["width"] = edge.shape.scale.x;
 
                 for (var j = 0; j < this.nodes.length; j++) {
-                    if (this.nodes[j].id == edge.sourceNode.id) {
+                    if (this.nodes[j].id == edge.sourceNode.userData.id) {
                         linkObject["source"] = this.nodes[j];
                         linkObject["x1"] = this.nodes[j].x;
                         linkObject["y1"] = this.nodes[j].y;
                     }
-
-                    if (this.nodes[j].id == edge.targetNode.id) {
+                    if (this.nodes[j].id == edge.targetNode.userData.id) {
                         linkObject["target"] = this.nodes[j];
                         linkObject["x2"] = this.nodes[j].x;
                         linkObject["y2"] = this.nodes[j].y;
@@ -1756,7 +1748,6 @@ class Graph2D {
             .attr("y2", function (d) { return d.y2; })
             .style("stroke-width", function (d) { return d.width; })
             .style("stroke", function (l) {
-
                 var sourceOpacity = 1, targetOpacity = 1;
                 var id = 'gradient_' + l.source.id + '_' + l.target.id;
 
@@ -1835,8 +1826,6 @@ class Graph2D {
 
                 return l.color;
             });
-
-
 
         var varMouseOveredSetNodeID = (id) => { this.mouseOveredSetNodeID(id); }
         var varMouseOutedSetNodeID = () => { this.mouseOutedSetNodeID(); }
@@ -1935,8 +1924,6 @@ class Graph2D {
         var initX = 3 / 5 * width;
         var initY = 1 / 2 * height;
 
-        var projector = new THREE.Projector();
-
         var unitRadius = 5;
 
         this.nodes.splice(0, this.nodes.length);
@@ -1946,22 +1933,23 @@ class Graph2D {
 
         // Add Nodes to SVG graph (Positions are based on the projected position of the 3D graphs
         for (var i = 0; i < children.length; i++) {
-            var obj = children[i];
+            var d = children[i].userData;
+
             var nodeObject = new Object();
-            nodeObject["id"] = obj.id;
-            nodeObject["color"] = "#".concat(colaGraph.nodeMeshes[obj.id].material.color.getHexString());
-            nodeObject["radius"] = colaGraph.nodeMeshes[obj.id].scale.x * unitRadius;
+            nodeObject["id"] = d.id;
+            nodeObject["color"] = "#".concat(colaGraph.nodeMeshes[d.id].material.color.getHexString());
+            nodeObject["radius"] = colaGraph.nodeMeshes[d.id].scale.x * unitRadius;
 
             // for every attributes
             for (var j = 0; j < this.dataSet.attributes.columnNames.length; j++) {
 
                 var colname = this.dataSet.attributes.columnNames[j];
-                var value = this.dataSet.attributes.get(colname)[obj.id];
+                var value = this.dataSet.attributes.get(colname)[d.id];
                 nodeObject[colname] = value;
 
                 // add a special property for module id
                 if (colname == 'module_id') {
-                    nodeObject['moduleID'] = this.dataSet.attributes.get(colname)[obj.id];
+                    nodeObject['moduleID'] = this.dataSet.attributes.get(colname)[d.id];
                 }
 
                 //  Get domain of the attributes (assume all positive numbers in the array)
@@ -1987,10 +1975,6 @@ class Graph2D {
                     nodeObject['bundle_group_' + colname] = bundleGroup;
                 }
             }
-            var v = new THREE.Vector3(obj.position.x, obj.position.y, obj.position.z);
-            var matrixWorld = obj.matrixWorld;
-            //screenCoords.setFromMatrixPosition(matrixWorld); // not sure why this method is undefined; maybe we have an old version of three.js
-
             nodeObject["x"] = initX;
             nodeObject["y"] = initY;
 
@@ -2007,13 +1991,13 @@ class Graph2D {
                 linkObject["width"] = edge.shape.scale.x;
 
                 for (var j = 0; j < this.nodes.length; j++) {
-                    if (this.nodes[j].id == edge.sourceNode.id) {
+                    if (this.nodes[j].id == edge.sourceNode.userData.id) {
                         linkObject["source"] = this.nodes[j];
                         linkObject["x1"] = this.nodes[j].x;
                         linkObject["y1"] = this.nodes[j].y;
                     }
 
-                    if (this.nodes[j].id == edge.targetNode.id) {
+                    if (this.nodes[j].id == edge.targetNode.userData.id) {
                         linkObject["target"] = this.nodes[j];
                         linkObject["x2"] = this.nodes[j].x;
                         linkObject["y2"] = this.nodes[j].y;
@@ -2206,10 +2190,7 @@ class Graph2D {
         var height = this.jDiv.height() - sliderSpace;
         var widthHalf = width / 2;
         var heightHalf = height / 2;
-
-        var projector = new THREE.Projector();
         var screenCoords = new THREE.Vector3();
-
         var unitRadius = 5;
 
         var edgeColorMode = this.colorMode;
@@ -2259,8 +2240,6 @@ class Graph2D {
     }
 
     mouseOutedNode(d) {
-        //this.commonData.nodeIDUnderPointer[4] = -1;
-
         var selectedID = this.commonData.selectedNode;
         if (selectedID == -1) {
             this.svgAllElements.selectAll(".link")
@@ -2355,10 +2334,8 @@ class Graph2D {
                 } else {
                     return 0.2;
                 }
-            });;
-
-
-    }
+            });
+        }
 
 
     clear() {
@@ -2776,18 +2753,20 @@ class Graph {
         this.nodeCurrentColor = nodeColorings.slice(0); // clone the array
 
         for (var i = 0; i < adjMatrix.length; ++i) {
-            var sphere = this.nodeMeshes[i] = new THREE.Mesh(
+            //TODO: Originally using spheres, but can switch to sprites for pie chart representations
+            var nodeObject = this.nodeMeshes[i] = new THREE.Mesh(
                 this._sphereGeometry,
                 new THREE.MeshLambertMaterial({ color: nodeColorings[i] })
-                );
+            );
+            //var nodeObject = this.nodeMeshes[i] = this.generateSprite(nodeColorings[i]);
             
             var label = (!!labels && labels[i]) || "";
             this.nodeInfo[i]["label"] = this.createNodeLabel(label, 6);
 
             // additional flag
-            (<any>sphere).hasVisibleEdges = true;
-            sphere.id = i;
-            this.rootObject.add(sphere);
+            nodeObject.userData.hasVisibleEdges = true;
+            nodeObject.userData.id = i;
+            this.rootObject.add(nodeObject);
         }
 
         // Create all the edges
@@ -2829,6 +2808,31 @@ class Graph {
         this.edgeMatrix = adjMatrix;
     }
 
+
+    generateSprite(nodeColouring: number) {
+        var canvas = document.createElement('canvas');
+        canvas.width = 64;
+        canvas.height = 64;
+        var context = canvas.getContext('2d');
+        var gradient = context.createRadialGradient(canvas.width / 2, canvas.height / 2, 0, canvas.width / 2, canvas.height / 2, canvas.width / 2);
+        gradient.addColorStop(0, 'rgba(255,255,255,1)');
+        gradient.addColorStop(0.2, 'rgba(255,255,255,0.8)');
+        gradient.addColorStop(0.4, 'rgba(64,64,64,0.6)');
+        gradient.addColorStop(1, 'rgba(0,0,0,0)');
+        context.fillStyle = gradient;
+        context.fillRect(0, 0, canvas.width, canvas.height);
+
+        var texture = new THREE.Texture(canvas);
+        texture.needsUpdate = true;
+        var material = new THREE.SpriteMaterial({
+            map: texture
+        });
+        var sprite = new THREE.Sprite(material);
+
+		return sprite;
+    }
+
+
     //////////////////////////////////////////////
     /////// Node's Functions /////////////////////
     //////////////////////////////////////////////
@@ -2842,9 +2846,10 @@ class Graph {
 
         var context = canvas.getContext('2d');
         context.font = "Bold " + varFontSize + "px Arial";
-
-        canvas.width = context.measureText(text).width;
-        canvas.height = varFontSize;
+        
+        // Canvas dimensions expected to be a power of 2
+        canvas.width = this.nextPowerOf2(context.measureText(text).width);
+        canvas.height = this.nextPowerOf2(varFontSize);
 
         context.font = varFontSize + "px Arial";
         context.fillStyle = "rgba(0,0,0,1)";
@@ -2855,54 +2860,49 @@ class Graph {
 	    texture.needsUpdate = true;
 
         // 3. map texture to an object
-        // method 1: do not face the camera
-        /*
-        var material = new THREE.MeshBasicMaterial({ map: texture, side: THREE.DoubleSide });
-        material.transparent = true;
-
-        var mesh = new THREE.Mesh(
-            new THREE.PlaneGeometry(canvas.width, canvas.height),
-            material
-            );
-        mesh.scale.set(0.1, 0.1, 1);
-        return mesh;
- 
-               */
-
-        // method 2:
-        var spriteMaterial = new THREE.SpriteMaterial(<any>{ map: texture, useScreenCoordinates: false, depthTest: false });
+        var spriteMaterial = new THREE.SpriteMaterial(<any>{
+            map: texture,
+            depthTest: false
+        });
         var sprite = new THREE.Sprite(spriteMaterial);
         sprite.scale.set(canvas.width / multiplyScale, canvas.height / multiplyScale, 1);
 
         return sprite;
     }
 
+    nextPowerOf2(n: number) {
+        var i = 0;
+        var s = 0;
+        while (s < n) {
+            i++;
+            s = Math.pow(2, i);
+        }
+        return s;
+    }
+
     setNodePositions(colaCoords: number[][]) {
         this.nodePositions = colaCoords;
         for (var i = 0; i < this.nodeMeshes.length; ++i) {
-            this.nodeMeshes[i].position.x = colaCoords[0][i];
-            this.nodeMeshes[i].position.y = colaCoords[1][i];
-            this.nodeMeshes[i].position.z = colaCoords[2][i];
-
-            // set the node label position 
-            this.nodeInfo[i]["label"].position.x = this.nodeMeshes[i].position.x + 5;
-            this.nodeInfo[i]["label"].position.y = this.nodeMeshes[i].position.y + 5;
-            this.nodeInfo[i]["label"].position.z = this.nodeMeshes[i].position.z;
+            var x, y, z;
+            x = colaCoords[0][i];
+            y = colaCoords[1][i];
+            z = colaCoords[2][i];
+            this.nodeMeshes[i].position.set(x, y, z);
+            this.nodeInfo[i]["label"].position.set(x + 5, y + 5, z);
         }
     }
 
     // Lerp between the physio and Cola positions of the nodes
     // 0 <= t <= 1
     setNodePositionsLerp(colaCoords1: number[][], colaCoords2: number[][], t: number) {
+        
         for (var i = 0; i < this.nodeMeshes.length; ++i) {
-            this.nodeMeshes[i].position.x = colaCoords1[0][i] * (1 - t) + colaCoords2[0][i] * t;
-            this.nodeMeshes[i].position.y = colaCoords1[1][i] * (1 - t) + colaCoords2[1][i] * t;
-            this.nodeMeshes[i].position.z = colaCoords1[2][i] * (1 - t) + colaCoords2[2][i] * t;
-
-            // set the node label position 
-            this.nodeInfo[i]["label"].position.x = this.nodeMeshes[i].position.x + 5;
-            this.nodeInfo[i]["label"].position.y = this.nodeMeshes[i].position.y + 5;
-            this.nodeInfo[i]["label"].position.z = this.nodeMeshes[i].position.z;
+            var x, y, z;
+            x = colaCoords1[0][i] * (1 - t) + colaCoords2[0][i] * t;
+            y = colaCoords1[1][i] * (1 - t) + colaCoords2[1][i] * t;
+            z = colaCoords1[2][i] * (1 - t) + colaCoords2[2][i] * t;
+            this.nodeMeshes[i].position.set(x, y, z);
+            this.nodeInfo[i]["label"].position.set(x + 5, y + 5, z);
         }
     }
 
@@ -3197,7 +3197,8 @@ class Graph {
 
         // reset node's hasVisibleEdges flag
         for (var i = 0; i < len - 1; ++i) {
-            this.nodeMeshes[i].hasVisibleEdges = false;
+            //this.nodeMeshes[i].hasVisibleEdges = false;
+            this.nodeMeshes[i].userData.hasVisibleEdges = false;
         }
         // reset Edges' Visibilities 
         for (var i = 0; i < len - 1; ++i) {
@@ -3210,8 +3211,8 @@ class Graph {
                         edge.setVisible(false);
 
                     } else if (visMatrix[i][j] === 1 || visMatrix[j][i] === 1) {
-                        this.nodeMeshes[i].hasVisibleEdges = true;
-                        this.nodeMeshes[j].hasVisibleEdges = true;
+                        this.nodeMeshes[i].userData.hasVisibleEdges = true;
+                        this.nodeMeshes[j].userData.hasVisibleEdges = true;
                         edge.setVisible(true);
                     } else {
                         edge.setVisible(false);
@@ -3341,7 +3342,6 @@ class Graph {
             this.nodeMeshes[id].scale.set(2 * x, 2 * y, 2 * z);
 
             if (this.allLabels == false) {
-                //if (!svgMode) this.rootObject.add(this.nodeLabelList[id]);
                 if (!svgMode) {
                     if (bCola) {
                         if (this.nodeHasNeighbors[id]) {
@@ -3358,7 +3358,6 @@ class Graph {
                 var edge = (this.edgeMatrix[id][j]) ? this.edgeMatrix[id][j] : this.edgeMatrix[j][id];
                 if (edge) {
                     if (edge.visible == true) {
-                        //edge.setColor(this.nodeMeshes[nodeID].material.color.getHex());
                         edge.multiplyScale(2);
                     }
                 }
@@ -3546,11 +3545,11 @@ class Edge {
             depthWrite: false
         });
         this.shape = new THREE.Mesh(this.geometry, material);
-        this.shape.renderDepth = 3; // Draw line BEFORE transparent brain model is drawn
+        this.shape.renderOrder = RENDER_ORDER_EDGE; // Draw line BEFORE transparent brain model is drawn
         this.pointer = new THREE.Mesh(this.cone, new THREE.MeshBasicMaterial({
             color: 0x000000
         }));
-        this.pointer.position = new THREE.Vector3(0, this.unitLength * 2 / 5, 0);
+        this.pointer.position.set(0, this.unitLength * 2 / 5, 0);
         this.pointer.visible = false;
         this.shape.add(this.pointer);
 
@@ -3578,11 +3577,11 @@ class Edge {
             depthWrite: false
         });
         this.shape = new THREE.Line(this.geometry, material);
-        this.shape.renderDepth = 3; // Draw line BEFORE transparent brain model is drawn
+        this.shape.renderOrder = RENDER_ORDER_EDGE; // Draw line BEFORE transparent brain model is drawn
         this.pointer = new THREE.Mesh(this.cone, new THREE.MeshBasicMaterial({
             color: 0x000000
         }));
-        this.pointer.position = new THREE.Vector3(0, this.unitLength * 2 / 5, 0);
+        this.pointer.position.set(0, this.unitLength * 2 / 5, 0);
         this.pointer.visible = false;
         this.shape.add(this.pointer);
 
@@ -3679,7 +3678,7 @@ class Edge {
         var m = new THREE.Vector3();
     
         m.addVectors(a, b).divideScalar(2);
-        this.shape.position = m;
+        this.shape.position.set(m.x, m.y, m.z);
         var origVec = new THREE.Vector3(0, 1, 0);         //vector of cylinder
         var targetVec = new THREE.Vector3();
         targetVec.subVectors(b, a);
@@ -3700,9 +3699,7 @@ class Edge {
         axis.crossVectors(origVec, targetVec);
         axis.normalize();
         
-        var quaternion = new THREE.Quaternion();
-        quaternion.setFromAxisAngle(axis, angle);
-        this.shape.quaternion = quaternion;
+        this.shape.quaternion.setFromAxisAngle(axis, angle);
 
         /* update color of the edge */
         if (this.isColorChanged) {

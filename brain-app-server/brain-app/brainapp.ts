@@ -1286,9 +1286,10 @@ function loadUploadedData(loadObj, view, func, source = "save") {
 
 }
 
-$('#button-apply-filter').button().click(function () {
-    applyFilterButtonOnClick();
-});
+$('#button-apply-filter').button().click(applyFilterButtonOnClick);
+$('#button-apply-filter').button("disable");
+
+
 
 function setupAttributeTab() {
     if (dataSet.attributes) {
@@ -1312,7 +1313,10 @@ function setupAttributeTab() {
 }
 
 function applyFilterButtonOnClick() {
-    if (!dataSet.attributes.filteredRecords) return;
+    if (!dataSet.attributes.filteredRecords) {
+        $('#button-apply-filter').button("disable");
+        return;
+    }
 
     var fRecords = dataSet.attributes.filteredRecords;
     var idArray = new Array();
@@ -1916,7 +1920,8 @@ function getNodeScaleArray(attribute: string) {
     var max = dataSet.attributes.getMax(columnIndex);
 
     var scaleArray: number[];
-    var scaleFactor = 0.5;
+    //var scaleFactor = 0.5;
+    var scaleFactor = 1;
 
     scaleArray = attrArray.map((value) => { return scaleFactor * value[0]; });
 
@@ -2751,7 +2756,9 @@ var manager = new THREE.LoadingManager();
 manager.onProgress = function (item, loaded, total) {
     console.log(item, loaded, total);
 };
+
 var loader = new (<any>THREE).OBJLoader(manager);
+
 var brainSurfaceColor: string = "0xe3e3e3";
 
 var saveObj = new SaveFile();
@@ -2803,6 +2810,7 @@ function initProject(data: string, source = "save") {
     if (data.length == 0) return;
 
     loadObj = <SaveFile>jQuery.parseJSON(data);
+    saveObj.loadExampleData = (source !== "save");
 
     var initViewPort = function (app, id) {
         loadBrainModel(file, function (object) {
@@ -3073,6 +3081,8 @@ function removeLoadingNotification() {
 // new THREE.Mesh() objects by the application wishing to use the model.
 function loadBrainModel(file: string, callback) {
     loader.load('examples/graphdata/' + file, function (object) {
+    //loader.setPath('examples/graphdata/');
+    //loader.load(file, function (object) {
         if (!object) {
             CommonUtilities.launchAlertMessage(CommonUtilities.alertType.ERROR, "Failed to load brain surface.");
             return;
@@ -3081,8 +3091,6 @@ function loadBrainModel(file: string, callback) {
         var surfaceColor = parseInt(brainSurfaceColor);
 
         callback(object);
-
-
     });
 }
 
@@ -3222,14 +3230,16 @@ function setupCrossFilter(attrs: Attributes) {
 
         dataSet.attributes.filteredRecords = dimArray[0].top(Number.POSITIVE_INFINITY);
         dataSet.attributes.filteredRecordsHighlightChanged = true;
-        console.log(dimArray);
+        //console.log(dimArray);
         if (dataSet.attributes.filteredRecords) {
             //console.log(fcount + "). count: " + dataSet.attributes.filteredRecords.length);
             //fcount++; 
         }
-
-        $('#button-apply-filter').button({ disabled: false });
+        
+        $('#button-apply-filter').button("enable");
     }
+
+    $('#button-apply-filter').button("disable");
 
     // render all charts
     dc.renderAll();
