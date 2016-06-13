@@ -22,6 +22,8 @@ var initialEdgesShown = 20; // The number of edges that are shown when the appli
 var widthInCamera = 520;
 var heightInCamera = 360;
 
+const RENDER_ORDER_BRAIN = 0.5;
+
 // TODO: Proper reset and destruction of the application (the 'instances' variable will continue to hold a reference - this will cause the application to live indefinitely)
 /*
 var instances = Array<Brain3DApp>(0); // Stores each instance of an application under its id, for lookup by the slider input element
@@ -43,7 +45,6 @@ class Brain3DApp implements Application, Loopable {
     camera;
     scene;
     renderer;
-    //projector = new THREE.Projector();
     cursor = new THREE.Vector2();
     descent: cola.Descent; // The handle to the constraint solver
 
@@ -169,13 +170,11 @@ class Brain3DApp implements Application, Loopable {
         this.brainObject = new THREE.Object3D();
         this.brainContainer = new THREE.Object3D();
         this.brainContainer.add(this.brainObject);
-        //this.brainContainer.position = new THREE.Vector3(-this.graphOffset, 0, 0);
         this.brainContainer.position.set(-this.graphOffset, 0, 0);
         this.brainContainer.lookAt(this.camera.position);
         this.scene.add(this.brainContainer);
 
         this.colaObject = new THREE.Object3D();
-        //this.colaObject.position = new THREE.Vector3(-this.graphOffset, 0, 0);
         this.colaObject.position.set(-this.graphOffset, 0, 0);
         this.scene.add(this.colaObject);
 
@@ -269,8 +268,6 @@ class Brain3DApp implements Application, Loopable {
             preserveDrawingBuffer: true,
             alpha: true
         });
-        //this.renderer.sortObjects = true;
-        //this.renderer.setClearColor(0xffffff, 0)
 
         this.renderer.setSize(jDiv.width(), (jDiv.height() - sliderSpace));
         jDiv.append($('<span id="close-brain-app-' + this.id + '" title="Close" class="view-panel-span"  data-toggle="tooltip" data-placement="bottom">x</span>')
@@ -531,8 +528,7 @@ class Brain3DApp implements Application, Loopable {
 
             // If the pointer is poiting to any node in 2D or 3D graph
             if (node || (nodeIDUnderPointer != -1)) {
-                //this.commonData.selectedNode = (node) ? node.id : nodeIDUnderPointer;
-                this.commonData.selectedNode = (node) ? node.userData.id : nodeIDUnderPointer;
+                this.commonData.selectedNode = node ? node.userData.id : nodeIDUnderPointer;
 
                 // Select the new node
                 this.physioGraph.selectNode(this.commonData.selectedNode, false, false);
@@ -575,18 +571,13 @@ class Brain3DApp implements Application, Loopable {
             this.fovZoomRatio = 1;
             this.camera.fov = this.defaultFov;
             this.camera.updateProjectionMatrix();
-
-            //this.brainContainer.position = new THREE.Vector3(-this.graphOffset, 0, 0);
+            
             this.brainContainer.position.set(-this.graphOffset, 0, 0);
             this.brainContainer.lookAt(this.camera.position);
             this.brainObject.rotation.set(0, 0, 0);
-
-            //if (this.showingCola) {
-            //if (this.colaGraph.isVisible()) {
-            //this.colaObject.position = new THREE.Vector3(this.graphOffset, 0, 0);
+            
             this.colaObject.position.set(this.graphOffset, 0, 0);
             this.colaObject.rotation.set(0, 0, 0);
-            //}   
         });
 
         /* Interact with mouse wheel will zoom in and out the 3D Model */
@@ -596,22 +587,15 @@ class Brain3DApp implements Application, Loopable {
             if (this.svgControlMode) return; // 2D Flat Version of the network
             var pointer = this.input.localPointerPosition();
             var pointerNDC = new THREE.Vector3(pointer.x, pointer.y, 1);
-            /*
-            this.projector.unprojectVector(pointerNDC, this.camera);
-            var zoomVector = pointerNDC.sub(this.camera.position).normalize().multiplyScalar(this.CAMERA_ZOOM_SPEED);
-            */
+
             pointerNDC.unproject(this.camera);
             pointerNDC.sub(this.camera.position);
 
             if (delta < 0) {
-                //this.camera.position.add(zoomVector);
                 this.camera.position.addVectors(this.camera.position, pointerNDC.setLength(ZOOM_FACTOR));
             } else {
-                //this.camera.position.sub(zoomVector);
                 this.camera.position.addVectors(this.camera.position, pointerNDC.setLength(-ZOOM_FACTOR));
             }
-
-
         });
 
         this.input.regGetRotationCallback(() => {
@@ -636,6 +620,7 @@ class Brain3DApp implements Application, Loopable {
         var model = this.brainModelOrigin;
         this.surfaceUniformList = [];
         var uniformList = this.surfaceUniformList;
+        /*
         var normalShader = {
             vertexShader: [
 
@@ -675,6 +660,7 @@ class Brain3DApp implements Application, Loopable {
             ].join("\n")
 
         };
+        */
 
         // Remove the old mesh and add the new one (we don't need a restart)
         this.brainObject.remove(this.brainSurface);
@@ -685,7 +671,7 @@ class Brain3DApp implements Application, Loopable {
             color: 0x888888,
             transparent: true,
             opacity: 0.3,
-            depthWrite: false,
+            depthWrite: true,
             depthTest: false,
             side: THREE.FrontSide
         });
@@ -712,31 +698,15 @@ class Brain3DApp implements Application, Loopable {
                     */
 
                     clonedObject.add(new THREE.Mesh(child.geometry.clone(), basicMaterial));
-
-                    //clonedObject.renderDepth = 2;
-                    clonedObject.renderOrder = 0.5;
+                    clonedObject.renderOrder = RENDER_ORDER_BRAIN;
 
                     child.geometry.computeBoundingSphere();
                     var boundingSphere = child.geometry.boundingSphere;
-                    //var material = child.material;
-                    /*
-                    var material = child.material;
-                    var sphereGeometry = new THREE.SphereGeometry(boundingSphere.radius + 10, 10, 10);
-                    var sphereObject = new THREE.Mesh(sphereGeometry.clone(), child.material.clone());
-                    */
                     var sphereMaterial = child.material.clone();
                     sphereMaterial.visible = false;
-                    //sphereMaterial.needsUpdate = true;
                     var sphereGeometry = new THREE.SphereGeometry(boundingSphere.radius + 10, 10, 10);
                     var sphereObject = new THREE.Mesh(sphereGeometry, sphereMaterial);
-                    /*
-                    sphereObject.position.x = boundingSphere.center.x;
-                    sphereObject.position.y = boundingSphere.center.y;
-                    sphereObject.position.z = boundingSphere.center.z;
-                    */
                     sphereObject.position.copy(boundingSphere.center);
-
-                    //sphereObject.visible = false;
                     boundingSphereObject.add(sphereObject);
                 }
             });
@@ -798,14 +768,14 @@ class Brain3DApp implements Application, Loopable {
                     leftGeometry.computeVertexNormals();
                     leftGeometry.computeFaceNormals();
                     var leftBrain = new THREE.Mesh(leftGeometry, basicMaterial);
-                    leftBrain.renderOrder = 0.5;
+                    leftBrain.renderOrder = RENDER_ORDER_BRAIN;
 
                     var rightGeometry = new THREE.BufferGeometry;
                     rightGeometry.addAttribute("position", new THREE.BufferAttribute(new Float32Array(rightPositions), VERT_CHUNK));
                     rightGeometry.computeVertexNormals();
                     rightGeometry.computeFaceNormals();
                     var rightBrain = new THREE.Mesh(rightGeometry, basicMaterial);
-                    rightBrain.renderOrder = 0.5;
+                    rightBrain.renderOrder = RENDER_ORDER_BRAIN;
 
                     var box = new THREE.Box3()['setFromObject'](model);
                     leftBrain.rotation.z = 3.14 / 2;
@@ -826,23 +796,12 @@ class Brain3DApp implements Application, Loopable {
 
                     child.geometry.computeBoundingSphere();
                     var boundingSphere = child.geometry.boundingSphere;
-                    /*
-                    var material = child.material;
-                    var sphereGeometry = new THREE.SphereGeometry(boundingSphere.radius + 10, 10, 10);
-                    var sphereObject = new THREE.Mesh(sphereGeometry.clone(), material.clone());
-                    */
                     var material = child.material.clone();
                     material.visible = false;
                     var sphereGeometry = new THREE.SphereGeometry(boundingSphere.radius + 10, 10, 10);
                     var sphereObject = new THREE.Mesh(sphereGeometry, material);
-                    /*
-                    sphereObject.position.x = boundingSphere.center.x;
-                    sphereObject.position.y = boundingSphere.center.y;
-                    sphereObject.position.z = boundingSphere.center.z;
-                    */
                     sphereObject.position.copy(boundingSphere.center);
-
-                    //sphereObject.visible = false;
+                    
                     boundingSphereObject.add(sphereObject);
                 }
             });
@@ -855,8 +814,6 @@ class Brain3DApp implements Application, Loopable {
         this.brainSurface = clonedObject;
         this.brainObject.add(this.brainSurface);
         
-
-        //boundingSphereObject.visible = false;
         this.brainSurfaceBoundingSphere = boundingSphereObject;
         this.brainObject.add(this.brainSurfaceBoundingSphere);
         this.surfaceLoaded = true;
@@ -933,7 +890,6 @@ class Brain3DApp implements Application, Loopable {
                 this.circularGraph.circularSortAttribute = app.circularSortAttribute;
                 this.circularGraph.circularLableAttribute = app.circularLableAttribute;
                 this.circularGraph.updateAllAttributeBars();
-                //this.circularGraph.attributeBars = app.circularAttributeBars;
 
                 this.showNetwork(true);
             }
@@ -1090,18 +1046,6 @@ class Brain3DApp implements Application, Loopable {
 
         if (this.bundlingEdges == true) {
             $('#bundling-edges-' + this.id).css('opacity', 1);
-
-            //var powerGraphPhysio = new PowerGraph(this.physioGraph);
-            //powerGraphPhysio.initPowerGraphSpatial3D();
-            //powerGraph.initPowerGraph('3d', this.jDiv.width(), this.jDiv.height() - sliderSpace);
-
-            if ((this.networkType == '3D')) {
-                //var powerGraphCola = new PowerGraph(this.colaGraph);
-                //powerGraphCola.initPowerGraphSpatial3D();
-            }
-            else if (this.networkType == '2D') {
-
-            }
         }
         else {
             $('#bundling-edges-' + this.id).css('opacity', 0.2);
@@ -1109,7 +1053,6 @@ class Brain3DApp implements Application, Loopable {
             this.physioGraph.removeAllBundlingEdges();
             this.physioGraph.findNodeConnectivity(this.filteredAdjMatrix, this.dissimilarityMatrix, null);
             this.physioGraph.setEdgeVisibilities(this.filteredAdjMatrix);
-
         }
 
         this.removeProcessingNotification();
@@ -1366,10 +1309,8 @@ class Brain3DApp implements Application, Loopable {
         $('#graph-view-slider-' + this.id).prop('disabled', true); 
 
         if (switchNetworkType == true) {
-            //this.colaObject.position = colaObjectTarget;
             this.colaObject.position.copy(colaObjectTarget);
         } else {
-            //this.colaObject.position = colaObjectOrigin;
             this.colaObject.position.copy(colaObjectOrigin);
         }
 
@@ -1377,7 +1318,6 @@ class Brain3DApp implements Application, Loopable {
             o.currentTime += deltaTime;
 
             if (o.currentTime >= o.endTime) { // The animation has finished
-                //this.colaObject.position = colaObjectTarget;
                 this.colaObject.position.copy(colaObjectTarget);
                 this.colaGraph.setNodePositions(nodeCoordTarget);
 
@@ -1402,7 +1342,6 @@ class Brain3DApp implements Application, Loopable {
                 this.colaGraph.setNodePositionsLerp(nodeCoordOrigin, nodeCoordTarget, percentDone);
 
                 if (switchNetworkType == false) {
-                    //this.colaObject.position = colaObjectOrigin.clone().add(colaObjectTarget.clone().sub(colaObjectOrigin).multiplyScalar(percentDone));
                     var pos = colaObjectOrigin.clone().add(colaObjectTarget.clone().sub(colaObjectOrigin).multiplyScalar(percentDone));
                     this.colaObject.position.set(pos.x, pos.y, pos.z);
                 }
@@ -1592,8 +1531,6 @@ class Brain3DApp implements Application, Loopable {
 
         if (attrArray[0].length > 1) {
             colorArrayNum = attrArray.map((value: number[]) => {
-                //var str = colorMap(value.indexOf(Math.max.apply(Math, value))).replace("#", "0x");
-                //return parseInt(str);
                 var color = 0;
                 var counter = 0;
                 value.forEach(function (v,i) {
@@ -1735,7 +1672,6 @@ class Brain3DApp implements Application, Loopable {
         }
 
         this.physioGraph.update();
-       // this.colaGraph.update();
     }
 
     // Initialize or re-initialize the visualisation.
@@ -1831,14 +1767,6 @@ class Brain3DApp implements Application, Loopable {
     }
 
     getNodeUnderPointer(pointer) {
-        /*
-        var pointerNDC = new THREE.Vector3(pointer.x, pointer.y, 1);
-        this.projector.unprojectVector( pointerNDC, this.camera);
-        var directionVector = pointerNDC.sub(this.camera.position);
-        directionVector.normalize();
-
-        var raycaster = new THREE.Raycaster(this.camera.position, directionVector, this.nearClip, this.farClip);
-        */
         var raycaster = new THREE.Raycaster();
         raycaster.setFromCamera(pointer, this.camera);
 
@@ -1846,9 +1774,7 @@ class Brain3DApp implements Application, Loopable {
             || raycaster.intersectObjects(this.physioGraph.nodeMeshes)[0]
         ;
         if (n) {
-            //this.commonData.nodeIDUnderPointer[this.id] = n.object.id;
             this.commonData.nodeIDUnderPointer[this.id] = n.object.userData.id;
-
             return n.object;
         }
 
@@ -1857,19 +1783,10 @@ class Brain3DApp implements Application, Loopable {
     }
 
     getBoundingSphereUnderPointer(pointer) {
-        /*
-        var pointerNDC = new THREE.Vector3(pointer.x, pointer.y, 1);
-        this.projector.unprojectVector(pointerNDC, this.camera);
-        var directionVector = pointerNDC.sub(this.camera.position);
-        directionVector.normalize();
-        */
-
         if ((this.networkType == '2D') || (this.networkType == 'circular')) {
-            //var raycaster = new THREE.Raycaster(this.camera.position, directionVector, this.nearClip, this.farClip);
             var raycaster = new THREE.Raycaster();
             raycaster.setFromCamera(pointer, this.camera);
-
-            //var inBoundingSphere = !!(raycaster.intersectObjects(this.brainSurfaceBoundingSphere.children)[0]);
+            
             var inBoundingSphere = !!(raycaster.intersectObject(this.brainSurfaceBoundingSphere, true).length);
             if (inBoundingSphere == true) {
                 this.svgControlMode = false;
@@ -1897,7 +1814,6 @@ class Brain3DApp implements Application, Loopable {
 
             // Check if pointer is over 3D Model
             var node = this.getNodeUnderPointer(this.input.localPointerPosition());
-            //var nodeIDUnderPointer = node ? node.id : -1;
             var nodeIDUnderPointer = node ? node.userData.id : -1;
             this.getBoundingSphereUnderPointer(this.input.localPointerPosition());
 
@@ -1920,7 +1836,6 @@ class Brain3DApp implements Application, Loopable {
                     }
 
                     if (node) {
-                        //this.selectedNodeID = node.id;
                         this.selectedNodeID = node.userData.id;
                     }
                     else {
@@ -1978,8 +1893,6 @@ class Brain3DApp implements Application, Loopable {
                 //  http://marvl.infotech.monash.edu/webcola/examples/3dlayout.js
                 this.descent.rungeKutta(); // Do an iteration of the solver
             }
-            //this.scene.updateMatrixWorld(true);
-            //this.scene.updateMatrixWorld(true);
             this.scene.updateMatrixWorld();     //TODO: Confirm that this change has no side effects
 
             if (this.svgMode && this.svgNeedsUpdate) {
@@ -1989,9 +1902,6 @@ class Brain3DApp implements Application, Loopable {
         }
 
         if (this.autoRotation) {
-            //this.brainObject.rotation.set(this.brainObject.rotation.x + this.mouse.dy / 100, this.brainObject.rotation.y + this.mouse.dx / 100, this.brainObject.rotation.z);
-            //this.colaObject.rotation.set(this.colaObject.rotation.x + this.mouse.dy / 100, this.colaObject.rotation.y + this.mouse.dx / 100, this.colaObject.rotation.z);
-
             var pixelAngleRatio = 50;
 
             var quatX = new THREE.Quaternion();
