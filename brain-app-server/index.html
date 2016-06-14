@@ -117,9 +117,15 @@
     <input id="input-select-load-file" style="display:none;" type="file" />
     <div id="control-panel" class="bg-info">
         <ul class="nav nav-tabs">
-            <li id="tab1" role="presentation" class="active"><a href="#tab-1" data-toggle="tab">Surface</a></li>
-            <li id="tab2" role="presentation"><a href="#tab-2" data-toggle="tab">Data</a></li>
-            <li id="tab3" role="presentation"><a href="#tab-3" data-toggle="tab">Attribute</a></li>
+            <li id="tab1" role="presentation" class="active" data-toggle="tooltip" data-placement="bottom" title="3D model settings">
+                <a href="#tab-1" data-toggle="tab">Surface</a>
+            </li>
+            <li id="tab2" role="presentation" data-toggle="tooltip" data-placement="bottom" title="Data source selection">
+                <a href="#tab-2" data-toggle="tab">Data</a>
+            </li>
+            <li id="tab3" role="presentation" data-toggle="tooltip" data-placement="bottom" title="Attribute mappings">
+                <a href="#tab-3" data-toggle="tab">Attribute</a>
+            </li>
         </ul>
         <div class="tab-content" style="height: 100%; ">
             <div id="tab-1" class="tab-pane active">
@@ -172,8 +178,12 @@
             <div id="tab-2" class="tab-pane">
                 <br />
                 <div class="btn-group btn-group-justified" data-toggle="btns">
-                    <a class="btn btn-sm btn-primary active" href="#div-set-data-tab" data-toggle="tab">Dataset</a>
-                    <a class="btn btn-sm btn-primary" href="#div-batching-tab" data-toggle="tab">Batching</a>
+                    <a class="btn btn-sm btn-primary active" href="#div-set-data-tab" data-toggle="tab">
+                        <span data-toggle="tooltip" data-placement="bottom" title="Set data source files">Dataset</span>
+                    </a>
+                    <a class="btn btn-sm btn-primary" href="#div-batching-tab" data-toggle="tab">
+                        <span data-toggle="tooltip" data-placement="bottom" title="Create batch images from multiple sources">Batching</span>
+                    </a>
                 </div>
                 <div class="tab-content" style="height: 85%; overflow-x: hidden; overflow-y: auto;">
                     
@@ -227,7 +237,7 @@
                        
                         
                         <br/>
-                        <label class="control-label">Connectivity Matrices</label>
+                        <label class="control-label" data-toggle="tooltip" data-placement="right" title="Select 1 (or more) input matrix files">Connectivity Matrices</label>
                         <input id="select-matrices-batching" style="display:none;" type="file" multiple/>
                         <div id="div-batching-tab" class="tab-pane">
                             <div class="input-group input-group-sm">
@@ -238,7 +248,7 @@
                         </div>
                         <br />
                         <br />
-                        <label class="control-label">Node Attributes</label>
+                        <label class="control-label" data-toggle="tooltip" data-placement="right" title="Select 1 (or more) input attribute files">Node Attributes</label>
                         <input id="select-attrs-batching" style="display:none;" type="file" multiple/>
                         <div class="input-group input-group-sm">
                             <div class="input-group-addon glyphicon glyphicon glyphicon-info-sign status-changed" id="attrs-batching-status"
@@ -246,7 +256,7 @@
                             <button id="button-select-attrs-batching" class="form-control btn-default">Attribute Files</button>
                         </div>
                         <br/>
-                        <button id="btn-start-batching" class="btn btn-sm btn-primary">Batch</button>
+                        <button id="btn-start-batching" class="btn btn-sm btn-primary" data-toggle="tooltip" data-placement="right" title="Create batch images...">Batch</button>
                     </div>
 
                 </div>
@@ -255,8 +265,12 @@
             <div id="tab-3" class="tab-pane" style="height: 100%;" >
                 <br />
                 <div class="btn-group btn-group-justified" data-toggle="btns">
-                    <a class="btn btn-sm btn-primary active" href="#div-node-attribute-tab" data-toggle="tab">Node Attrs</a>
-                    <a class="btn btn-sm btn-primary" href="#div-edge-attribute-tab" data-toggle="tab">Edge Attrs</a>
+                    <a class="btn btn-sm btn-primary active" href="#div-node-attribute-tab" data-toggle="tab">
+                        <span data-toggle="tooltip" data-placement="bottom" title="Visual settings and selection filtering for nodes">Node Attrs</span>
+                    </a>
+                    <a class="btn btn-sm btn-primary" href="#div-edge-attribute-tab" data-toggle="tab">
+                        <span data-toggle="tooltip" data-placement="bottom" title="Visual settings for edges">Edge Attrs</span>
+                    </a>
                 </div>
 
                 <br>
