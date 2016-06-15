@@ -98,7 +98,7 @@
     </div>
 
     <div id="control-panel-bottom">
-        <div class="btn btn-primary" style ="height: 50%; width: 100%;"onclick="toggleSplashPage()">Splash Page</div>
+        <div class="btn btn-primary" style="height: 50%; width: 100%;" onclick="toggleSplashPage()" data-toggle="tooltip" data-placement="top" title="Show introduction with example links">Splash Page</div>
         <div class="btn-group btn-group-justified bg-info" style="height: 50%; width: 100%;">
             <div id="button-export-svg" class="btn btn-primary" data-toggle="tooltip" data-placement="top" title="Download Visualisations">
                 <span class="glyphicon glyphicon-download-alt" aria-hidden="true"></span>
@@ -189,10 +189,11 @@
                     
                     <div id="div-set-data-tab" class="tab-pane active">
                         <br />
-                        <button id="load-example-data" class="btn btn-sm btn-primary">Load Default Data</button>
+                        <button id="load-example-data" class="btn btn-sm btn-primary" data-toggle="tooltip" data-placement="top" title="Immediately load default data">Load Default Data</button>
+                        <a id="download-example-data" class="btn btn-sm btn-primary" data-toggle="tooltip" data-placement="top" title="Download example files to create custom data..." href="brain-app/data/example.zip">Get Example Files</a>
                         <br />
                         <br />
-                        <label class="control-label">Node Coordinates</label>
+                        <label class="control-label" data-toggle="tooltip" data-placement="right" title="Coordinates of areas (or nodes) in the brain">Node Coordinates</label>
                         <input id="select-coords" style="display:none;" type="file" />
                         <div class="input-group input-group-sm">
                             <div class="input-group-addon glyphicon glyphicon glyphicon-info-sign status-changed" id="coords-status"
@@ -201,7 +202,7 @@
                         </div>
                         <br />
                         <br />
-                        <label class="control-label">Connectivity Matrix</label>
+                        <label class="control-label" data-toggle="tooltip" data-placement="right" title="Measured similarities (in activity) between nodes">Connectivity Matrix</label>
                         <input id="select-matrix" style="display:none;" type="file" />
                         <div class="input-group input-group-sm">
                             <div class="input-group-addon glyphicon glyphicon glyphicon-info-sign status-changed" id="matrix-status"
@@ -210,7 +211,7 @@
                         </div>
                         <br />
                         <br />
-                        <label class="control-label">Node Attributes</label>
+                        <label class="control-label" data-toggle="tooltip" data-placement="right" title="Attributes for each node">Node Attributes</label>
                         <input id="select-attrs" style="display:none;" type="file" />
                         <div class="input-group input-group-sm">
                             <div class="input-group-addon glyphicon glyphicon glyphicon-info-sign status-changed" id="attrs-status"
@@ -219,7 +220,7 @@
                         </div>
                         <br />
                         <br />
-                        <label class="control-label">Node Labels (optional)</label>
+                        <label class="control-label" data-toggle="tooltip" data-placement="right" title="Node names">Node Labels (optional)</label>
                         <input id="select-labels" style="display:none;" type="file" />
                         <div class="input-group input-group-sm">
                             <div class="input-group-addon glyphicon glyphicon glyphicon-info-sign status-changed" id="labels-status"
@@ -278,12 +279,13 @@
                     <div id="div-node-attribute-tab" class="tab-pane active">
                         <div>
                             <div id="div-set-node-scale" style="display: none; margin-bottom: 5px; ">
-                                <label class="control-label">Set</label>
+                                <label class="control-label" data-toggle="tooltip" data-placement="right" title="Physical property to assign">Set</label>
                                 <select id="select-node-size-color" class="form-control input-sm">
                                     <option value="node-size">Size</option>
                                     <option value="node-color">Color</option>
                                     <option value="node-default">None</option>
-                                </select> <label class="control-label">by</label>
+                                </select>
+                                <label class="control-label" data-toggle="tooltip" data-placement="right" title="Corresponding attribute from the data">by</label>
                                 <select id="select-attribute" class="form-control input-sm"></select>
                             </div>
                         </div>
@@ -295,7 +297,10 @@
                             <input id="div-node-size-slider" data-slider-id='node-size-slider' type="text"
                                    data-slider-min="0.01" data-slider-max="3" data-slider-step="0.02" data-slider-value="[0.5,1]" />
                         </div>
-                        <div id="div-node-color-mode" style="display:none;"><input type="checkbox" id="checkbox-node-color-continuous" style="width: 12px;"> <strong>Treat as continuous</strong></div>
+                        <div id="div-node-color-mode" style="display:none;" data-toggle="tooltip" data-placement="right" title="Toggle continuous or discrete colouring">
+                            <input type="checkbox" id="checkbox-node-color-continuous" style="width: 12px;"> 
+                            <strong>Treat as continuous</strong>
+                        </div>
                         <div id="div-node-color-pickers-discrete" style="display:none; margin-top: 20px; margin-left: 20px;">
                             <p>
                                 <label class="control-label" style="display: inline-block;">Key</label>
