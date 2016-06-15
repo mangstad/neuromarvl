@@ -275,6 +275,8 @@ class CircularGraph {
     }
 
     update() {
+        console.log("update");///jm
+
         if (!this.colaGraph) {
             return;
         }
@@ -513,6 +515,8 @@ class CircularGraph {
 
     // Generate data array for the graph 
     generateCircularData(bundleByAttribute: string) {
+        console.log("generateCircularData");///jm
+
         if (!this.colaGraph) {
             console.log("ERROR: colaGraph is NULL");
             return;
@@ -636,6 +640,8 @@ class CircularGraph {
     }
 
     GenerateCircularUI(sortByAttribute: string, bundleByAttribute: string) {
+        console.log("GenerateCircularUI");///jm
+
         var nodeJson = JSON.parse(JSON.stringify(this.svgNodeBundleArray));
 
         var width = 250 + this.jDiv.width() / 2;
@@ -665,7 +671,7 @@ class CircularGraph {
 
         // Link path
         var line = d3.svg.line.radial()
-            .tension(.85)
+            //.tension(.85)
             .radius(function (d) {
                 return d.y;
             })

@@ -122,7 +122,8 @@ class Brain3DApp implements Application, Loopable {
     // Constants
     nearClip = 1;
     farClip = 2000;
-    modeLerpLength: number = 0.6;
+    //modeLerpLength: number = 0.6;
+    modeLerpLength: number = 0.0;       //TODO: Effectively kills the animation. Remove it properly (or fix if easy to do)
     rotationSpeed: number = 1.2;
     graphOffset: number = 120;
     colaLinkDistance = 15;
@@ -321,12 +322,13 @@ class Brain3DApp implements Application, Loopable {
 
             // Show Network button
             .append($('<button id="button-show-network-' + this.id + ' data-toggle="tooltip" data-placement="top" title="Show side-by-side graph representation">Show Network</button>')
-                .css({ 'margin-left': '10px', 'font-size': '12px', 'optposition': 'relative', 'z-index': 1000 })
+                .css({ 'margin-left': '10px', 'font-size': '12px', 'position': 'relative', 'z-index': 1000 })
                 .click(function () { varShowNetwork(false); })
             )
 
             // Select Network type dropdown
-            .append($('<select id="select-network-type-' + this.id + '"data-toggle="tooltip" data-placement="top" title="Select the graph view type" disabled="true"></select>').css({ 'margin-left': '5px', 'font-size': '12px', 'width': '80px', 'position': 'relative', 'z-index': 1000 })
+            .append($('<select id="select-network-type-' + this.id + '"data-toggle="tooltip" data-placement="top" title="Select the graph view type" disabled="true"></select>')
+                    .css({ 'margin-left': '5px', 'font-size': '12px', 'width': '80px', 'position': 'relative', 'z-index': 1000 })
                 .on("change", function () { varNetworkTypeOnChange($(this).val()); })
             )
         ;
