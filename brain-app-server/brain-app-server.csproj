@@ -110,7 +110,9 @@
     <TypeScriptCompile Include="brain-app\brain3d.ts" />
     <TypeScriptCompile Include="brain-app\brainapp.ts" />
     <TypeScriptCompile Include="brain-app\CommonUtilities.ts" />
-    <TypeScriptCompile Include="brain-app\graph.ts" />
+    <TypeScriptCompile Include="brain-app\circularGraph.ts" />
+    <TypeScriptCompile Include="brain-app\graph2d.ts" />
+    <TypeScriptCompile Include="brain-app\graph3d.ts" />
     <TypeScriptCompile Include="brain-app\input.ts" />
   </ItemGroup>
   <PropertyGroup>

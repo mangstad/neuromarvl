@@ -69,9 +69,9 @@ class Brain3DApp implements Application, Loopable {
 
     //Graphs
     circularGraph: CircularGraph = null;
-    colaGraph: Graph = null;
+    colaGraph: Graph3D = null;
     svgGraph: Graph2D = null;
-    physioGraph: Graph = null;
+    physioGraph: Graph3D = null;
     needUpdate = false;
     isAnimationOn = false;
 
@@ -1704,7 +1704,7 @@ class Brain3DApp implements Application, Loopable {
         // Set up the two graphs
         var edgeMatrix = this.dataSet.adjMatrixFromEdgeCount(maxEdgesShowable); // Don''t create more edges than we will ever be showing
         if (this.physioGraph) this.physioGraph.destroy();
-        this.physioGraph = new Graph(this.brainObject, edgeMatrix, this.nodeColorings, this.dataSet.simMatrix, this.dataSet.brainLabels, this.commonData);
+        this.physioGraph = new Graph3D(this.brainObject, edgeMatrix, this.nodeColorings, this.dataSet.simMatrix, this.dataSet.brainLabels, this.commonData);
 
         if (this.brainSurfaceMode === 0) {
             this.physioGraph.setNodePositions(this.dataSet.brainCoords);
@@ -1718,7 +1718,7 @@ class Brain3DApp implements Application, Loopable {
 
         var edgeMatrix = this.dataSet.adjMatrixFromEdgeCount(maxEdgesShowable);
         if (this.colaGraph) this.colaGraph.destroy();
-        this.colaGraph = new Graph(this.colaObject, edgeMatrix, this.nodeColorings, this.dataSet.simMatrix, this.dataSet.brainLabels, this.commonData);
+        this.colaGraph = new Graph3D(this.colaObject, edgeMatrix, this.nodeColorings, this.dataSet.simMatrix, this.dataSet.brainLabels, this.commonData);
         this.colaGraph.setVisible(false);
 
         this.svgGraph = new Graph2D(this.id, this.jDiv, this.dataSet, this.svg, this.svgDefs, this.svgAllElements,
