@@ -6,7 +6,7 @@
     <link rel="stylesheet" type="text/css" href="extern/dc.css" />
   
     <!-- Latest compiled and minified CSS -->
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
     <link rel="stylesheet" href="extern/css/main.css" />
     <link rel="stylesheet" href="extern/splashPage/splashPage.css" />
     <link rel="stylesheet" href="extern/bootstrap-colorpicker/css/bootstrap-colorpicker.min.css" />
@@ -98,7 +98,7 @@
     </div>
 
     <div id="control-panel-bottom">
-        <div class="btn btn-primary" style ="height: 50%; width: 100%;"onclick="toggleSplashPage()">Splash Page</div>
+        <div class="btn btn-primary" style="height: 50%; width: 100%;" onclick="toggleSplashPage()" data-toggle="tooltip" data-placement="top" title="Show introduction with example links">Splash Page</div>
         <div class="btn-group btn-group-justified bg-info" style="height: 50%; width: 100%;">
             <div id="button-export-svg" class="btn btn-primary" data-toggle="tooltip" data-placement="top" title="Download Visualisations">
                 <span class="glyphicon glyphicon-download-alt" aria-hidden="true"></span>
@@ -117,14 +117,20 @@
     <input id="input-select-load-file" style="display:none;" type="file" />
     <div id="control-panel" class="bg-info">
         <ul class="nav nav-tabs">
-            <li id="tab1" role="presentation" class="active"><a href="#tab-1" data-toggle="tab">Surface</a></li>
-            <li id="tab2" role="presentation"><a href="#tab-2" data-toggle="tab">Data</a></li>
-            <li id="tab3" role="presentation"><a href="#tab-3" data-toggle="tab">Attribute</a></li>
+            <li id="tab1" role="presentation" class="active" data-toggle="tooltip" data-placement="bottom" title="3D model settings">
+                <a href="#tab-1" data-toggle="tab">Surface</a>
+            </li>
+            <li id="tab2" role="presentation" data-toggle="tooltip" data-placement="bottom" title="Data source selection">
+                <a href="#tab-2" data-toggle="tab">Data</a>
+            </li>
+            <li id="tab3" role="presentation" data-toggle="tooltip" data-placement="bottom" title="Attribute mappings">
+                <a href="#tab-3" data-toggle="tab">Attribute</a>
+            </li>
         </ul>
         <div class="tab-content" style="height: 100%; ">
             <div id="tab-1" class="tab-pane active">
                 <br/>
-                <label class="control-label">Model</label>
+                <label class="control-label" data-toggle="tooltip" data-placement="right" title="Set the 3D brain model">Model</label>
                 <select id="select-brain3d-model" class="form-control input-sm">
                     <option value="icbm">ICBM152</option>
                     <option value="ch2">CH2</option>
@@ -134,7 +140,7 @@
                     <option value="none">None</option>
                 </select>
                 <br />
-                <label class="control-label">Color</label>
+                <label class="control-label" data-toggle="tooltip" data-placement="right" title="Open colour picker for the brain model">Color</label>
                 <p style="margin-bottom: 0;">
                     <input id="input-surface-color"
                            class="color {pickerFace:3,
@@ -144,7 +150,7 @@
                            onchange="setBrainSurfaceColor(this.color);">
                 </p>
                 <br/>
-                <label class="control-label">Opacity</label>
+                <label class="control-label" data-toggle="tooltip" data-placement="right" title="Adjust brain model opacity">Opacity</label>
                 <input id="div-surface-opacity-slider" data-slider-id='surface-opacity-slider' type="text"
                        data-slider-min="0.0" data-slider-max="1" data-slider-step="0.02" data-slider-value="0.5" />
                 <br/>        
@@ -172,17 +178,22 @@
             <div id="tab-2" class="tab-pane">
                 <br />
                 <div class="btn-group btn-group-justified" data-toggle="btns">
-                    <a class="btn btn-sm btn-primary active" href="#div-set-data-tab" data-toggle="tab">Dataset</a>
-                    <a class="btn btn-sm btn-primary" href="#div-batching-tab" data-toggle="tab">Batching</a>
+                    <a class="btn btn-sm btn-primary active" href="#div-set-data-tab" data-toggle="tab">
+                        <span data-toggle="tooltip" data-placement="bottom" title="Set data source files">Dataset</span>
+                    </a>
+                    <a class="btn btn-sm btn-primary" href="#div-batching-tab" data-toggle="tab">
+                        <span data-toggle="tooltip" data-placement="bottom" title="Create batch images from multiple sources">Batching</span>
+                    </a>
                 </div>
                 <div class="tab-content" style="height: 85%; overflow-x: hidden; overflow-y: auto;">
                     
                     <div id="div-set-data-tab" class="tab-pane active">
                         <br />
-                        <button id="load-example-data" class="btn btn-sm btn-primary">Load Default Data</button>
+                        <button id="load-example-data" class="btn btn-sm btn-primary" data-toggle="tooltip" data-placement="top" title="Immediately load default data">Load Default Data</button>
+                        <a id="download-example-data" class="btn btn-sm btn-primary" data-toggle="tooltip" data-placement="top" title="Download example files to create custom data..." href="brain-app/data/example.zip">Get Example Files</a>
                         <br />
                         <br />
-                        <label class="control-label">Node Coordinates</label>
+                        <label class="control-label" data-toggle="tooltip" data-placement="right" title="Coordinates of areas (or nodes) in the brain">Node Coordinates</label>
                         <input id="select-coords" style="display:none;" type="file" />
                         <div class="input-group input-group-sm">
                             <div class="input-group-addon glyphicon glyphicon glyphicon-info-sign status-changed" id="coords-status"
@@ -191,7 +202,7 @@
                         </div>
                         <br />
                         <br />
-                        <label class="control-label">Connectivity Matrix</label>
+                        <label class="control-label" data-toggle="tooltip" data-placement="right" title="Measured similarities (in activity) between nodes">Connectivity Matrix</label>
                         <input id="select-matrix" style="display:none;" type="file" />
                         <div class="input-group input-group-sm">
                             <div class="input-group-addon glyphicon glyphicon glyphicon-info-sign status-changed" id="matrix-status"
@@ -200,7 +211,7 @@
                         </div>
                         <br />
                         <br />
-                        <label class="control-label">Node Attributes</label>
+                        <label class="control-label" data-toggle="tooltip" data-placement="right" title="Attributes for each node">Node Attributes</label>
                         <input id="select-attrs" style="display:none;" type="file" />
                         <div class="input-group input-group-sm">
                             <div class="input-group-addon glyphicon glyphicon glyphicon-info-sign status-changed" id="attrs-status"
@@ -209,7 +220,7 @@
                         </div>
                         <br />
                         <br />
-                        <label class="control-label">Node Labels (optional)</label>
+                        <label class="control-label" data-toggle="tooltip" data-placement="right" title="Node names">Node Labels (optional)</label>
                         <input id="select-labels" style="display:none;" type="file" />
                         <div class="input-group input-group-sm">
                             <div class="input-group-addon glyphicon glyphicon glyphicon-info-sign status-changed" id="labels-status"
@@ -227,7 +238,7 @@
                        
                         
                         <br/>
-                        <label class="control-label">Connectivity Matrices</label>
+                        <label class="control-label" data-toggle="tooltip" data-placement="right" title="Select 1 (or more) input matrix files">Connectivity Matrices</label>
                         <input id="select-matrices-batching" style="display:none;" type="file" multiple/>
                         <div id="div-batching-tab" class="tab-pane">
                             <div class="input-group input-group-sm">
@@ -238,7 +249,7 @@
                         </div>
                         <br />
                         <br />
-                        <label class="control-label">Node Attributes</label>
+                        <label class="control-label" data-toggle="tooltip" data-placement="right" title="Select 1 (or more) input attribute files">Node Attributes</label>
                         <input id="select-attrs-batching" style="display:none;" type="file" multiple/>
                         <div class="input-group input-group-sm">
                             <div class="input-group-addon glyphicon glyphicon glyphicon-info-sign status-changed" id="attrs-batching-status"
@@ -246,7 +257,7 @@
                             <button id="button-select-attrs-batching" class="form-control btn-default">Attribute Files</button>
                         </div>
                         <br/>
-                        <button id="btn-start-batching" class="btn btn-sm btn-primary">Batch</button>
+                        <button id="btn-start-batching" class="btn btn-sm btn-primary" data-toggle="tooltip" data-placement="right" title="Create batch images...">Batch</button>
                     </div>
 
                 </div>
@@ -255,8 +266,12 @@
             <div id="tab-3" class="tab-pane" style="height: 100%;" >
                 <br />
                 <div class="btn-group btn-group-justified" data-toggle="btns">
-                    <a class="btn btn-sm btn-primary active" href="#div-node-attribute-tab" data-toggle="tab">Node Attrs</a>
-                    <a class="btn btn-sm btn-primary" href="#div-edge-attribute-tab" data-toggle="tab">Edge Attrs</a>
+                    <a class="btn btn-sm btn-primary active" href="#div-node-attribute-tab" data-toggle="tab">
+                        <span data-toggle="tooltip" data-placement="bottom" title="Visual settings and selection filtering for nodes">Node Attrs</span>
+                    </a>
+                    <a class="btn btn-sm btn-primary" href="#div-edge-attribute-tab" data-toggle="tab">
+                        <span data-toggle="tooltip" data-placement="bottom" title="Visual settings for edges">Edge Attrs</span>
+                    </a>
                 </div>
 
                 <br>
@@ -264,12 +279,13 @@
                     <div id="div-node-attribute-tab" class="tab-pane active">
                         <div>
                             <div id="div-set-node-scale" style="display: none; margin-bottom: 5px; ">
-                                <label class="control-label">Set</label>
+                                <label class="control-label" data-toggle="tooltip" data-placement="right" title="Physical property to assign">Set</label>
                                 <select id="select-node-size-color" class="form-control input-sm">
                                     <option value="node-size">Size</option>
                                     <option value="node-color">Color</option>
                                     <option value="node-default">None</option>
-                                </select> <label class="control-label">by</label>
+                                </select>
+                                <label class="control-label" data-toggle="tooltip" data-placement="right" title="Corresponding attribute from the data">by</label>
                                 <select id="select-attribute" class="form-control input-sm"></select>
                             </div>
                         </div>
@@ -281,7 +297,10 @@
                             <input id="div-node-size-slider" data-slider-id='node-size-slider' type="text"
                                    data-slider-min="0.01" data-slider-max="3" data-slider-step="0.02" data-slider-value="[0.5,1]" />
                         </div>
-                        <div id="div-node-color-mode" style="display:none;"><input type="checkbox" id="checkbox-node-color-continuous" style="width: 12px;"> <strong>Treat as continuous</strong></div>
+                        <div id="div-node-color-mode" style="display:none;" data-toggle="tooltip" data-placement="right" title="Toggle continuous or discrete colouring">
+                            <input type="checkbox" id="checkbox-node-color-continuous" style="width: 12px;"> 
+                            <strong>Treat as continuous</strong>
+                        </div>
                         <div id="div-node-color-pickers-discrete" style="display:none; margin-top: 20px; margin-left: 20px;">
                             <p>
                                 <label class="control-label" style="display: inline-block;">Key</label>
@@ -613,7 +632,7 @@
 
     <script src="extern/jquery-1.10.2.min.js"></script>
     <script src="extern/jquery-ui-1.10.4.custom/js/jquery-ui-1.10.4.custom.min.js"></script>
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/js/bootstrap.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS" crossorigin="anonymous"></script>
 
     <script src="extern/three.js"></script>
     <script src="extern/OBJLoader.js"></script>
@@ -640,7 +659,9 @@
     <!-- The main application script -->
     <script src="brain-app/input.js"></script> 
     <script src="brain-app/CommonUtilities.js"></script>
-    <script src="brain-app/graph.js"></script>
+    <script src="brain-app/graph2d.js"></script>
+    <script src="brain-app/graph3d.js"></script>
+    <script src="brain-app/circularGraph.js"></script>
     <script src="brain-app/brain3d.js"></script>
     <script src="brain-app/brainapp.js"></script>
 

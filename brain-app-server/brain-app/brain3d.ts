@@ -69,9 +69,9 @@ class Brain3DApp implements Application, Loopable {
 
     //Graphs
     circularGraph: CircularGraph = null;
-    colaGraph: Graph = null;
+    colaGraph: Graph3D = null;
     svgGraph: Graph2D = null;
-    physioGraph: Graph = null;
+    physioGraph: Graph3D = null;
     needUpdate = false;
     isAnimationOn = false;
 
@@ -122,7 +122,8 @@ class Brain3DApp implements Application, Loopable {
     // Constants
     nearClip = 1;
     farClip = 2000;
-    modeLerpLength: number = 0.6;
+    //modeLerpLength: number = 0.6;
+    modeLerpLength: number = 0.0;       //TODO: Effectively kills the animation. Remove it properly (or fix if easy to do)
     rotationSpeed: number = 1.2;
     graphOffset: number = 120;
     colaLinkDistance = 15;
@@ -303,27 +304,34 @@ class Brain3DApp implements Application, Loopable {
                 .click(function () { varAutoRotationOnChange("anticlockwise"); }))
 
 
-        // Circular Graph
+            // Circular Graph
             .append($('<div id="div-svg-' + this.id + '"></div>')
                 .css({ 'position': 'absolute', 'width': '100%', 'height': '100%', 'top': 0, 'left': 0, 'z-index': 10 }))
 
             .append(this.renderer.domElement)
             .append('<p>Showing <label id="count-' + this.id + '">0</label> edges (<label id=percentile-' + this.id + '>0</label>th percentile)</p>')
 
-        // Edge count Slider at the bottom of the application
-            .append($('<input id="edge-count-slider-' + this.id + '" type="range" min="1" max="' + maxEdgesShowable + '" value="' + initialEdgesShown + '" disabled="true"/>')
+            // Edge count Slider at the bottom of the application
+            .append($('<input id="edge-count-slider-' + this.id + '" type="range" min="1" max="' + maxEdgesShowable + '" value="' + initialEdgesShown +
+                    'data-toggle="tooltip" data-placement="top" title="Adjust count of visible edges" disabled="true"/>')
                 .css({ 'display': 'inline-block', 'width': '300px', 'position': 'relative', 'margin-right': 10, 'z-index': 1000 })
                 .mousedown(function () { varSliderMouseEvent("mousedown"); })
                 .mouseup(function () { varSliderMouseEvent("mouseup"); })
-                .on("input change", function () { varEdgeCountSliderOnChange($(this).val()); }))
+                .on("input change", function () { varEdgeCountSliderOnChange($(this).val()); })
+            )
 
-        // Show Network button
-            .append($('<button id="button-show-network-' + this.id + '">Show Network</button>').css({ 'margin-left': '10px', 'font-size': '12px', 'position': 'relative', 'z-index': 1000 })
-                .click(function () { varShowNetwork(false); }))
+            // Show Network button
+            .append($('<button id="button-show-network-' + this.id + ' data-toggle="tooltip" data-placement="top" title="Show side-by-side graph representation">Show Network</button>')
+                .css({ 'margin-left': '10px', 'font-size': '12px', 'position': 'relative', 'z-index': 1000 })
+                .click(function () { varShowNetwork(false); })
+            )
 
-        // Select Network type dropdown
-            .append($('<select id="select-network-type-' + this.id + '" disabled="true"></select>').css({ 'margin-left': '5px', 'font-size': '12px', 'width': '80px', 'position': 'relative', 'z-index': 1000 })
-                .on("change", function () { varNetworkTypeOnChange($(this).val()); }));
+            // Select Network type dropdown
+            .append($('<select id="select-network-type-' + this.id + '"data-toggle="tooltip" data-placement="top" title="Select the graph view type" disabled="true"></select>')
+                    .css({ 'margin-left': '5px', 'font-size': '12px', 'width': '80px', 'position': 'relative', 'z-index': 1000 })
+                .on("change", function () { varNetworkTypeOnChange($(this).val()); })
+            )
+        ;
 
         $("[data-toggle='tooltip']").tooltip(<any>{ container: 'body' });
 
@@ -1696,7 +1704,7 @@ class Brain3DApp implements Application, Loopable {
         // Set up the two graphs
         var edgeMatrix = this.dataSet.adjMatrixFromEdgeCount(maxEdgesShowable); // Don''t create more edges than we will ever be showing
         if (this.physioGraph) this.physioGraph.destroy();
-        this.physioGraph = new Graph(this.brainObject, edgeMatrix, this.nodeColorings, this.dataSet.simMatrix, this.dataSet.brainLabels, this.commonData);
+        this.physioGraph = new Graph3D(this.brainObject, edgeMatrix, this.nodeColorings, this.dataSet.simMatrix, this.dataSet.brainLabels, this.commonData);
 
         if (this.brainSurfaceMode === 0) {
             this.physioGraph.setNodePositions(this.dataSet.brainCoords);
@@ -1710,7 +1718,7 @@ class Brain3DApp implements Application, Loopable {
 
         var edgeMatrix = this.dataSet.adjMatrixFromEdgeCount(maxEdgesShowable);
         if (this.colaGraph) this.colaGraph.destroy();
-        this.colaGraph = new Graph(this.colaObject, edgeMatrix, this.nodeColorings, this.dataSet.simMatrix, this.dataSet.brainLabels, this.commonData);
+        this.colaGraph = new Graph3D(this.colaObject, edgeMatrix, this.nodeColorings, this.dataSet.simMatrix, this.dataSet.brainLabels, this.commonData);
         this.colaGraph.setVisible(false);
 
         this.svgGraph = new Graph2D(this.id, this.jDiv, this.dataSet, this.svg, this.svgDefs, this.svgAllElements,

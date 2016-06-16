@@ -73,10 +73,6 @@
     <Content Include="brain-app\getapp.aspx" />
     <Content Include="brain-app\saveapp.aspx" />
     <Content Include="brain-app\upload.aspx" />
-    <Content Include="cola.v1.min.js" />
-    <Content Include="cola.v2.min.js" />
-    <Content Include="cola.v3.min.js" />
-    <Content Include="compiledtypescript.js" />
     <Content Include="index.html" />
     <Content Include="linklengths.js" />
     <Content Include="style.css" />
@@ -110,7 +106,9 @@
     <TypeScriptCompile Include="brain-app\brain3d.ts" />
     <TypeScriptCompile Include="brain-app\brainapp.ts" />
     <TypeScriptCompile Include="brain-app\CommonUtilities.ts" />
-    <TypeScriptCompile Include="brain-app\graph.ts" />
+    <TypeScriptCompile Include="brain-app\circularGraph.ts" />
+    <TypeScriptCompile Include="brain-app\graph2d.ts" />
+    <TypeScriptCompile Include="brain-app\graph3d.ts" />
     <TypeScriptCompile Include="brain-app\input.ts" />
   </ItemGroup>
   <PropertyGroup>
