@@ -71,6 +71,7 @@ class Brain3DApp implements Application, Loopable {
     circularGraph: CircularGraph = null;
     colaGraph: Graph3D = null;
     svgGraph: Graph2D = null;
+    canvasGraph: Graph2DAlt = null;
     physioGraph: Graph3D = null;
     needUpdate = false;
     isAnimationOn = false;
@@ -1722,7 +1723,9 @@ class Brain3DApp implements Application, Loopable {
         this.colaGraph.setVisible(false);
 
         this.svgGraph = new Graph2D(this.id, this.jDiv, this.dataSet, this.svg, this.svgDefs, this.svgAllElements,
-                                    this.d3Zoom, this.commonData);
+            this.d3Zoom, this.commonData);
+
+        this.canvasGraph = new Graph2DAlt(this.id, this.jDiv, this.dataSet, this.svg, this.svgDefs, this.svgAllElements, this.commonData);      //TODO: This is a test signature. Change it.
 
         // Initialize the filtering
         if (this.brainSurfaceMode === 0) {
