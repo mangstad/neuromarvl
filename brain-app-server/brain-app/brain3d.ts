@@ -76,6 +76,8 @@ class Brain3DApp implements Application, Loopable {
     needUpdate = false;
     isAnimationOn = false;
 
+    graph2dContainer;
+
     svg;
     svgDefs;
     svgMode;
@@ -353,9 +355,26 @@ class Brain3DApp implements Application, Loopable {
         $(networkTypeSelect).append(option);
 
         var option = document.createElement('option');
+        option.text = '2D-alt';
+        option.value = '2D-alt';
+        $(networkTypeSelect).append(option);
+
+        var option = document.createElement('option');
         option.text = 'Circular';
         option.value = 'circular';
         $(networkTypeSelect).append(option);
+
+        // Graph canvas setup
+        this.graph2dContainer = d3.select('#div-svg-' + this.id)
+            .append("div")
+            //.attr("width", jDiv.width())
+            //.attr("height", jDiv.height() - sliderSpace)
+            .style({
+                width: "100%",
+                height: "100%"
+            })
+            .classed("graph2dContainer", true)
+            [0];
 
         // SVG Initializing
         var varSVGZoom = () => { this.svgZoom(); }
@@ -380,16 +399,16 @@ class Brain3DApp implements Application, Loopable {
                 .append("path")
                 .attr("d", "M 0,0 V 4 L6,2 Z"); //this is actual shape for arrowhead
 
-        this.svgAllElements.append("defs").append("marker")
-            .attr("id", "arrowhead-2d")
-            .attr("refX", 8) /*must be smarter way to calculate shift*/
-            .attr("refY", 2)
-            .attr("markerWidth", 6)
-            .attr("markerHeight", 4)
-            .attr("orient", "auto")
-            .attr("viewbox", "0 0 20 20")
-            .append("path")
-            .attr("d", "M 0,0 V 4 L6,2 Z"); //this is actual shape for arrowhead
+            this.svgAllElements.append("defs").append("marker")
+                .attr("id", "arrowhead-2d")
+                .attr("refX", 8) /*must be smarter way to calculate shift*/
+                .attr("refY", 2)
+                .attr("markerWidth", 6)
+                .attr("markerHeight", 4)
+                .attr("orient", "auto")
+                .attr("viewbox", "0 0 20 20")
+                .append("path")
+                .attr("d", "M 0,0 V 4 L6,2 Z"); //this is actual shape for arrowhead
 
             var varSvg = this.svg[0];
             var varNamespaceURI = varSvg[0].namespaceURI;
@@ -939,6 +958,8 @@ class Brain3DApp implements Application, Loopable {
 
         if (type === "circular" && this.circularGraph) {
             this.circularGraph.setupOptionMenuUI(); // add options button to the page
+            this.svg.attr("visibility", "visible");
+            $(this.graph2dContainer).hide();
         } else {
             // hide options button
             $('#button-circular-layout-histogram-' + this.id).hide();
@@ -946,9 +967,20 @@ class Brain3DApp implements Application, Loopable {
         
         if (type === "2D" && this.svgGraph) {
             this.svgGraph.setupOptionMenuUI(); // add options button to the page
+            this.svg.attr("visibility", "visible");
+            $(this.graph2dContainer).hide();
         } else {
             // hide options button
             $('#button-graph2d-option-menu-' + this.id).hide();
+        }
+
+        if (type === "2D-alt" && this.canvasGraph) {
+            this.canvasGraph.setupOptionMenuUI(); // add options button to the page
+            this.svg.attr("visibility", "hidden");
+            $(this.graph2dContainer).show();
+        } else {
+            // hide options button
+            $('#button-graph2dalt-option-menu-' + this.id).hide();
         }
 
 
@@ -1254,13 +1286,16 @@ class Brain3DApp implements Application, Loopable {
                 this.circularGraph.setColaGraph(this.physioGraph);
                 this.circularGraph.create();
 
+            } else if (this.networkType == '2D-alt') {
+                this.svgMode = true;    //TODO: toggles drag detection mode, maybe rename?
+                this.colaGraph.setVisible(false);
+                this.canvasGraph.initGraph(this.colaGraph);
             } else { // this.network === "3D"
                 // Set up a coroutine to do the animation
                 var origin = new THREE.Vector3(this.brainContainer.position.x, this.brainContainer.position.y, this.brainContainer.position.z);
                 var target = new THREE.Vector3(this.brainContainer.position.x + 2 * this.graphOffset, this.brainContainer.position.y, this.brainContainer.position.z);
 
-                this.colaObjectAnimation(origin, target, originColaCoords, this.colaCoords, switchNetworkType, true);
-                
+                this.colaObjectAnimation(origin, target, originColaCoords, this.colaCoords, switchNetworkType, true);                
             }
         }
     }
@@ -1725,7 +1760,7 @@ class Brain3DApp implements Application, Loopable {
         this.svgGraph = new Graph2D(this.id, this.jDiv, this.dataSet, this.svg, this.svgDefs, this.svgAllElements,
             this.d3Zoom, this.commonData);
 
-        this.canvasGraph = new Graph2DAlt(this.id, this.jDiv, this.dataSet, this.svg, this.svgDefs, this.svgAllElements, this.commonData);      //TODO: This is a test signature. Change it.
+        this.canvasGraph = new Graph2DAlt(this.id, this.jDiv, this.dataSet, this.graph2dContainer, this.commonData);      //TODO: This is a test signature. Change it.
 
         // Initialize the filtering
         if (this.brainSurfaceMode === 0) {

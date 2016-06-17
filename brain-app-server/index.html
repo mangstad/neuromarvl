@@ -14,6 +14,7 @@
     <link rel="stylesheet" href="extern/jquery-ui-1.10.4.custom/css/sunny/jquery-ui-1.10.4.custom.min.css" />
 </head>
 <body onload="defaultFunction()">
+    <!-- <div id="testspace" style="width: 200px; height: 200px; z-index: 9000; position: relative; clear: both"></div><!--- hide when not in use -->
     <div id="splashPage" class="overlay overlay-scale">
         <div id="content">
             <button type="button" class="overlay-close" onclick="toggleSplashPage()">Close</button>
@@ -653,10 +654,14 @@
     <script src="extern/numeric-1.2.6.js"></script>
     <script src="extern/packages.js"></script>
 
-    <script src="extern/cola.v3.min.js"></script>
+    <!--<script src="extern/cola.v3.min.js"></script>-->
+    <script src="http://marvl.infotech.monash.edu/webcola/cola.v3.min.js"></script>
     <script src="extern/d3adaptor.js"></script>
 
     <script src="extern/cytoscape.min.js"></script>
+    <!--<script src="http://cytoscape.github.io/cytoscape.js/api/cytoscape.js-latest/cytoscape.min.js"></script>-->
+    <script src="extern/cytoscape-cola.js"></script>
+
 
     <!-- The main application script -->
     <script src="brain-app/input.js"></script> 
