@@ -718,7 +718,7 @@ class Loop {
             this.timeOfLastFrame = currentTime;
 
             for (var i = 0; i < 4; ++i) {
-                if (apps[i] && (apps[i].isDeleted() == true)) {
+                if (apps[i] && apps[i].isDeleted()) {
                     apps[i] = null;
                     saveObj.saveApps[i] = null; // create a new instance (if an old instance exists)
                 }
@@ -2047,7 +2047,7 @@ function setNodeColorInContextMenu(color: string) {
 function highlightSelectedNodes() {
     if (!dataSet || !dataSet.attributes) return;
 
-    if (dataSet.attributes.filteredRecordsHighlightChanged == true) {
+    if (dataSet.attributes.filteredRecordsHighlightChanged) {
         dataSet.attributes.filteredRecordsHighlightChanged = false;
 
         if (!dataSet.attributes.filteredRecords) return;

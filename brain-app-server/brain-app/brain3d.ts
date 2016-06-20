@@ -108,7 +108,7 @@ class Brain3DApp implements Application, Loopable {
     fovZoomRatio = 1;
     currentViewWidth: number; 
 
-    allLables: boolean = false;
+    allLabels: boolean = false;
     autoRotation: boolean = false;
     weightEdges: boolean = false;
     colorMode: string = "none";
@@ -1085,7 +1085,7 @@ class Brain3DApp implements Application, Loopable {
 
         this.bundlingEdges = !this.bundlingEdges;
 
-        if (this.bundlingEdges == true) {
+        if (this.bundlingEdges) {
             $('#bundling-edges-' + this.id).css('opacity', 1);
         }
         else {
@@ -1130,7 +1130,7 @@ class Brain3DApp implements Application, Loopable {
         this.mouse.dy = 0;
 
         // set default rotation
-        if (this.autoRotation == true) {
+        if (this.autoRotation) {
             $('#anti-auto-rotation-' + this.id).css('opacity', 1);
             if (s == "anticlockwise") {
                 this.mouse.dx = 1;
@@ -1144,12 +1144,12 @@ class Brain3DApp implements Application, Loopable {
     allLabelsOnChange() {
         if ((!this.physioGraph) || (!this.colaGraph)) return;
 
-        this.allLables = !this.allLables;
+        this.allLabels = !this.allLabels;
 
-        this.physioGraph.allLabels = this.allLables;
-        this.colaGraph.allLabels = this.allLables;
+        this.physioGraph.allLabels = this.allLabels;
+        this.colaGraph.allLabels = this.allLabels;
 
-        if (this.allLables == true) {
+        if (this.allLabels) {
             $('#all-labels-' + this.id).css('opacity', 1);
             this.physioGraph.showAllLabels(false, false);
             this.colaGraph.showAllLabels(this.svgMode, true);
@@ -1182,7 +1182,7 @@ class Brain3DApp implements Application, Loopable {
             this.colaGraph.findNodeConnectivity(this.filteredAdjMatrix, this.dissimilarityMatrix, edges);
             this.colaGraph.setNodeVisibilities(); // Hide the nodes without neighbours
             this.colaGraph.setEdgeVisibilities(this.filteredAdjMatrix); // Hide the edges that have not been selected
-            if (this.allLables == true) {
+            if (this.allLabels) {
                 this.colaGraph.showAllLabels(this.svgMode, true);
             }
             //-------------------------------------------------------------------------------------------------------------
@@ -1215,7 +1215,7 @@ class Brain3DApp implements Application, Loopable {
             this.descent = new cola.Descent(clonedPhysioCoords, D); // Create the solver
 
             var originColaCoords: number[][];
-            if (switchNetworkType == true) {
+            if (switchNetworkType) {
                 if (this.colaCoords) {
                     originColaCoords = this.colaCoords.map(function (array) {
                         return array.slice(0);
@@ -1352,7 +1352,7 @@ class Brain3DApp implements Application, Loopable {
         $('#select-network-type-' + this.id).prop('disabled', true);    
         $('#graph-view-slider-' + this.id).prop('disabled', true); 
 
-        if (switchNetworkType == true) {
+        if (switchNetworkType) {
             this.colaObject.position.copy(colaObjectTarget);
         } else {
             this.colaObject.position.copy(colaObjectOrigin);
@@ -1450,7 +1450,7 @@ class Brain3DApp implements Application, Loopable {
     update2DGraph() {
         if (this.networkType == '2D') {
             if (this.svgGraph) {
-                this.svgGraph.update(this.colaGraph, this.allLables);
+                this.svgGraph.update(this.colaGraph, this.allLabels);
             }
         }
         else if (this.networkType == 'circular') {           
@@ -1834,7 +1834,7 @@ class Brain3DApp implements Application, Loopable {
             raycaster.setFromCamera(pointer, this.camera);
             
             var inBoundingSphere = !!(raycaster.intersectObject(this.brainSurfaceBoundingSphere, true).length);
-            if (inBoundingSphere == true) {
+            if (inBoundingSphere) {
                 this.svgControlMode = false;
                 this.svg.on(".zoom", null);
             }

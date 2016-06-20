@@ -252,7 +252,7 @@ class InputTargetManager {
 
             if (viewID == this.activeTarget) {
                 var it = this.inputTargets[this.activeTarget];
-                if (it && (it.sliderEvent == true)) return;
+                if (it && (it.sliderEvent)) return;
 
                 this.isMouseDown = true;
 
@@ -365,7 +365,7 @@ class InputTargetManager {
 
             if (this.contextMenuColorChanged) return;
 
-            if (this.isMouseDown === true) {
+            if (this.isMouseDown) {
                 this.isDragged = true;
                 var it = this.inputTargets[this.activeTarget];
                 if (it) {

@@ -658,7 +658,7 @@ class Graph3D {
             for (var j = 0; j < this.edgeMatrix.length; ++j) {
                 var edge = (this.edgeMatrix[id][j]) ? this.edgeMatrix[id][j] : this.edgeMatrix[j][id];
                 if (edge) {
-                    if (edge.visible == true) {
+                    if (edge.visible) {
                         edge.multiplyScale(2);
                     }
                 }
@@ -683,7 +683,7 @@ class Graph3D {
             for (var j = 0; j < this.edgeMatrix.length; ++j) {
                 var edge = (this.edgeMatrix[id][j]) ? this.edgeMatrix[id][j] : this.edgeMatrix[j][id];
                 if (edge) {
-                    if (edge.visible == true) {
+                    if (edge.visible) {
                         edge.multiplyScale(0.5);
                     }
                 }
@@ -968,7 +968,7 @@ class Edge {
         var scale = 1;
 
         /* update width of the edge */
-        if (weightEdges == true) {
+        if (weightEdges) {
             scale = this.scaleWeight;
         } else {
             scale = this.scaleNoWeight;
