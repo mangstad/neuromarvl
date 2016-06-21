@@ -2114,7 +2114,7 @@ $('#brain3d-icon-front').draggable(
             var model = $('#select-brain3d-model').val();
             var view = getViewUnderMouse(event.pageX, event.pageY);
 
-            brainIconDraggableEvent(view, model);
+            applyModelToBrainView(view, model);
         }
     }
 );
@@ -2136,81 +2136,72 @@ function setBrainMode(brainMode, view: string) {
     }
 }
 
-function brainIconDraggableEvent(view: string, model: string, brainSurfaceMode?) {
-    resetBrain3D();
 
-    var file = 'none';
-    if (model === 'ch2') {
-        file = 'BrainMesh_ch2.obj';
-
-    } else if (model === 'ch2_inflated') {
-        file = 'BrainMesh_Ch2_Inflated.obj';
-
-    } else if (model === 'icbm') {
-        file = 'BrainMesh_ICBM152.obj';
-
-    } else if (model === 'ch2_cerebellum') {
-        file = 'BrainMesh_Ch2withCerebellum.obj';
-
-    } else if (model === 'upload') {
-        file = (<any>$('#input-select-model').get(0)).files[0].name;
-
+function viewToId(view: string): number {
+    //TODO: this function should be used more in this class
+    switch (view) {
+        case tr_view: return 1;
+        case bl_view: return 2;
+        case br_view: return 0;
+        default: return 0;      // tl_view
     }
+}
 
-    loadBrainModel(file, function (object) {
-        var appID = -1;
-        switch (view) {
-            case tl_view:
-                var info = {
-                    id: 0,
-                    jDiv: $(tl_view),
-                    brainModelOrigin: object
-                };
-                $(tl_view).empty();
-                apps[0] = new Brain3DApp(info, commonData, input.newTarget(0));
-                appID = 0;
-                break;
-            case tr_view:
-                var info = {
-                    id: 1,
-                    jDiv: $(tl_view),
-                    brainModelOrigin: object
-                };
-                $(tr_view).empty();
-                apps[1] = new Brain3DApp(info, commonData, input.newTarget(1));
-                appID = 1;
-                break;
-            case bl_view:
-                var info = {
-                    id: 2,
-                    jDiv: $(tl_view),
-                    brainModelOrigin: object
-                };
-                $(bl_view).empty();
-                apps[2] = new Brain3DApp(info, commonData, input.newTarget(2));
-                appID = 2;
-                break;
-            case br_view:
-                var info = {
-                    id: 3,
-                    jDiv: $(tl_view),
-                    brainModelOrigin: object
-                };
-                $(br_view).empty();
-                apps[3] = new Brain3DApp(info, commonData, input.newTarget(3));
-                appID = 3;
-                break;
-        }
 
-        saveObj.saveApps[appID] = new SaveApp(); // create a new instance (if an old instance exists)
-        saveObj.saveApps[appID].surfaceModel = model;
-        saveObj.saveApps[appID].view = view;
+function applyModelToBrainView(view: string, model: string, brainSurfaceMode?) {
+    resetBrain3D();
+    
+    var file = (model === 'ch2') && 'BrainMesh_ch2.obj'
+        || (model === 'ch2_inflated') && 'BrainMesh_Ch2_Inflated.obj'
+        || (model === 'icbm') && 'BrainMesh_ICBM152.obj'
+        || (model === 'ch2_cerebellum') && 'BrainMesh_Ch2withCerebellum.obj'
+        || (model === 'upload') && (<any>$('#input-select-model').get(0)).files[0].name
+        || "none";
+
+    var id = viewToId(view);
+
+    loadBrainModel(file, object => {
+        $(view).empty();
+        apps[id] = new Brain3DApp(
+            {
+                id,
+                jDiv: $(view),
+                brainModelOrigin: object,
+                brainSurfaceMode
+            },
+            commonData,
+            input.newTarget(id)
+        );
+
+        var app = saveObj.saveApps[id] = (loadObj && loadObj.saveApps[id]) || new SaveApp(); // create a new instance (if an old instance exists)
+        app.surfaceModel = model;
+        app.view = view;
 
         $('#button-save-app').button({ disabled: false });
+
+        if (loadObj) {
+            // Load dataset into the webapp
+            if (loadObj.loadExampleData) {
+                loadExampleData(app.setDataSetView, function (view) {
+                    setDataset(view);
+                    initApp(id)
+                    CommonUtilities.launchAlertMessage(CommonUtilities.alertType.SUCCESS,
+                        "Default example dataset is loaded.");
+                });
+            } else {
+                var source = (saveObj.loadExampleData ? "save_examples" : "save");
+                loadUploadedData(loadObj, app.setDataSetView, function (view) {
+                    // Set data set to the right view
+                    setDataset(view);
+                    initApp(id);
+                    CommonUtilities.launchAlertMessage(CommonUtilities.alertType.SUCCESS,
+                        "Uploaded dataset is loaded.");
+                }, source);
+            }
+        }
     });
-
-
 }
+
 
 $('#dataset1-icon-front').draggable(
     <any>{
@@ -2804,85 +2795,20 @@ function initFromSaveFile() {
 }
 
 function initProject(data: string, source = "save") {
-
     // Ensure that data is not empty
     if (data == null) return;
     if (data.length == 0) return;
 
     loadObj = <SaveFile>jQuery.parseJSON(data);
     saveObj.loadExampleData = (source !== "save");
-
-    var initViewPort = function (app, id) {
-        loadBrainModel(file, function (object) {
-            var info = {
-                id: id,
-                jDiv: $(app.view),
-                brainModelOrigin: object,
-                brainSurfaceMode: app.brainSurfaceMode
-            };
-            $(app.view).empty();
-            apps[id] = new Brain3DApp(info, commonData, input.newTarget(id));
-
-            saveObj.saveApps[id] = loadObj.saveApps[id];
-
-            $('#button-save-app').button({ disabled: false });
-
-            // Load dataset into the webapp
-            if (loadObj.loadExampleData) {
-                loadExampleData(app.setDataSetView, function (view) {
-                    setDataset(view);
-                    initApp(id)
-                    CommonUtilities.launchAlertMessage(CommonUtilities.alertType.SUCCESS,
-                        "Default example dataset is loaded.");
-                });
-            } else {
-                loadUploadedData(loadObj, app.setDataSetView, function (view) {
-                    // Set data set to the right view
-                    setDataset(view);
-                    initApp(id);
-                    CommonUtilities.launchAlertMessage(CommonUtilities.alertType.SUCCESS,
-                        "Uploaded dataset is loaded.");
-                }, source);
-            }
-
-        });
-    };
-
-
-
+        
     for (var i = 0; i < 4; i++) {
-        resetBrain3D();
-        var id = i;
-        var app = loadObj.saveApps[id];
+        var app = loadObj.saveApps[i];
         if (app && (app.surfaceModel != null) && (app.surfaceModel.length > 0)) {
             // if this app exists:
-            brainIconDraggableEvent(app.view, app.surfaceModel, app.brainSurfaceMode);
-
-            var file = 'none';
-            if (app.surfaceModel === 'ch2') {
-                file = 'BrainMesh_ch2.obj';
-
-            } else if (app.surfaceModel === 'ch2_inflated') {
-                file = 'BrainMesh_Ch2_Inflated.obj';
-
-            } else if (app.surfaceModel === 'icbm') {
-                file = 'BrainMesh_ICBM152.obj';
-
-            } else if (app.surfaceModel === 'ch2_cerebellum') {
-                file = 'BrainMesh_Ch2withCerebellum.obj';
-
-            } else if (app.surfaceModel === 'upload') {
-                file = (<any>$('#input-select-model').get(0)).files[0].name;
-
-            }
-
-            initViewPort(app, id);
-
+            applyModelToBrainView(app.view, app.surfaceModel, app.brainSurfaceMode);
         }
     }
-
-
-    //setTimeout(function () { initApps() }, 3000);
 }
 
 function initApp(id) {
@@ -3251,8 +3177,9 @@ function setupCrossFilter(attrs: Attributes) {
 //////////////////////////////////////////////////////////////////
 
 function defaultFunction() {
-    if (!initFromSaveFile()) {
-        brainIconDraggableEvent(tl_view, $('#select-brain3d-model').val());
+    var gotSave = initFromSaveFile();
+    if (!gotSave) {
+        applyModelToBrainView(tl_view, $('#select-brain3d-model').val());
         toggleSplashPage();
     }
 }

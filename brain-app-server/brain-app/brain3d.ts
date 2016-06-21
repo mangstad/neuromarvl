@@ -334,7 +334,7 @@ class Brain3DApp implements Application, Loopable {
                     .css({ 'margin-left': '5px', 'font-size': '12px', 'width': '80px', 'position': 'relative', 'z-index': 1000 })
                 .on("change", function () { varNetworkTypeOnChange($(this).val()); })
             )
-        ;
+            ;
 
         $("[data-toggle='tooltip']").tooltip(<any>{ container: 'body' });
 
