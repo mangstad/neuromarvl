@@ -65,9 +65,10 @@ class Graph2DAlt {
             nodeObject["color"] = "#".concat(node.material.color.getHexString());
             nodeObject["radius"] = node.scale.x * unitRadius;
 
-            //TODO: Use projection of colaGraph to screen space to initialise positions - this isn't working
+            // Use projection of colaGraph to screen space to initialise positions
             var position = (new THREE.Vector3()).setFromMatrixPosition(node.matrixWorld);
             position.project(camera);
+            // Offset positions to the right, because the left side is usually occupied by the 3d model
             nodeObject["x"] = position.x;
             nodeObject["y"] = position.y;
 
@@ -150,8 +151,10 @@ class Graph2DAlt {
         // Start on right half, because the brain model is typically on the left
 
         var width = container.offsetWidth * 0.4;
-        var height = container.offsetHeight;
-        var offsetLeft = container.offsetWidth * 0.6;
+        var height = container.offsetHeight * 0.8;
+        var offsetLeft = container.offsetWidth * 0.5;
+        var offsetTop = container.offsetHeight * 0.1;
+        console.log(width, height, offsetLeft);///
 
         var nodes = this.nodes.map(d => ({
             data: {
@@ -200,8 +203,9 @@ class Graph2DAlt {
                 name: 'cola',
                 animate: false,
                 ungrabifyWhileSimulating: true,
-                boundingBox: { x1: offsetLeft, y1: 0, w: width, h: height },
-                padding: 50,
+                fit: true,
+                boundingBox: { x1: offsetLeft, y1: offsetTop, w: width, h: height },
+                //padding: 50,
                 //randomize: true,        //TODO: Don't do this when position initialisation is working properly
 
                 //edgeLength: 50,
