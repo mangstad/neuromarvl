@@ -144,17 +144,8 @@ class Graph2DAlt {
 
 
     updateGraph(container) {
-        //console.log(this.nodes);///
-        //console.log(this.links);///
-
-
-        // Start on right half, because the brain model is typically on the left
-
-        var width = container.offsetWidth * 0.4;
-        var height = container.offsetHeight * 0.8;
         var offsetLeft = container.offsetWidth * 0.5;
         var offsetTop = container.offsetHeight * 0.1;
-        console.log(width, height, offsetLeft);///
 
         var nodes = this.nodes.map(d => ({
             data: {
@@ -203,10 +194,9 @@ class Graph2DAlt {
                 name: 'cola',
                 animate: false,
                 ungrabifyWhileSimulating: true,
-                fit: true,
-                boundingBox: { x1: offsetLeft, y1: offsetTop, w: width, h: height },
+                //fit: true,
+                //boundingBox: { x1: offsetLeft, y1: offsetTop, w: width, h: height },      //TODO: seems to be doing nothing, would be nice
                 //padding: 50,
-                //randomize: true,        //TODO: Don't do this when position initialisation is working properly
 
                 //edgeLength: 50,
                 //edgeSymDiffLength: 60
@@ -218,6 +208,9 @@ class Graph2DAlt {
                 allConstIter: 30
             }
         });
+
+        this.cy.pan({ x: offsetLeft, y: offsetTop });
+        this.cy.zoom(this.cy.zoom() * 0.8);
     }
 
 

@@ -309,7 +309,7 @@ class Brain3DApp implements Application, Loopable {
 
             // Circular Graph
             .append($('<div id="div-svg-' + this.id + '"></div>')
-                .css({ 'position': 'absolute', 'width': '100%', 'height': '100%', 'top': 0, 'left': 0, 'z-index': 10 }))
+                .css({ 'position': 'absolute', 'width': '100%', 'height': '100%', 'top': 0, 'left': 0, 'z-index': 10, 'overflow': 'hidden' }))
 
             .append(this.renderer.domElement)
             .append('<p>Showing <label id="count-' + this.id + '">0</label> edges (<label id=percentile-' + this.id + '>0</label>th percentile)</p>')
@@ -371,7 +371,9 @@ class Brain3DApp implements Application, Loopable {
             //.attr("height", jDiv.height() - sliderSpace)
             .style({
                 width: "100%",
-                height: "100%"
+                height: "100%",
+                //position: "absolute",
+                //right: "0px"
             })
             .classed("graph2dContainer", true)
             .node();
