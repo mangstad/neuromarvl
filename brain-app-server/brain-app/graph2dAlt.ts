@@ -32,21 +32,21 @@ class Graph2DAlt {
         this.dataSet = dataSet;
         
         this.commonData = commonData;
-
     }
 
 
-    initGraph(colaGraph: Graph3D) {
+    initGraph(colaGraph: Graph3D, camera) {
         //this.colorMode = colaGraph.colorMode;
         //this.directionMode = colaGraph.edgeDirectionMode;
         var width = this.jDiv.width();
-        var height = this.jDiv.height() - sliderSpace;
-        var widthHalf = width / 2;
-        var heightHalf = height / 2;
-        var offsetx = 250;
-        var offsety = 0;
-        var initX = 3 / 5 * width;
-        var initY = 1 / 2 * height;
+        var height = this.jDiv.height();
+        //var widthHalf = width / 2;
+        //var heightHalf = height / 2;
+        //var offsetx = 250;
+        //var offsety = 0;
+
+        //var initX = width * 0.5;
+        //var initY = height * 0.5;
 
         var unitRadius = 5;
 
@@ -55,14 +55,21 @@ class Graph2DAlt {
 
         var children = colaGraph.nodeMeshes;
 
-        // Add Nodes to SVG graph (Positions are based on the projected position of the 3D graphs
+        
         for (var i = 0; i < children.length; i++) {
-            var d = children[i].userData;
+            var node = children[i];
+            var d = node.userData;
 
             var nodeObject = new Object();
             nodeObject["id"] = d.id;
-            nodeObject["color"] = "#".concat(colaGraph.nodeMeshes[d.id].material.color.getHexString());
-            nodeObject["radius"] = colaGraph.nodeMeshes[d.id].scale.x * unitRadius;
+            nodeObject["color"] = "#".concat(node.material.color.getHexString());
+            nodeObject["radius"] = node.scale.x * unitRadius;
+
+            //TODO: Use projection of colaGraph to screen space to initialise positions - this isn't working
+            var position = (new THREE.Vector3()).setFromMatrixPosition(node.matrixWorld);
+            position.project(camera);
+            nodeObject["x"] = position.x;
+            nodeObject["y"] = position.y;
 
             // for every attributes
             for (var j = 0; j < this.dataSet.attributes.columnNames.length; j++) {
@@ -99,13 +106,11 @@ class Graph2DAlt {
                     nodeObject['bundle_group_' + colname] = bundleGroup;
                 }
             }
-            nodeObject["x"] = initX;
-            nodeObject["y"] = initY;
 
             this.nodes.push(nodeObject);
         }
 
-        // Add Edges to SVG graph
+        // Add Edges to graph
         for (var i = 0; i < colaGraph.edgeList.length; i++) {
             var edge = colaGraph.edgeList[i];
             if (edge.visible) {
@@ -138,11 +143,15 @@ class Graph2DAlt {
 
 
     updateGraph(container) {
-        console.log(this.nodes);///
-        console.log(this.links);///
+        //console.log(this.nodes);///
+        //console.log(this.links);///
 
-        var width = container.offsetWidth;
+
+        // Start on right half, because the brain model is typically on the left
+
+        var width = container.offsetWidth * 0.4;
         var height = container.offsetHeight;
+        var offsetLeft = container.offsetWidth * 0.6;
 
         var nodes = this.nodes.map(d => ({
             data: {
@@ -163,8 +172,6 @@ class Graph2DAlt {
             }
         }));
         var elements = nodes.concat(<any>edges);
-
-        console.log(elements);///
 
         this.cy = cytoscape({
             container,
@@ -187,13 +194,26 @@ class Graph2DAlt {
                     }
                 }
             ],
+            minZoom: 0.1,
+            maxZoom: 10,
             layout: {
                 name: 'cola',
                 animate: false,
-                //boundingBox: {x1: 0, y1: 0, w: width/2, h: height/2}
+                ungrabifyWhileSimulating: true,
+                boundingBox: { x1: offsetLeft, y1: 0, w: width, h: height },
+                padding: 50,
+                //randomize: true,        //TODO: Don't do this when position initialisation is working properly
+
+                //edgeLength: 50,
+                //edgeSymDiffLength: 60
+                handleDisconnected: true,
+                avoidOverlap: true,
+
+                unconstrIter: 30,
+                userConstIter: 1,
+                allConstIter: 30
             }
         });
-        console.log("cytoscape test loaded");///
     }
 
 
@@ -303,6 +323,15 @@ class Graph2DAlt {
         */
 
 
+    }
+
+
+    setUserControl(isOn: boolean) {
+        if (this.cy) {
+            this.cy.userPanningEnabled(isOn);
+            this.cy.userZoomingEnabled(isOn);
+            this.cy.boxSelectionEnabled(isOn);
+        }
     }
 
 

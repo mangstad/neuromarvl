@@ -83,7 +83,7 @@ class Brain3DApp implements Application, Loopable {
     svgMode;
     svgAllElements;
     svgNodeBundleArray: any[];
-    svgControlMode: boolean = false;
+    isControllingGraphOnly: boolean = false;
     svgNeedsUpdate: boolean = false;
     d3Zoom = d3.behavior.zoom();
 
@@ -374,7 +374,7 @@ class Brain3DApp implements Application, Loopable {
                 height: "100%"
             })
             .classed("graph2dContainer", true)
-            [0];
+            .node();
 
         // SVG Initializing
         var varSVGZoom = () => { this.svgZoom(); }
@@ -475,7 +475,7 @@ class Brain3DApp implements Application, Loopable {
         });
 
         this.input.regMouseDragCallback((dx: number, dy: number, mode: number) => {
-            if (this.svgControlMode) return;
+            if (this.isControllingGraphOnly) return;
 
             // left button: rotation
             if (mode == 1) {
@@ -579,7 +579,7 @@ class Brain3DApp implements Application, Loopable {
         });
 
         this.input.regMouseRightClickCallback((x: number, y: number) => {
-            if (this.svgControlMode) return;
+            if (this.isControllingGraphOnly) return;
 
             var record;
             var node = this.getNodeUnderPointer(this.input.localPointerPosition());
@@ -594,7 +594,7 @@ class Brain3DApp implements Application, Loopable {
 
         /* Double Click the viewport will reset the Model*/
         this.input.regMouseDoubleClickCallback(() => {
-            if (this.svgControlMode) return;
+            if (this.isControllingGraphOnly) return;
 
             this.fovZoomRatio = 1;
             this.camera.fov = this.defaultFov;
@@ -612,7 +612,7 @@ class Brain3DApp implements Application, Loopable {
         this.input.regMouseWheelCallback((delta: number) => {
             const ZOOM_FACTOR = 10;
 
-            if (this.svgControlMode) return; // 2D Flat Version of the network
+            if (this.isControllingGraphOnly) return; // 2D Flat Version of the network
             var pointer = this.input.localPointerPosition();
             var pointerNDC = new THREE.Vector3(pointer.x, pointer.y, 1);
 
@@ -1287,9 +1287,9 @@ class Brain3DApp implements Application, Loopable {
                 this.circularGraph.create();
 
             } else if (this.networkType == '2D-alt') {
-                this.svgMode = true;    //TODO: toggles drag detection mode, maybe rename?
+                this.svgMode = true;    //TODO: toggles drag detection mode, maybe rename to ignore3dControl?
+                this.canvasGraph.initGraph(this.colaGraph, this.camera);
                 this.colaGraph.setVisible(false);
-                this.canvasGraph.initGraph(this.colaGraph);
             } else { // this.network === "3D"
                 // Set up a coroutine to do the animation
                 var origin = new THREE.Vector3(this.brainContainer.position.x, this.brainContainer.position.y, this.brainContainer.position.z);
@@ -1396,7 +1396,7 @@ class Brain3DApp implements Application, Loopable {
     }
   
     svgZoom() {
-        if (this.svgControlMode) {
+        if (this.isControllingGraphOnly) {
             this.svgAllElements.attr("transform", "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")");
             if (this.networkType == "2D") this.svgNeedsUpdate = true;
         }
@@ -1829,23 +1829,26 @@ class Brain3DApp implements Application, Loopable {
     }
 
     getBoundingSphereUnderPointer(pointer) {
-        if ((this.networkType == '2D') || (this.networkType == 'circular')) {
+        if ((this.networkType == '2D') || (this.networkType == '2D-alt') || (this.networkType == 'circular')) {
             var raycaster = new THREE.Raycaster();
             raycaster.setFromCamera(pointer, this.camera);
             
             var inBoundingSphere = !!(raycaster.intersectObject(this.brainSurfaceBoundingSphere, true).length);
             if (inBoundingSphere) {
-                this.svgControlMode = false;
+                this.isControllingGraphOnly = false;
                 this.svg.on(".zoom", null);
+                this.canvasGraph.setUserControl(false);
             }
             else {
-                this.svgControlMode = true;
+                this.isControllingGraphOnly = true;
                 var varSVGZoom = () => { this.svgZoom(); }
                 this.svg.call(this.d3Zoom.on("zoom", varSVGZoom));
+                this.canvasGraph.setUserControl(true);
             }
         } else {
-            this.svgControlMode = false;
+            this.isControllingGraphOnly = false;
             this.svg.on(".zoom", null);
+            this.canvasGraph.setUserControl(true);
         }
     }
 
