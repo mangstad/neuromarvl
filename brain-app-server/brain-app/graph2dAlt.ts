@@ -193,7 +193,12 @@ class Graph2DAlt {
             layout: {
                 name: 'cola',
                 animate: false,
+
+                // Options that may affect speed of layout
                 ungrabifyWhileSimulating: true,
+                maxSimulationTime: 1000,        // Only starts counting after the layout startup, which can take some time by itself. 0 actually works well.
+                //refresh: 5,                     // Probably on works when animating
+
                 //fit: true,
                 //boundingBox: { x1: offsetLeft, y1: offsetTop, w: width, h: height },      //TODO: seems to be doing nothing, would be nice
                 //padding: 50,
@@ -203,9 +208,9 @@ class Graph2DAlt {
                 handleDisconnected: true,
                 avoidOverlap: true,
 
-                unconstrIter: 30,
-                userConstIter: 1,
-                allConstIter: 30
+                unconstrIter: 15,
+                userConstIter: 0,
+                allConstIter: 15
             }
         });
 

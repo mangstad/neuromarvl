@@ -283,7 +283,6 @@ class Graph2D {
             }
         }
 
-
         this.initSVGElements();
         // Update graph layout position with animation
         this.calculateLayout();
@@ -567,7 +566,6 @@ class Graph2D {
                 this.links.push(linkObject);
             }
         }
-
 
         this.initSVGElements();
         // Update graph layout position with animation

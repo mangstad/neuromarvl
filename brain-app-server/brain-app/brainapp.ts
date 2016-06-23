@@ -2796,16 +2796,13 @@ function initFromSaveFile() {
 
 function initProject(data: string, source = "save") {
     // Ensure that data is not empty
-    if (data == null) return;
-    if (data.length == 0) return;
+    if (!data || !data.length) return;
 
     loadObj = <SaveFile>jQuery.parseJSON(data);
     saveObj.loadExampleData = (source !== "save");
-        
-    for (var i = 0; i < 4; i++) {
-        var app = loadObj.saveApps[i];
-        if (app && (app.surfaceModel != null) && (app.surfaceModel.length > 0)) {
-            // if this app exists:
+    
+    for (var app of loadObj.saveApps) {
+        if (app.surfaceModel && (app.surfaceModel.length > 0)) {
             applyModelToBrainView(app.view, app.surfaceModel, app.brainSurfaceMode);
         }
     }
