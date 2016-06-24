@@ -1935,28 +1935,24 @@ function setupNodeSizeRangeSlider(attribute: string) {
 
     var scaleArray = getNodeScaleArray(attribute);
     if (!scaleArray) return;
-
+    
     var minScale = Math.min.apply(Math, scaleArray);
     var maxScale = Math.max.apply(Math, scaleArray);
-    $("#div-node-size-slider")['bootstrapSlider']();
-    $("#div-node-size-slider")['bootstrapSlider']().on('slide', function () {
-        var values = $("#div-node-size-slider")['bootstrapSlider']().data('bootstrapSlider').getValue();
-        $("#label_node_size_range").text(values[0] + " - " + values[1]);
-        setNodeSizeOrColor();
-    });
-    $("#div-node-size-slider").slider(<any>{
+    var slider = $("#div-node-size-slider")['bootstrapSlider']({
         range: true,
         min: 0.1,
         max: 10,
         step: 0.1,
-        values: [minScale, maxScale],
+        value: [minScale, maxScale],
         change: setNodeSizeOrColor,
-        slide: function (event, ui) {
-
-        }
     });
-
-    $("#label_node_size_range").text($("#div-node-size-slider").slider("values", 0) + " - " + $("#div-node-size-slider").slider("values", 1));
+    slider.on("slide", () => {
+        var values = $("#div-node-size-slider")['bootstrapSlider']().data('bootstrapSlider').getValue();
+        $("#label_node_size_range").text(values[0] + " - " + values[1]);
+        setNodeSizeOrColor();
+    });
+    slider.on("change", setNodeSizeOrColor);
+    $("#label_node_size_range").text(minScale + " - " + maxScale);
 }
 
 function setupColorPicker() {

@@ -160,7 +160,8 @@ class Graph2DAlt {
         var nodes = this.nodes.map(d => ({
             data: {
                 id: "n_" + d.id,
-                color: d.color
+                color: d.color,
+                radius: d.radius
             },
             position: {
                 x: d.x,
@@ -234,7 +235,9 @@ class Graph2DAlt {
                     selector: 'node',
                     style: {
                         'background-color': 'data(color)',
-                        'label': 'data(id)'
+                        'label': 'data(id)',
+                        "width": "data(radius)",
+                        "height": "data(radius)"
                     }
                 },
                 {
