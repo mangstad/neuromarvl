@@ -10,9 +10,17 @@ class Graph2DAlt {
     container;
 
     // UI
-    graph2DDotClass: string;
-    graph2DClass: string;
-    isFlowLayoutOn: boolean;
+    graph2DAltDotClass: string;
+    graph2DAltClass: string;
+
+    // Options menu
+    edgeLengthScale: number = 3;
+    edgeBaseLength: number = 7;
+    groupNodesBy = "none";
+    colorMode: string;
+    directionMode: string;
+    mouseDownEventListenerAdded;
+    layout = "cose";
 
     // Data
     commonData;
@@ -54,6 +62,8 @@ class Graph2DAlt {
         this.links.splice(0, this.links.length);
 
         var children = colaGraph.nodeMeshes;
+        this.colorMode = colaGraph.colorMode;
+        this.directionMode = colaGraph.edgeDirectionMode;
 
         
         for (var i = 0; i < children.length; i++) {
@@ -138,12 +148,12 @@ class Graph2DAlt {
             }
         }
 
-        this.updateGraph(this.container);
+        this.updateGraph();
     }
 
 
-
-    updateGraph(container) {
+    updateGraph() {
+        var container = this.container;
         var offsetLeft = container.offsetWidth * 0.5;
         var offsetTop = container.offsetHeight * 0.1;
 
@@ -166,6 +176,55 @@ class Graph2DAlt {
             }
         }));
         var elements = nodes.concat(<any>edges);
+
+        // Default layout is simple and fast
+        var layout = <any>{
+            name: "cose",
+            animate: false
+        }
+        switch (this.layout) {
+            case "cola":
+                layout = <any>{
+                    name: "cola",
+                    animate: false,
+
+                    // Options that may affect speed of layout
+                    ungrabifyWhileSimulating: true,
+                    maxSimulationTime: 1000,        // Only starts counting after the layout startup, which can take some time by itself. 0 actually works well.
+                    //refresh: 5,                     // Probably on works when animating
+
+                    //fit: true,
+                    //boundingBox: { x1: offsetLeft, y1: offsetTop, w: width, h: height },      //TODO: seems to be doing nothing, would be nice
+                    //padding: 50,
+
+                    edgeLength: this.edgeBaseLength * this.edgeLengthScale,
+                    //edgeSymDiffLength: 60
+                    handleDisconnected: true,
+                    avoidOverlap: true,
+
+                    unconstrIter: 15,
+                    userConstIter: 0,
+                    allConstIter: 15
+                }
+                break;
+            case "cola-flow":
+                // Mostly the same as cola
+                layout = <any>{
+                    name: "cola",
+                    animate: false,
+                    ungrabifyWhileSimulating: true,
+                    maxSimulationTime: 1000,
+                    edgeLength: this.edgeBaseLength * this.edgeLengthScale,
+                    handleDisconnected: true,
+                    avoidOverlap: true,
+                    unconstrIter: 15,
+                    userConstIter: 0,
+                    allConstIter: 15,
+
+                    flow: true
+                }
+                break;
+        }
 
         this.cy = cytoscape({
             container,
@@ -190,56 +249,66 @@ class Graph2DAlt {
             ],
             minZoom: 0.1,
             maxZoom: 10,
-            layout: {
-                name: 'cola',
-                animate: false,
-
-                // Options that may affect speed of layout
-                ungrabifyWhileSimulating: true,
-                maxSimulationTime: 1000,        // Only starts counting after the layout startup, which can take some time by itself. 0 actually works well.
-                //refresh: 5,                     // Probably on works when animating
-
-                //fit: true,
-                //boundingBox: { x1: offsetLeft, y1: offsetTop, w: width, h: height },      //TODO: seems to be doing nothing, would be nice
-                //padding: 50,
-
-                //edgeLength: 50,
-                //edgeSymDiffLength: 60
-                handleDisconnected: true,
-                avoidOverlap: true,
-
-                unconstrIter: 15,
-                userConstIter: 0,
-                allConstIter: 15
-            }
+            layout
         });
 
         this.cy.pan({ x: offsetLeft, y: offsetTop });
         this.cy.zoom(this.cy.zoom() * 0.8);
     }
+    
+    setUserControl(isOn: boolean) {
+        if (this.cy) {
+            this.cy.userPanningEnabled(isOn);
+            this.cy.userZoomingEnabled(isOn);
+            this.cy.boxSelectionEnabled(isOn);
+        }
+    }
 
 
+    /*
+        Menu
+    */
+
+    settingOnChange() {
+        var lengthScale = this.edgeLengthScale
+        var baseLength = this.edgeBaseLength;
+        var groupBy = this.groupNodesBy;
+
+        var width = this.jDiv.width();
+        var height = this.jDiv.height() - sliderSpace;
+        var widthHalf = width / 2;
+        var heightHalf = height / 2;
+        var screenCoords = new THREE.Vector3();
+        var unitRadius = 5;
+
+        var edgeColorMode = this.colorMode;
+        var edgeDirectionMode = this.directionMode;
+        
+        this.updateGraph();
+    }
+
+    menuButtonOnClick() {
+        var l = $('#button-graph2dalt-option-menu-' + this.id).position().left + 5;
+        var t = $('#button-graph2dalt-option-menu-' + this.id).position().top - $('#div-graph2dalt-layout-menu-' + this.id).height() - 15;
+
+
+        $('#div-graph2dalt-layout-menu-' + this.id).zIndex(1000);
+        $('#div-graph2dalt-layout-menu-' + this.id).css({ left: l, top: t, height: 'auto' });
+        $('#div-graph2dalt-layout-menu-' + this.id).fadeToggle('fast');
+    }
 
     setupOptionMenuUI() {
         // Remove existing html elements
-        this.graph2DDotClass = ".graph-2dalt-menu-" + this.id;
-        this.graph2DClass = "graph-2dalt-menu-" + this.id;
-        $("label").remove(this.graph2DDotClass);
-        $("select").remove(this.graph2DDotClass);
-        $("button").remove(this.graph2DDotClass);
-        $("div").remove(this.graph2DDotClass);
-
-        // Default Setting
-        this.isFlowLayoutOn = false;
+        this.graph2DAltDotClass = ".graph-2dalt-menu-" + this.id;
+        this.graph2DAltClass = "graph-2dalt-menu-" + this.id;
+        $("label").remove(this.graph2DAltDotClass);
+        $("select").remove(this.graph2DAltDotClass);
+        $("button").remove(this.graph2DAltDotClass);
+        $("div").remove(this.graph2DAltDotClass);
 
         // Function variables response to changes in settings
-        /*
-        var varLayoutOnChange = (isOn) => {
-            this.isFlowLayoutOn = isOn;
-            this.settingOnChange();
-        };
         var varEdgeLengthOnChange = () => {
-            var edgeLengthScale = $("#div-edge-length-slider-" + this.id)['bootstrapSlider']().data('bootstrapSlider').getValue();
+            var edgeLengthScale = $("#div-edge-length-slider-alt-" + this.id)['bootstrapSlider']().data('bootstrapSlider').getValue();
             this.edgeLengthScale = edgeLengthScale;
             this.settingOnChange();
         };
@@ -251,9 +320,14 @@ class Graph2DAlt {
 
         var varMenuButtonOnClick = () => { this.menuButtonOnClick(); };
 
+        var changeLayout = layout => {
+            this.layout = layout;
+            this.updateGraph();
+        }
+
         // Setting Options
         // option button
-        this.jDiv.append($('<button id="button-graph2d-option-menu-' + this.id + '" class="' + this.graph2DClass + ' btn  btn-sm btn-primary" ' +
+        this.jDiv.append($('<button id="button-graph2dalt-option-menu-' + this.id + '" class="' + this.graph2DAltClass + ' btn  btn-sm btn-primary" ' +
             'data-toggle="tooltip" data-placement="top" title="Show side-by-side graph representation">Options</button>')
             .css({ 'position': 'relative', 'margin-left': '5px', 'font-size': '12px', 'z-index': 1000 })
             .click(function () { varMenuButtonOnClick(); }));
@@ -261,7 +335,7 @@ class Graph2DAlt {
 
         //------------------------------------------------------------------------
         // menu
-        this.jDiv.append($('<div id="div-graph2d-layout-menu-' + this.id + '" class="' + this.graph2DClass + '"></div>')
+        this.jDiv.append($('<div id="div-graph2dalt-layout-menu-' + this.id + '" class="' + this.graph2DAltClass + '"></div>')
             .css({
                 'display': 'none',
                 'background-color': '#feeebd',
@@ -272,69 +346,52 @@ class Graph2DAlt {
 
         //------------------------------------------------------------------------
         // menu - edge length
-        $('#div-graph2d-layout-menu-' + this.id).append('<div>Edge Length<div/>');
-        $('#div-graph2d-layout-menu-' + this.id).append($('<input id="div-edge-length-slider-' + this.id + '" class=' + this.graph2DClass + 'data-slider-id="surface-opacity-slider" type="text"' +
+        $('#div-graph2dalt-layout-menu-' + this.id).append('<div>Edge Length<div/>');
+        $('#div-graph2dalt-layout-menu-' + this.id).append($('<input id="div-edge-length-slider-alt-' + this.id + '" class=' + this.graph2DAltClass + 'data-slider-id="surface-opacity-slider" type="text"' +
             'data-slider-min="3" data-slider-max="10" data-slider-step="0.5" data-slider-value="1" />')
             .css({ 'position': 'relative', 'width': '150px' }));
 
-        $("#div-edge-length-slider-" + this.id)['bootstrapSlider']();
-        $("#div-edge-length-slider-" + this.id)['bootstrapSlider']().on('change', varEdgeLengthOnChange);
-
-        // menu - flow
-        $('#div-graph2d-layout-menu-' + this.id).append('<div id="div-graph2d-flow-' + this.id + '"></div>');
-        $('#div-graph2d-flow-' + this.id).append($('<input type="checkbox" id="checkbox-graph2d-flow-layout-' + this.id + '" class=' + this.graph2DClass + '>')
-            .css({ 'position': 'relative', 'width': '20px' })
-            .on("change", function () { varLayoutOnChange($(this).is(":checked")); }));
-        $('#div-graph2d-flow-' + this.id).append('Enable Flow Layout');
-
-
+        $("#div-edge-length-slider-alt-" + this.id)['bootstrapSlider']();
+        $("#div-edge-length-slider-alt-" + this.id)['bootstrapSlider']().on('change', varEdgeLengthOnChange);
+        
 
         // menu - group nodes
-        $('#div-graph2d-layout-menu-' + this.id).append('<div id="div-graph2d-group-' + this.id + '">bundle: </div>');
-        $('#div-graph2d-group-' + this.id).append($('<select id="select-graph2d-group-' + this.id + '" class=' + this.graph2DClass + '></select>')
+        $('#div-graph2dalt-layout-menu-' + this.id).append('<div id="div-graph2dalt-group-' + this.id + '">bundle: </div>');
+        $('#div-graph2dalt-group-' + this.id).append($('<select id="select-graph2dalt-group-' + this.id + '" class=' + this.graph2DAltClass + '></select>')
             .css({ 'margin-left': '5px', 'margin-bottom': '5px', 'font-size': '12px', 'width': '80px', 'background-color': '#feeebd' })
             .on("change", function () { varGroupNodesOnChange($(this).val()); }));
 
-        $('#select-graph2d-group-' + this.id).empty();
+        $('#select-graph2dalt-group-' + this.id).empty();
 
         var option = document.createElement('option');
         option.text = 'none';
         option.value = 'none';
-        $('#select-graph2d-group-' + this.id).append(option);
+        $('#select-graph2dalt-group-' + this.id).append(option);
 
         // Add descrete attribute to list
         for (var i = 0; i < this.dataSet.attributes.columnNames.length; ++i) {
             var columnName = this.dataSet.attributes.columnNames[i];
             if (this.dataSet.attributes.info[columnName].isDiscrete) {
-                $('#select-graph2d-group-' + this.id).append('<option value = "' + columnName + '">' + columnName + '</option>');
+                $('#select-graph2dalt-group-' + this.id).append('<option value = "' + columnName + '">' + columnName + '</option>');
             }
 
         }
+        
+        // menu - layouts
+        $('#div-graph2dalt-layout-menu-' + this.id).append('<div id="div-graph2dalt-layout-' + this.id + '">layout: </div>');
+        $('#div-graph2dalt-layout-' + this.id).append($('<select id="select-graph2dalt-layout-' + this.id + '" class=' + this.graph2DAltClass + '></select>')
+            .css({ 'margin-left': '5px', 'margin-bottom': '5px', 'font-size': '12px', 'width': '80px', 'background-color': '#feeebd' })
+            .on("change", function () { changeLayout($(this).val()); }));
 
-        var varClass = this.graph2DClass;
+        $('#select-graph2dalt-layout-' + this.id).empty();
 
-        if (this.mouseDownEventListenerAdded == false) {
-            this.mouseDownEventListenerAdded = true;
-            document.addEventListener('mouseup', (event) => {
-                if ((!$(event.target).hasClass(varClass))) {
-                    $('#div-graph2d-layout-menu-' + this.id).hide();
-
-                }
-            }, false);
+        for (var layout of ["cose", "cola", "cola-flow"]) {
+            var option = document.createElement('option');
+            option.text = layout;
+            option.value = layout;
+            $('#select-graph2dalt-layout-' + this.id).append(option);
         }
-        */
-
-
+                
     }
-
-
-    setUserControl(isOn: boolean) {
-        if (this.cy) {
-            this.cy.userPanningEnabled(isOn);
-            this.cy.userZoomingEnabled(isOn);
-            this.cy.boxSelectionEnabled(isOn);
-        }
-    }
-
 
 }
