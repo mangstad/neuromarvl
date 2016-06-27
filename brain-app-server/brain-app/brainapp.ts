@@ -67,7 +67,7 @@ class DataSet {
                 type: "",
                 distincts: []
             },
-            isSimatricalMatrix: true
+            isSymmetricalMatrix: true
         };
     }
 
@@ -227,7 +227,7 @@ class DataSet {
 
     setSimMatrix(simMatrix) {
         this.simMatrix = simMatrix;
-        this.info.isSimatricalMatrix = CommonUtilities.isSimatrical(this.simMatrix);
+        this.info.isSymmetricalMatrix = CommonUtilities.isSymmetrical(this.simMatrix);
 
         this.sortedSimilarities = [];
 
@@ -1292,7 +1292,7 @@ $('#button-apply-filter').button("disable");
 
 
 function setupAttributeTab() {
-    if (dataSet.attributes) {
+    if (dataSet && dataSet.attributes) {
         $('#select-attribute').empty();
         for (var i = 0; i < dataSet.attributes.columnNames.length; ++i) {
             var columnName = dataSet.attributes.columnNames[i];

@@ -57,16 +57,21 @@ class Graph3D {
             //TODO: Originally using spheres, but can switch to sprites for pie chart representations
             var nodeObject = this.nodeMeshes[i] = new THREE.Mesh(
                 this._sphereGeometry,
-                new THREE.MeshLambertMaterial({ color: nodeColorings[i] })
+                new THREE.MeshLambertMaterial({
+                    color: nodeColorings[i],
+                    transparent: true       // Not actually transparent, but need this or three.js will render it before the brasin surface
+                })
             );
             //var nodeObject = this.nodeMeshes[i] = this.generateSprite(nodeColorings[i]);
+            nodeObject.renderOrder = RENDER_ORDER_EDGE; // Draw at the same level as edges
             
             var label = (!!labels && labels[i]) || "";
             this.nodeInfo[i]["label"] = this.createNodeLabel(label, 6);
 
-            // additional flag
+            // User data, which will be useful for other graphs using this graph as a basis
             nodeObject.userData.hasVisibleEdges = true;
             nodeObject.userData.id = i;
+
             this.rootObject.add(nodeObject);
         }
 

@@ -24,9 +24,13 @@ class Graph2DAlt {
 
     // Data
     commonData;
+    config;
+    //edgeMatrix;
 
     nodes: any[];
     links: any[];
+
+    //elements: any[];
 
     cy;
 
@@ -34,16 +38,87 @@ class Graph2DAlt {
         this.nodes = [];
         this.links = [];
 
+        //this.elements = [];
+
         this.container = container;
         this.id = id;
         this.jDiv = jDiv;
         this.dataSet = dataSet;
         
         this.commonData = commonData;
+        //this.edgeMatrix = edgeMatrix;
     }
 
 
     initGraph(colaGraph: Graph3D, camera) {
+        // Use this.dataSet to build the elements for the cytoscape graph.
+        // Include default values that are input to style fuctions.
+
+        console.log(this.dataSet);
+        console.log(this.commonData);
+        console.log(saveObj);
+
+        /*
+        let edgeMatrix = this.dataSet.adjMatrixFromEdgeCount(maxEdgesShowable);
+
+        let edges = [];
+        for (let i in edgeMatrix) {
+            for (let j in edgeMatrix[i]) {
+                if (i === j) continue;      // Skip self edges
+                if (this.dataSet.info.isSymmetricalMatrix && (i < j)) continue;     // Don't need redundant half of symmetric matrix
+                let value = edgeMatrix[i][j];
+                if (value <= 0) continue;      // Skip any filtered out (null) or insignificant
+                edges.push({
+                    data: {
+                        id: `e_${i}_${j}`,
+                        source: `n_${i}`,
+                        target: `n_${j}`,
+                        value,
+
+                        color: "black"
+                    }
+                });
+            }
+        }
+        let nodes = [];
+        for (let i = 0; i < this.dataSet.info.nodeCount; i++) {
+            // Use projection of colaGraph to screen space to initialise positions
+            //TODO: getting (0,0) for position
+            //let node3d = colaGraph.nodeMeshes[i];
+            //let position;
+            //position = (new THREE.Vector3()).setFromMatrixPosition(colaGraph.nodeMeshes[i].matrixWorld);
+            //position.project(camera);
+
+            // Map the nodes attribute values to node data, for quick application of styling
+            let attributes = {};
+            let columnNames = this.dataSet.attributes.columnNames;
+            let values = this.dataSet.attributes.attrValues;
+            for (let j in columnNames) {
+                attributes[columnNames[j]] = values[j][i];
+            }
+
+            nodes.push({
+                data: {
+                    id: `n_${i}`,
+
+                    attributes,
+                    radius: 5,
+                    color: "black"
+                },
+                //position: {
+                //    x: position.x,
+                //    y: position.y
+                //}
+            });
+        }
+        
+        console.log(nodes);
+        console.log(edges);
+        this.elements = nodes.concat(edges);
+        */
+
+
+
         //this.colorMode = colaGraph.colorMode;
         //this.directionMode = colaGraph.edgeDirectionMode;
         var width = this.jDiv.width();
@@ -64,8 +139,7 @@ class Graph2DAlt {
         var children = colaGraph.nodeMeshes;
         this.colorMode = colaGraph.colorMode;
         this.directionMode = colaGraph.edgeDirectionMode;
-
-        
+                
         for (var i = 0; i < children.length; i++) {
             var node = children[i];
             var d = node.userData;
@@ -78,7 +152,6 @@ class Graph2DAlt {
             // Use projection of colaGraph to screen space to initialise positions
             var position = (new THREE.Vector3()).setFromMatrixPosition(node.matrixWorld);
             position.project(camera);
-            // Offset positions to the right, because the left side is usually occupied by the 3d model
             nodeObject["x"] = position.x;
             nodeObject["y"] = position.y;
 
@@ -153,15 +226,21 @@ class Graph2DAlt {
 
 
     updateGraph() {
+        // Use saveObj and this.layout to create the layout and style options, then create the cytoscape graph
+
         var container = this.container;
         var offsetLeft = container.offsetWidth * 0.5;
         var offsetTop = container.offsetHeight * 0.1;
 
+        var colorAttr = saveObj.nodeSettings.nodeColorAttribute;
+        var attrArray = dataSet.attributes.get(colorAttr);
+        var colorMode = saveObj.nodeSettings.nodeColorMode;     // discrete or continuous
+        
         var nodes = this.nodes.map(d => ({
             data: {
                 id: "n_" + d.id,
                 color: d.color,
-                radius: d.radius
+                radius: d.radius * 10
             },
             position: {
                 x: d.x,
@@ -177,6 +256,9 @@ class Graph2DAlt {
             }
         }));
         var elements = nodes.concat(<any>edges);
+        //var elements = this.elements;
+
+        //console.log(nodes);
 
         // Default layout is simple and fast
         var layout = <any>{
@@ -205,7 +287,9 @@ class Graph2DAlt {
 
                     unconstrIter: 15,
                     userConstIter: 0,
-                    allConstIter: 15
+                    allConstIter: 15,
+
+                    flow: false
                 }
                 break;
             case "cola-flow":
@@ -227,27 +311,30 @@ class Graph2DAlt {
                 break;
         }
 
+        var nodeStyle = {
+            'label': 'data(id)',
+            "width": "data(radius)",
+            "height": "data(radius)",
+            "background-color": "data(color)"
+        };
+        var edgeStyle = {
+            'width': 3,
+            'line-color': 'data(color)',
+            'target-arrow-color': '#ccc',
+            'target-arrow-shape': 'triangle'
+        };
+
         this.cy = cytoscape({
             container,
             elements,
             style: [ // the stylesheet for the graph
                 {
                     selector: 'node',
-                    style: {
-                        'background-color': 'data(color)',
-                        'label': 'data(id)',
-                        "width": "data(radius)",
-                        "height": "data(radius)"
-                    }
+                    style: nodeStyle 
                 },
                 {
                     selector: 'edge',
-                    style: {
-                        'width': 3,
-                        'line-color': 'data(color)',
-                        'target-arrow-color': '#ccc',
-                        'target-arrow-shape': 'triangle'
-                    }
+                    style: edgeStyle
                 }
             ],
             minZoom: 0.1,

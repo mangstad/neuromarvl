@@ -23,7 +23,7 @@ class CommonUtilities {
         return true;
     }
 
-    static isSimatrical(matrix: number[][]) {
+    static isSymmetrical(matrix: number[][]) {
         if (matrix.length !== matrix[0].length) return false;
         for (var i = 0; i < matrix.length; i++) {
             for (var j = i + 1; j < matrix[0].length; j++) {

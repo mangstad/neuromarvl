@@ -60,6 +60,7 @@ class Brain3DApp implements Application, Loopable {
     brainSurfaceBoundingSphere;
     brainObject; // Brain Object surface used for controling object rotation
     brainContainer; // Container of brain object used for translation and camera facing direction
+    surfaceMaterial;
 
     // 3D graph of brain connectivity
     colaObject; // Base object for the cola graph
@@ -224,7 +225,7 @@ class Brain3DApp implements Application, Loopable {
 
         this.svgNeedsUpdate = true;
 
-        if (dataSet.info.isSimatricalMatrix && directionMode !== "none") {
+        if (dataSet.info.isSymmetricalMatrix && directionMode !== "none") {
             CommonUtilities.launchAlertMessage(CommonUtilities.alertType.WARNING,
                 "The given similarity matrix is symmetrical," +
                 "so the animation of edges do not reflect their actual direction.");
@@ -272,6 +273,7 @@ class Brain3DApp implements Application, Loopable {
             preserveDrawingBuffer: true,
             alpha: true
         });
+        this.renderer.sortObjects = true;
 
         this.renderer.setSize(jDiv.width(), (jDiv.height() - sliderSpace));
         jDiv.append($('<span id="close-brain-app-' + this.id + '" title="Close" class="view-panel-span"  data-toggle="tooltip" data-placement="bottom">x</span>')
@@ -697,10 +699,10 @@ class Brain3DApp implements Application, Loopable {
         var clonedObject = new THREE.Object3D();
         var boundingSphereObject = new THREE.Object3D();
 
-        var basicMaterial = new THREE.MeshLambertMaterial({
-            color: 0x888888,
+        let surfaceMaterial = new THREE.MeshLambertMaterial({
+            color: 0xcccccc,
             transparent: true,
-            opacity: 0.3,
+            opacity: 0.5,
             depthWrite: true,
             depthTest: false,
             side: THREE.FrontSide
@@ -727,7 +729,7 @@ class Brain3DApp implements Application, Loopable {
                     })));
                     */
 
-                    clonedObject.add(new THREE.Mesh(child.geometry.clone(), basicMaterial));
+                    clonedObject.add(new THREE.Mesh(child.geometry.clone(), surfaceMaterial));
                     clonedObject.renderOrder = RENDER_ORDER_BRAIN;
 
                     child.geometry.computeBoundingSphere();
@@ -797,14 +799,14 @@ class Brain3DApp implements Application, Loopable {
                     leftGeometry.addAttribute("position", new THREE.BufferAttribute(new Float32Array(leftPositions), VERT_CHUNK));
                     leftGeometry.computeVertexNormals();
                     leftGeometry.computeFaceNormals();
-                    var leftBrain = new THREE.Mesh(leftGeometry, basicMaterial);
+                    var leftBrain = new THREE.Mesh(leftGeometry, surfaceMaterial);
                     leftBrain.renderOrder = RENDER_ORDER_BRAIN;
 
                     var rightGeometry = new THREE.BufferGeometry;
                     rightGeometry.addAttribute("position", new THREE.BufferAttribute(new Float32Array(rightPositions), VERT_CHUNK));
                     rightGeometry.computeVertexNormals();
                     rightGeometry.computeFaceNormals();
-                    var rightBrain = new THREE.Mesh(rightGeometry, basicMaterial);
+                    var rightBrain = new THREE.Mesh(rightGeometry, surfaceMaterial);
                     rightBrain.renderOrder = RENDER_ORDER_BRAIN;
 
                     var box = new THREE.Box3()['setFromObject'](model);
@@ -860,8 +862,12 @@ class Brain3DApp implements Application, Loopable {
     }
 
     setSurfaceOpacity(opacity: number) {
-        for (var i = 0; i < this.surfaceUniformList.length; i++) {
-            this.surfaceUniformList[i].opacity.value = opacity; 
+        //for (var i = 0; i < this.surfaceUniformList.length; i++) {
+        //    this.surfaceUniformList[i].opacity.value = opacity; 
+        //}
+        for (let object of this.brainSurface.children) {
+            object.material.opacity = opacity;
+            object.material.needsUpdate = true;
         }
     }
 
@@ -1290,7 +1296,7 @@ class Brain3DApp implements Application, Loopable {
 
             } else if (this.networkType == '2D-alt') {
                 this.svgMode = true;    //TODO: toggles drag detection mode, maybe rename to ignore3dControl?
-                this.canvasGraph.initGraph(this.colaGraph, this.camera);
+                this.canvasGraph.initGraph(this.physioGraph, this.camera);
                 this.colaGraph.setVisible(false);
             } else { // this.network === "3D"
                 // Set up a coroutine to do the animation
@@ -1739,8 +1745,9 @@ class Brain3DApp implements Application, Loopable {
 
         // Set up loop
 
-        // Set up the two graphs
+        // Set up the graphs
         var edgeMatrix = this.dataSet.adjMatrixFromEdgeCount(maxEdgesShowable); // Don''t create more edges than we will ever be showing
+
         if (this.physioGraph) this.physioGraph.destroy();
         this.physioGraph = new Graph3D(this.brainObject, edgeMatrix, this.nodeColorings, this.dataSet.simMatrix, this.dataSet.brainLabels, this.commonData);
 
@@ -1754,14 +1761,14 @@ class Brain3DApp implements Application, Loopable {
             console.log("ERROR: Wrong Brain Surface Mode");
         }
 
-        var edgeMatrix = this.dataSet.adjMatrixFromEdgeCount(maxEdgesShowable);
+        edgeMatrix = this.dataSet.adjMatrixFromEdgeCount(maxEdgesShowable);
         if (this.colaGraph) this.colaGraph.destroy();
         this.colaGraph = new Graph3D(this.colaObject, edgeMatrix, this.nodeColorings, this.dataSet.simMatrix, this.dataSet.brainLabels, this.commonData);
         this.colaGraph.setVisible(false);
 
         this.svgGraph = new Graph2D(this.id, this.jDiv, this.dataSet, this.svg, this.svgDefs, this.svgAllElements,
             this.d3Zoom, this.commonData);
-
+        
         this.canvasGraph = new Graph2DAlt(this.id, this.jDiv, this.dataSet, this.graph2dContainer, this.commonData);      //TODO: This is a test signature. Change it.
 
         // Initialize the filtering
