@@ -730,7 +730,6 @@ class Brain3DApp implements Application, Loopable {
                     */
 
                     clonedObject.add(new THREE.Mesh(child.geometry.clone(), surfaceMaterial));
-                    clonedObject.renderOrder = RENDER_ORDER_BRAIN;
 
                     child.geometry.computeBoundingSphere();
                     var boundingSphere = child.geometry.boundingSphere;
@@ -800,14 +799,12 @@ class Brain3DApp implements Application, Loopable {
                     leftGeometry.computeVertexNormals();
                     leftGeometry.computeFaceNormals();
                     var leftBrain = new THREE.Mesh(leftGeometry, surfaceMaterial);
-                    leftBrain.renderOrder = RENDER_ORDER_BRAIN;
 
                     var rightGeometry = new THREE.BufferGeometry;
                     rightGeometry.addAttribute("position", new THREE.BufferAttribute(new Float32Array(rightPositions), VERT_CHUNK));
                     rightGeometry.computeVertexNormals();
                     rightGeometry.computeFaceNormals();
                     var rightBrain = new THREE.Mesh(rightGeometry, surfaceMaterial);
-                    rightBrain.renderOrder = RENDER_ORDER_BRAIN;
 
                     var box = new THREE.Box3()['setFromObject'](model);
                     leftBrain.rotation.z = 3.14 / 2;
@@ -843,6 +840,7 @@ class Brain3DApp implements Application, Loopable {
             return;
         }
 
+        clonedObject.renderOrder = RENDER_ORDER_BRAIN;
         this.brainSurface = clonedObject;
         this.brainObject.add(this.brainSurface);
         
