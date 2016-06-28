@@ -1249,6 +1249,10 @@ function loadUploadedData(loadObj, view, func, source = "save") {
             .text("Pre-uploaded data")
             .css({ color: 'green' });
         status.coordLoaded = true;
+        // change status
+        document.getElementById("button-select-coords").innerHTML = loadObj.serverFileNameCoord;
+        changeFileStatus("coords-status", "uploaded");
+
         callback();
     });
     $.get('brain-app/' + source + '/' + loadObj.serverFileNameMatrix, function (text) {
@@ -1258,6 +1262,11 @@ function loadUploadedData(loadObj, view, func, source = "save") {
             .text("Pre-uploaded data")
             .css({ color: 'green' });
         status.matrixLoaded = true;
+
+        // change status
+        document.getElementById("button-select-matrix").innerHTML = loadObj.serverFileNameMatrix;
+        changeFileStatus("matrix-status", "uploaded");
+
         callback();
     });
     $.get('brain-app/' + source + '/' + loadObj.serverFileNameAttr, function (text) {
@@ -1268,6 +1277,10 @@ function loadUploadedData(loadObj, view, func, source = "save") {
             .css({ color: 'green' });
         setupAttributeTab();
         status.attrLoaded = true;
+        // change status
+        document.getElementById("button-select-attrs").innerHTML = loadObj.serverFileNameAttr;
+        changeFileStatus("attrs-status", "uploaded");
+
         callback()
     });
     // Check if Label file is uploaded
@@ -1280,6 +1293,11 @@ function loadUploadedData(loadObj, view, func, source = "save") {
                 .css({ color: 'green' });
         });
         status.labelLoaded = true;
+
+        // change status
+        document.getElementById("button-select-labels").innerHTML = loadObj.serverFileNameLabel;
+        changeFileStatus("labels-status", "uploaded");
+
         callback();
     }
     $('#load-example-data').button().prop("disabled", "disabled");
@@ -2185,6 +2203,7 @@ function applyModelToBrainView(view: string, model: string, brainSurfaceMode?) {
                         "Default example dataset is loaded.");
                 });
             } else {
+                ///jm
                 var source = (saveObj.loadExampleData ? "save_examples" : "save");
                 loadUploadedData(loadObj, app.setDataSetView, function (view) {
                     // Set data set to the right view
