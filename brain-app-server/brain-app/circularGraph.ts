@@ -441,6 +441,8 @@ class CircularGraph {
         this.svgAllElements.selectAll(".nodeDotCircular")
             .data(this.nodes.filter(function (n) { return !n.children; }))
             .each(function (chartData, i) {
+                //TODO: Colour conversion is already done elsewhere. Pass it to the graph so it doesn't need to be repeated for every node
+
                 var colorAttr = saveObj.nodeSettings.nodeColorAttribute;
                 var attrArray = dataSet.attributes.get(colorAttr);
                 var group = d3.select(this);

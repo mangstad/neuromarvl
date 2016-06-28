@@ -35,8 +35,9 @@ class Graph3D {
     _sphereGeometry: THREE.SphereGeometry = new THREE.SphereGeometry(2, 10, 10);
 
     allLabels: boolean = false;
-
-    constructor(parentObject, adjMatrix: any[][], nodeColorings: number[], weightMatrix: any[][], labels: string[], commonData) {
+    
+    //constructor(parentObject, adjMatrix: any[][], nodeColorings: number[], weightMatrix: any[][], labels: string[], commonData) {
+    constructor(parentObject, adjMatrix: any[][], nodeColorings: number[][], weightMatrix: any[][], labels: string[], commonData) {
         this.parentObject = parentObject;
         this.rootObject = new THREE.Object3D();
         this.commonData = commonData;
@@ -50,16 +51,27 @@ class Graph3D {
                 isSelected: false
             };
         })
-        this.nodeDefaultColor = nodeColorings.slice(0); // clone the array
-        this.nodeCurrentColor = nodeColorings.slice(0); // clone the array
+
+        //this.nodeDefaultColor = nodeColorings.slice(0); // clone the array
+        //this.nodeCurrentColor = nodeColorings.slice(0); // clone the array
+        let averageColor = (colors: number[]) => {
+            //let bAvg = colors.reduce((acc, color) => acc + color % 0x100, 0) / colors.length;
+            //let gAvg = colors.reduce((acc, color) => acc + Math.floor(color / 0x100) % 0x100, 0) / colors.length;
+            //let rAvg = colors.reduce((acc, color) => acc + Math.floor(color / 0x10000) % 0x100, 0) / colors.length;
+            //return rAvg * 0x10000 + gAvg * 0x100 + bAvg;
+            return colors.reduce((acc, color) => acc + color, 0) / colors.length;
+        }
+        this.nodeDefaultColor = nodeColorings.map(a => averageColor(a)); // Use average colour
+        this.nodeCurrentColor = this.nodeDefaultColor.slice(0); // clone the array
 
         for (var i = 0; i < adjMatrix.length; ++i) {
             //TODO: Originally using spheres, but can switch to sprites for pie chart representations
             var nodeObject = this.nodeMeshes[i] = new THREE.Mesh(
                 this._sphereGeometry,
                 new THREE.MeshLambertMaterial({
-                    color: nodeColorings[i],
-                    transparent: true       // Not actually transparent, but need this or three.js will render it before the brasin surface
+                    //color: nodeColorings[i],
+                    color: this.nodeDefaultColor[i],       // Average colour value needed for material
+                    transparent: true       // Not actually transparent, but need this or three.js will render it before the brain surface
                 })
             );
             //var nodeObject = this.nodeMeshes[i] = this.generateSprite(nodeColorings[i]);
@@ -71,6 +83,7 @@ class Graph3D {
             // User data, which will be useful for other graphs using this graph as a basis
             nodeObject.userData.hasVisibleEdges = true;
             nodeObject.userData.id = i;
+            nodeObject.userData.colors = nodeColorings[i];
 
             this.rootObject.add(nodeObject);
         }

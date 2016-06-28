@@ -88,7 +88,7 @@ class Brain3DApp implements Application, Loopable {
     svgNeedsUpdate: boolean = false;
     d3Zoom = d3.behavior.zoom();
 
-    nodeColorings: number[]; // Stores the colorings associated with the groups
+    //nodeColorings: number[]; // Stores the colorings associated with the groups
     dissimilarityMatrix: number[][] = []; // An inversion of the similarity matrix, used for Cola graph distances
 
     // State
@@ -230,6 +230,36 @@ class Brain3DApp implements Application, Loopable {
                 "The given similarity matrix is symmetrical," +
                 "so the animation of edges do not reflect their actual direction.");
         }
+    }
+
+    getNodeColors(): number[][] {
+        // Get the colour array, a mapping of the configured colour attribute to colour values
+        let colorAttribute = saveObj.nodeSettings.nodeColorAttribute;
+
+        if (colorAttribute === "none" || colorAttribute === "") {
+            return Array(dataSet.attributes.numRecords).map(d => [0xd3d3d3]);
+        }
+
+        let valueArray = dataSet.attributes.get(colorAttribute);
+        let colorMode = saveObj.nodeSettings.nodeColorMode;     // "discrete" or not
+        let colorMap;
+
+        if (colorMode == "discrete") {
+            colorMap = d3.scale
+                .ordinal()
+                .domain(dataSet.attributes.info[colorAttribute].distinctValues)
+                .range(saveObj.nodeSettings.nodeColorDiscrete)
+                ;
+        }
+        else {
+            let i = dataSet.attributes.columnNames.indexOf(colorAttribute);
+            colorMap = d3.scale
+                .linear()
+                .domain([dataSet.attributes.getMin(i), dataSet.attributes.getMax(i)])
+                .range([saveObj.nodeSettings.nodeColorContinuousMin, saveObj.nodeSettings.nodeColorContinuousMax])
+                ;
+        }
+        return valueArray.map(a => a.map(value => colorMap(value)));
     }
 
     setupUserInteraction(jDiv) {
@@ -1737,9 +1767,10 @@ class Brain3DApp implements Application, Loopable {
         }
 
         // Set up the node colorings
-        this.nodeColorings = this.dataSet.attributes.attrValues[0].map((group: number[]) => {
-            return 0xd3d3d3;
-        });
+        //this.nodeColorings = this.dataSet.attributes.attrValues[0].map((group: number[]) => {
+        //    return 0xd3d3d3;
+        //});
+        let nodeColors = this.getNodeColors();
 
         // Set up loop
 
@@ -1747,7 +1778,8 @@ class Brain3DApp implements Application, Loopable {
         var edgeMatrix = this.dataSet.adjMatrixFromEdgeCount(maxEdgesShowable); // Don''t create more edges than we will ever be showing
 
         if (this.physioGraph) this.physioGraph.destroy();
-        this.physioGraph = new Graph3D(this.brainObject, edgeMatrix, this.nodeColorings, this.dataSet.simMatrix, this.dataSet.brainLabels, this.commonData);
+        //this.physioGraph = new Graph3D(this.brainObject, edgeMatrix, this.nodeColorings, this.dataSet.simMatrix, this.dataSet.brainLabels, this.commonData);
+        this.physioGraph = new Graph3D(this.brainObject, edgeMatrix, nodeColors, this.dataSet.simMatrix, this.dataSet.brainLabels, this.commonData);
 
         if (this.brainSurfaceMode === 0) {
             this.physioGraph.setNodePositions(this.dataSet.brainCoords);
@@ -1761,7 +1793,8 @@ class Brain3DApp implements Application, Loopable {
 
         edgeMatrix = this.dataSet.adjMatrixFromEdgeCount(maxEdgesShowable);
         if (this.colaGraph) this.colaGraph.destroy();
-        this.colaGraph = new Graph3D(this.colaObject, edgeMatrix, this.nodeColorings, this.dataSet.simMatrix, this.dataSet.brainLabels, this.commonData);
+        //this.colaGraph = new Graph3D(this.colaObject, edgeMatrix, this.nodeColorings, this.dataSet.simMatrix, this.dataSet.brainLabels, this.commonData);
+        this.colaGraph = new Graph3D(this.colaObject, edgeMatrix, nodeColors, this.dataSet.simMatrix, this.dataSet.brainLabels, this.commonData);
         this.colaGraph.setVisible(false);
 
         this.svgGraph = new Graph2D(this.id, this.jDiv, this.dataSet, this.svg, this.svgDefs, this.svgAllElements,
