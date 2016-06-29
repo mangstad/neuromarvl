@@ -235,6 +235,8 @@ class Brain3DApp implements Application, Loopable {
     getNodeColors(): number[][] {
         // Get the colour array, a mapping of the configured colour attribute to colour values
         let colorAttribute = saveObj.nodeSettings.nodeColorAttribute;
+        console.log(saveObj);
+        console.log(colorAttribute);
 
         if (colorAttribute === "none" || colorAttribute === "") {
             return Array(dataSet.attributes.numRecords).map(d => [0xd3d3d3]);
@@ -1727,15 +1729,16 @@ class Brain3DApp implements Application, Loopable {
 
     setDataSet(dataSet: DataSet) {
         this.dataSet = dataSet;
-
-        // Update slider max value
-        if (this.dataSet.sortedSimilarities.length < maxEdgesShowable) {
-            $("#edge-count-slider-" + this.id).prop("max", this.dataSet.sortedSimilarities.length);
-        } else {
-            $("#edge-count-slider-" + this.id).prop("max", maxEdgesShowable);
+        if (this.dataSet.sortedSimilarities) {
+            // Update slider max value
+            if (this.dataSet.sortedSimilarities.length < maxEdgesShowable) {
+                $("#edge-count-slider-" + this.id).prop("max", this.dataSet.sortedSimilarities.length);
+            } else {
+                $("#edge-count-slider-" + this.id).prop("max", maxEdgesShowable);
+            }
+            // update Circular Dataset
+            this.circularGraph.setDataSet(dataSet);
         }
-        // update Circular Dataset
-        this.circularGraph.setDataSet(dataSet);
 
         var sim = () => {
             this.restart();
@@ -1747,11 +1750,10 @@ class Brain3DApp implements Application, Loopable {
         dataSet.regNotifyAttributes(att);
         if (dataSet.simMatrix && dataSet.attributes) {
             this.restart();
+            this.physioGraph.update();
         } else {
             console.log("Warning: Similarity Matrix and Attributes not Available.");
         }
-
-        this.physioGraph.update();
     }
 
     // Initialize or re-initialize the visualisation.
@@ -1771,6 +1773,7 @@ class Brain3DApp implements Application, Loopable {
         //    return 0xd3d3d3;
         //});
         let nodeColors = this.getNodeColors();
+        console.log(nodeColors);
 
         // Set up loop
 
@@ -1853,12 +1856,13 @@ class Brain3DApp implements Application, Loopable {
     }
 
     getNodeUnderPointer(pointer) {
-        var raycaster = new THREE.Raycaster();
+        let raycaster = new THREE.Raycaster();
         raycaster.setFromCamera(pointer, this.camera);
 
-        var n = raycaster.intersectObjects(this.colaGraph.nodeMeshes)[0]
-            || raycaster.intersectObjects(this.physioGraph.nodeMeshes)[0]
-        ;
+        let nCola = (this.colaGraph && this.colaGraph.nodeMeshes) || [];
+        let nPhysio = (this.physioGraph && this.physioGraph.nodeMeshes) || [];
+
+        let n = raycaster.intersectObjects(nCola)[0] || raycaster.intersectObjects(nPhysio)[0];
         if (n) {
             this.commonData.nodeIDUnderPointer[this.id] = n.object.userData.id;
             return n.object;
@@ -1888,7 +1892,7 @@ class Brain3DApp implements Application, Loopable {
         } else {
             this.isControllingGraphOnly = false;
             this.svg.on(".zoom", null);
-            this.canvasGraph.setUserControl(true);
+            if (this.canvasGraph) this.canvasGraph.setUserControl(true);
         }
     }
 

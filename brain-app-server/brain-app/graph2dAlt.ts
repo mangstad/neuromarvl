@@ -148,6 +148,7 @@ class Graph2DAlt {
             nodeObject["id"] = d.id;
             nodeObject["color"] = "#".concat(node.material.color.getHexString());
             nodeObject["radius"] = node.scale.x * unitRadius;
+            nodeObject["colors"] = d.colors;
 
             // Use projection of colaGraph to screen space to initialise positions
             var position = (new THREE.Vector3()).setFromMatrixPosition(node.matrixWorld);
@@ -232,14 +233,15 @@ class Graph2DAlt {
         var offsetLeft = container.offsetWidth * 0.5;
         var offsetTop = container.offsetHeight * 0.1;
 
-        var colorAttr = saveObj.nodeSettings.nodeColorAttribute;
-        var attrArray = dataSet.attributes.get(colorAttr);
-        var colorMode = saveObj.nodeSettings.nodeColorMode;     // discrete or continuous
+        //var colorAttr = saveObj.nodeSettings.nodeColorAttribute;
+        //var attrArray = dataSet.attributes.get(colorAttr);
+        //var colorMode = saveObj.nodeSettings.nodeColorMode;     // discrete or continuous
         
         var nodes = this.nodes.map(d => ({
             data: {
                 id: "n_" + d.id,
-                color: d.color,
+                color: d.color,         //TODO: Can retire this when multiple colors is working
+                colors: d.colors,
                 radius: d.radius * 10
             },
             position: {
@@ -310,13 +312,21 @@ class Graph2DAlt {
                 }
                 break;
         }
-
+        
         var nodeStyle = {
             'label': 'data(id)',
             "width": "data(radius)",
             "height": "data(radius)",
-            "background-color": "data(color)"
+            "background-color": "data(color)",
+
+            "pie-size": "100%"
         };
+        let colorAttribute = saveObj.nodeSettings.nodeColorAttribute;
+        let nSlices = dataSet.attributes.info[colorAttribute].distinctValues.length;
+        for (let i = 0; i < nSlices; i++) {
+            nodeStyle[`pie-${i}-background-color`] = `data(colors[${i}])`;
+            nodeStyle[`pie-${i}-background-size`] = `${100 / nSlices}%`;
+        }
         var edgeStyle = {
             'width': 3,
             'line-color': 'data(color)',

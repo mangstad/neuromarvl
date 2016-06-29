@@ -50,9 +50,9 @@ class CommonData {
 
 // Holds data for a specific dataset, and sends notifications when data changes
 class DataSet {
-    public simMatrix: number[][];
-    public brainCoords: number[][];
-    public brainLabels: string[];
+    public simMatrix: number[][] = [];
+    public brainCoords: number[][] = [];
+    public brainLabels: string[] = [];
     public attributes: Attributes = null;
     public info;
     public sortedSimilarities;
@@ -77,13 +77,13 @@ class DataSet {
             return false;
         }
 
-        if (this.brainCoords.length === 0) {
-            CommonUtilities.launchAlertMessage(CommonUtilities.alertType.ERROR, "Node Coordinates is not loaded!");
+        if (!this.attributes) {
+            CommonUtilities.launchAlertMessage(CommonUtilities.alertType.ERROR, "Attributes are not loaded!");
             return false;
         }
 
-        if (!this.attributes) {
-            CommonUtilities.launchAlertMessage(CommonUtilities.alertType.ERROR, "Attributes are not loaded!");
+        if (this.brainCoords.length === 0) {
+            CommonUtilities.launchAlertMessage(CommonUtilities.alertType.ERROR, "Node Coordinates is not loaded!");
             return false;
         }
 
@@ -2156,7 +2156,7 @@ function viewToId(view: string): number {
     switch (view) {
         case tr_view: return 1;
         case bl_view: return 2;
-        case br_view: return 0;
+        case br_view: return 3;
         default: return 0;      // tl_view
     }
 }
@@ -2187,6 +2187,10 @@ function applyModelToBrainView(view: string, model: string, brainSurfaceMode?) {
             input.newTarget(id)
         );
 
+        ///jm
+        //if (!dataSet) dataSet = new DataSet();
+        apps[id].setDataSet(dataSet);
+
         var app = saveObj.saveApps[id] = (loadObj && loadObj.saveApps[id]) || new SaveApp(); // create a new instance (if an old instance exists)
         app.surfaceModel = model;
         app.view = view;
@@ -2203,7 +2207,6 @@ function applyModelToBrainView(view: string, model: string, brainSurfaceMode?) {
                         "Default example dataset is loaded.");
                 });
             } else {
-                ///jm
                 var source = (saveObj.loadExampleData ? "save_examples" : "save");
                 loadUploadedData(loadObj, app.setDataSetView, function (view) {
                     // Set data set to the right view
@@ -2697,7 +2700,7 @@ function getViewUnderMouse(x, y) {
 
 // Resource loading
 var commonData = new CommonData();
-var dataSet: DataSet = null;
+var dataSet = new DataSet();
 
 // Load the physiological coordinates of each node in the brain
 function loadCoordinates(file) {
@@ -2710,7 +2713,7 @@ function loadCoordinates(file) {
 
 function parseCoordinates(text: string) {
 
-    if (!dataSet) dataSet = new DataSet();
+    //if (!dataSet) dataSet = new DataSet();
 
     // For some reason the text file uses a carriage return to separate coordinates (ARGGgggh!!!!)
     //var lines = text.split(String.fromCharCode(13));
@@ -2752,7 +2755,7 @@ function loadLabels(file) {
 }
 
 function parseLabels(text: string) {
-    if (!dataSet) dataSet = new DataSet();
+    //if (!dataSet) dataSet = new DataSet();
     dataSet.brainLabels = text.replace(/\t|\n|\r/g, ' ').trim().split(' ').map(function (s) { return s.trim() });
     commonData.notifyLabels();
 }
@@ -3047,7 +3050,7 @@ function loadSimilarityMatrix(file, dataSet: DataSet) {
 }
 
 function parseSimilarityMatrix(text: string, dataSet: DataSet) {
-    if (!dataSet) dataSet = new DataSet();
+    //if (!dataSet) dataSet = new DataSet();
     //var lines = text.split('\n').map(function (s) { return s.trim() });
     var lines = text.replace(/\t|\,/g, ' ').trim().split(/\r\n|\r|\n/g).map(function (s) { return s.trim() });
     var simMatrix = [];
@@ -3071,7 +3074,7 @@ function loadAttributes(file, dataSet: DataSet) {
 }
 
 function parseAttributes(text: string, dataSet: DataSet) {
-    if (!dataSet) dataSet = new DataSet();
+    //if (!dataSet) dataSet = new DataSet();
     var newAttributes = new Attributes(text);
     dataSet.attributes = newAttributes;
     dataSet.notifyAttributes();
