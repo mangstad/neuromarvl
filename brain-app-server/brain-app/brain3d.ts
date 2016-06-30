@@ -617,12 +617,11 @@ class Brain3DApp implements Application, Loopable {
         this.input.regMouseRightClickCallback((x: number, y: number) => {
             if (this.isControllingGraphOnly) return;
 
-            var record;
+            let record;
             var node = this.getNodeUnderPointer(this.input.localPointerPosition());
             if (node) {
-                var color = (<any>node).material.color.getHex();
-                record = this.dataSet.getRecord(node.id);
-                record["color"] = color;
+                record = this.dataSet.getRecord(node.userData.id);
+                record["color"] = (<any>node).material.color.getHex();
             }
             return record;
         });
