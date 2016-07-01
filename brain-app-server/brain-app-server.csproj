@@ -111,6 +111,7 @@
     <TypeScriptCompile Include="brain-app\graph2dAlt.ts" />
     <TypeScriptCompile Include="brain-app\graph3d.ts" />
     <TypeScriptCompile Include="brain-app\input.ts" />
+    <TypeScriptCompile Include="brain-app\state.ts" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="extern\" />

@@ -5,6 +5,7 @@ class Graph3D {
     parentObject;
     rootObject;
     commonData;
+    saveObj;
 
     // Nodes
     nodeMeshes: any[];
@@ -37,10 +38,11 @@ class Graph3D {
     allLabels: boolean = false;
     
     //constructor(parentObject, adjMatrix: any[][], nodeColorings: number[], weightMatrix: any[][], labels: string[], commonData) {
-    constructor(parentObject, adjMatrix: any[][], nodeColorings: number[][], weightMatrix: any[][], labels: string[], commonData) {
+    constructor(parentObject, adjMatrix: any[][], nodeColorings: number[][], weightMatrix: any[][], labels: string[], commonData, saveObj) {
         this.parentObject = parentObject;
         this.rootObject = new THREE.Object3D();
         this.commonData = commonData;
+        this.saveObj = saveObj;
         this.edgeDirectionMode = "none";
         parentObject.add(this.rootObject);
 
@@ -108,10 +110,12 @@ class Graph3D {
                     }
 
                     if (weightMatrix[i][j] > weightMatrix[j][i]) {
-                        this.edgeList.push(adjMatrix[i][j] = new Edge(this.rootObject, this.nodeMeshes[i], this.nodeMeshes[j], weightMatrix[i][j])); // assume symmetric matrix
+                        //this.edgeList.push(adjMatrix[i][j] = new Edge(this.rootObject, this.nodeMeshes[i], this.nodeMeshes[j], weightMatrix[i][j])); // assume symmetric matrix
+                        this.edgeList.push(adjMatrix[i][j] = new Edge(this, this.nodeMeshes[i], this.nodeMeshes[j], weightMatrix[i][j])); // assume symmetric matrix
                         adjMatrix[j][i] = null;
                     } else {
-                        this.edgeList.push(adjMatrix[j][i] = new Edge(this.rootObject, this.nodeMeshes[j], this.nodeMeshes[i], weightMatrix[j][i])); // assume symmetric matrix
+                        //this.edgeList.push(adjMatrix[j][i] = new Edge(this.rootObject, this.nodeMeshes[j], this.nodeMeshes[i], weightMatrix[j][i])); // assume symmetric matrix
+                        this.edgeList.push(adjMatrix[j][i] = new Edge(this, this.nodeMeshes[j], this.nodeMeshes[i], weightMatrix[j][i])); // assume symmetric matrix
                         adjMatrix[i][j] = null;
                     }
                 } else {
@@ -428,8 +432,8 @@ class Graph3D {
     }
 
     setEdgeDirectionGradient() {
-        var startRGB = CommonUtilities.hexToRgb(saveObj.edgeSettings.directionStartColor, 1.0);
-        var endRGB = CommonUtilities.hexToRgb(saveObj.edgeSettings.directionEndColor, 1.0);
+        var startRGB = CommonUtilities.hexToRgb(this.saveObj.edgeSettings.directionStartColor, 1.0);
+        var endRGB = CommonUtilities.hexToRgb(this.saveObj.edgeSettings.directionEndColor, 1.0);
         for (var i = 0; i < this.edgeList.length; i++) {
             var edge = this.edgeList[i];
             edge.uniforms.startColor.value = new THREE.Vector4(startRGB.r / 255, startRGB.g / 255, startRGB.b / 255, 1.0);
@@ -734,6 +738,7 @@ class Edge {
     sourceNode;
     targetNode;
     parentObject;
+    saveObj;
 
     // Time control
     timeTracker;
@@ -770,9 +775,11 @@ class Edge {
 
 
 
-    constructor(parentObject, sourceNode, targetNode, private weight) {
+    //constructor(parentObject, sourceNode, targetNode, private weight) {
+    constructor(graph, sourceNode, targetNode, private weight) {
         this.timeTracker = new Date().getMilliseconds();
-        this.parentObject = parentObject;
+        this.parentObject = graph.rootObject;
+        this.saveObj = graph.saveObj;
         this.targetNode = targetNode;
         this.sourceNode = sourceNode;
         this.directionMode = "none";
@@ -828,7 +835,7 @@ class Edge {
 
         this.initializeCylinder();
         (<any>this.shape).isEdge = true; // A flag to identify the edge
-        parentObject.add(this.shape);
+        this.parentObject.add(this.shape);
 
         var w = (Math.ceil(weight * 10) - 6) * 0.5; // the edge scale is not proportional to edge weight
         if (w < 0) w = 0;
@@ -915,8 +922,8 @@ class Edge {
 
         // Overwriter current color setting if directionMode is gradient
         if (this.directionMode === "gradient") {
-            var startRGB = CommonUtilities.hexToRgb(saveObj.edgeSettings.directionStartColor, 1.0);
-            var endRGB = CommonUtilities.hexToRgb(saveObj.edgeSettings.directionEndColor, 1.0);
+            var startRGB = CommonUtilities.hexToRgb(this.saveObj.edgeSettings.directionStartColor, 1.0);
+            var endRGB = CommonUtilities.hexToRgb(this.saveObj.edgeSettings.directionEndColor, 1.0);
             this.uniforms.startColor.value = new THREE.Vector4(
                 startRGB.r / 255,
                 startRGB.g / 255,

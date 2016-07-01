@@ -51,6 +51,7 @@ class Brain3DApp implements Application, Loopable {
     // Data/objects
     commonData: CommonData;
     dataSet: DataSet;
+    saveObj;
 
     // Brain Surface
     surfaceUniformList = [];
@@ -140,7 +141,7 @@ class Brain3DApp implements Application, Loopable {
     }
     */
     
-    constructor(info, commonData: CommonData, inputTargetCreator: (l: number, r: number, t: number, b: number) => InputTarget) {
+    constructor(info, commonData: CommonData, inputTargetCreator: (l: number, r: number, t: number, b: number) => InputTarget, saveObj) {
 
         this.id = info.id;
         this.brainModelOrigin = info.brainModelOrigin;
@@ -152,6 +153,7 @@ class Brain3DApp implements Application, Loopable {
             this.brainSurfaceMode = 0;
         }
         this.commonData = commonData;
+        this.saveObj = saveObj;
         this.input = inputTargetCreator(0, 0, 0, sliderSpace);
         this.edgeCountSliderValue = initialEdgesShown;
          
@@ -207,7 +209,7 @@ class Brain3DApp implements Application, Loopable {
         // Initialize Graph Objects
         this.circularGraph = new CircularGraph( this.id, this.jDiv, this.dataSet,
                                                 this.svg, this.svgDefs, this.svgAllElements,
-                                                this.d3Zoom, this.commonData);
+                                                this.d3Zoom, this.commonData, this.saveObj);
         
     }   
 
@@ -225,7 +227,7 @@ class Brain3DApp implements Application, Loopable {
 
         this.svgNeedsUpdate = true;
 
-        if (dataSet.info.isSymmetricalMatrix && directionMode !== "none") {
+        if (this.dataSet.info.isSymmetricalMatrix && directionMode !== "none") {
             CommonUtilities.launchAlertMessage(CommonUtilities.alertType.WARNING,
                 "The given similarity matrix is symmetrical," +
                 "so the animation of edges do not reflect their actual direction.");
@@ -234,31 +236,31 @@ class Brain3DApp implements Application, Loopable {
 
     getNodeColors(): number[][] {
         // Get the colour array, a mapping of the configured colour attribute to colour values
-        let colorAttribute = saveObj.nodeSettings.nodeColorAttribute;
-        console.log(saveObj);
+        let colorAttribute = this.saveObj.nodeSettings.nodeColorAttribute;
+        console.log(this.saveObj);
         console.log(colorAttribute);
 
         if (colorAttribute === "none" || colorAttribute === "") {
-            return Array(dataSet.attributes.numRecords).map(d => [0xd3d3d3]);
+            return Array(this.dataSet.attributes.numRecords).map(d => [0xd3d3d3]);
         }
 
-        let valueArray = dataSet.attributes.get(colorAttribute);
-        let colorMode = saveObj.nodeSettings.nodeColorMode;     // "discrete" or not
+        let valueArray = this.dataSet.attributes.get(colorAttribute);
+        let colorMode = this.saveObj.nodeSettings.nodeColorMode;     // "discrete" or not
         let colorMap;
 
         if (colorMode == "discrete") {
             colorMap = d3.scale
                 .ordinal()
-                .domain(dataSet.attributes.info[colorAttribute].distinctValues)
-                .range(saveObj.nodeSettings.nodeColorDiscrete)
+                .domain(this.dataSet.attributes.info[colorAttribute].distinctValues)
+                .range(this.saveObj.nodeSettings.nodeColorDiscrete)
                 ;
         }
         else {
-            let i = dataSet.attributes.columnNames.indexOf(colorAttribute);
+            let i = this.dataSet.attributes.columnNames.indexOf(colorAttribute);
             colorMap = d3.scale
                 .linear()
-                .domain([dataSet.attributes.getMin(i), dataSet.attributes.getMax(i)])
-                .range([saveObj.nodeSettings.nodeColorContinuousMin, saveObj.nodeSettings.nodeColorContinuousMax])
+                .domain([this.dataSet.attributes.getMin(i), this.dataSet.attributes.getMax(i)])
+                .range([this.saveObj.nodeSettings.nodeColorContinuousMin, this.saveObj.nodeSettings.nodeColorContinuousMax])
                 ;
         }
         return valueArray.map(a => a.map(value => colorMap(value)));
@@ -1758,6 +1760,9 @@ class Brain3DApp implements Application, Loopable {
     // Initialize or re-initialize the visualisation.
     restart() {
         if (!this.dataSet || !this.dataSet.verify()) return;
+        //console.log(loadObj);///
+        //console.log(saveObj);///
+        //console.trace();///jm
         console.log("restarted");
         // Create the dissimilarity matrix from the similarity matrix (we need dissimilarity for Cola)
         for (var i = 0; i < this.dataSet.simMatrix.length; ++i) {
@@ -1781,7 +1786,7 @@ class Brain3DApp implements Application, Loopable {
 
         if (this.physioGraph) this.physioGraph.destroy();
         //this.physioGraph = new Graph3D(this.brainObject, edgeMatrix, this.nodeColorings, this.dataSet.simMatrix, this.dataSet.brainLabels, this.commonData);
-        this.physioGraph = new Graph3D(this.brainObject, edgeMatrix, nodeColors, this.dataSet.simMatrix, this.dataSet.brainLabels, this.commonData);
+        this.physioGraph = new Graph3D(this.brainObject, edgeMatrix, nodeColors, this.dataSet.simMatrix, this.dataSet.brainLabels, this.commonData, this.saveObj);
 
         if (this.brainSurfaceMode === 0) {
             this.physioGraph.setNodePositions(this.dataSet.brainCoords);
@@ -1796,13 +1801,13 @@ class Brain3DApp implements Application, Loopable {
         edgeMatrix = this.dataSet.adjMatrixFromEdgeCount(maxEdgesShowable);
         if (this.colaGraph) this.colaGraph.destroy();
         //this.colaGraph = new Graph3D(this.colaObject, edgeMatrix, this.nodeColorings, this.dataSet.simMatrix, this.dataSet.brainLabels, this.commonData);
-        this.colaGraph = new Graph3D(this.colaObject, edgeMatrix, nodeColors, this.dataSet.simMatrix, this.dataSet.brainLabels, this.commonData);
+        this.colaGraph = new Graph3D(this.colaObject, edgeMatrix, nodeColors, this.dataSet.simMatrix, this.dataSet.brainLabels, this.commonData, this.saveObj);
         this.colaGraph.setVisible(false);
 
         this.svgGraph = new Graph2D(this.id, this.jDiv, this.dataSet, this.svg, this.svgDefs, this.svgAllElements,
-            this.d3Zoom, this.commonData);
+            this.d3Zoom, this.commonData, this.saveObj);
         
-        this.canvasGraph = new Graph2DAlt(this.id, this.jDiv, this.dataSet, this.graph2dContainer, this.commonData);      //TODO: This is a test signature. Change it.
+        this.canvasGraph = new Graph2DAlt(this.id, this.jDiv, this.dataSet, this.graph2dContainer, this.commonData, this.saveObj);      //TODO: This is a test signature. Change it.
 
         // Initialize the filtering
         if (this.brainSurfaceMode === 0) {

@@ -25,6 +25,7 @@ class Graph2DAlt {
     // Data
     commonData;
     config;
+    saveObj;
     //edgeMatrix;
 
     nodes: any[];
@@ -34,7 +35,7 @@ class Graph2DAlt {
 
     cy;
 
-    constructor(id: number, jDiv, dataSet: DataSet, container, commonData) {
+    constructor(id: number, jDiv, dataSet: DataSet, container, commonData, saveObj) {
         this.nodes = [];
         this.links = [];
 
@@ -44,6 +45,7 @@ class Graph2DAlt {
         this.id = id;
         this.jDiv = jDiv;
         this.dataSet = dataSet;
+        this.saveObj = saveObj;
         
         this.commonData = commonData;
         //this.edgeMatrix = edgeMatrix;
@@ -56,7 +58,7 @@ class Graph2DAlt {
 
         console.log(this.dataSet);
         console.log(this.commonData);
-        console.log(saveObj);
+        console.log(this.saveObj);
 
         /*
         let edgeMatrix = this.dataSet.adjMatrixFromEdgeCount(maxEdgesShowable);
@@ -321,8 +323,8 @@ class Graph2DAlt {
 
             "pie-size": "100%"
         };
-        let colorAttribute = saveObj.nodeSettings.nodeColorAttribute;
-        let nSlices = dataSet.attributes.info[colorAttribute].distinctValues.length;
+        let colorAttribute = this.saveObj.nodeSettings.nodeColorAttribute;
+        let nSlices = this.dataSet.attributes.info[colorAttribute].distinctValues.length;
         for (let i = 0; i < nSlices; i++) {
             nodeStyle[`pie-${i}-background-color`] = `data(colors[${i}])`;
             nodeStyle[`pie-${i}-background-size`] = `${100 / nSlices}%`;
