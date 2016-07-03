@@ -1859,7 +1859,7 @@ class Brain3DApp implements Application, Loopable {
         return newCoords;
     }
 
-    getNodeUnderPointer(pointer) {
+    getNodeUnderPointer = pointer => {
         let raycaster = new THREE.Raycaster();
         raycaster.setFromCamera(pointer, this.camera);
 

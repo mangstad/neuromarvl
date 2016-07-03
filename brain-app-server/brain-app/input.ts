@@ -57,7 +57,10 @@ class InputTarget {
 
     // Accepts the CSS ID of the div that is to represent the input target, and the extra borders
     // which describe where in the div the region of interest is (and where the coordinates should be scaled around)
-    constructor(public targetCssId: string, public currentPointer: PointerIndirection, public leftBorder = 0, public rightBorder = 0, public topBorder = 0, public bottomBorder = 0) { }
+    constructor(public targetCssId: string, public currentPointer: PointerIndirection, public leftBorder = 0, public rightBorder = 0, public topBorder = 0, public bottomBorder = 0) {
+        console.log(targetCssId);
+        console.trace();///jm
+    }
 
     regKeyDownCallback(key: string, callback: (b: boolean) => void) {
         this.keyDownCallbacks[key] = callback;
@@ -195,7 +198,12 @@ class InputTargetManager {
             console.log("The Leap device has been disconnected.");
         });
 
-        this.leap.connect();
+        try {
+            this.leap.connect();
+        }
+        catch (e) {
+            console.log("Connection to Leap failed: " + e);
+        }
 
         // Initialize finger smoothing variables
         this.fingerPositions = new Array(this.fingerSmoothingLevel);
@@ -641,8 +649,10 @@ class InputTargetManager {
     // Return a function that can be used to create a new input target with the specified border sizes.
     // This is intended to be passed to an application so they can set their own borders.
     newTarget(index: number): (l: number, r: number, t: number, b: number) => InputTarget {
+        console.log(index);///jm
         return (leftBorder = 0, rightBorder = 0, topBorder = 0, bottomBorder = 0) => {
             // Create the input target and return it
+            console.log(index, this.targetCssIds, this.currentPointer);///jm
             return this.inputTargets[index] = new InputTarget(this.targetCssIds[index], this.currentPointer, leftBorder, rightBorder, topBorder, bottomBorder);
         };
     }

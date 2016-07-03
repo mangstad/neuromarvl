@@ -19,7 +19,7 @@
     <!-- <div id="testspace" style="width: 200px; height: 200px; z-index: 9000; position: relative; clear: both"></div><!--- hide when not in use -->
     <div id="splashPage" class="overlay overlay-scale">
         <div id="content">
-            <button type="button" class="overlay-close" onclick="toggleSplashPage()">Close</button>
+            <button id="overlay-close" type="button" class="overlay-close">Close</button>
 
             <div id="title" align="center">
                 <span style="font-size:400%; color: #2c3e50;">NeuroMArVL</span>
@@ -101,7 +101,7 @@
     </div>
 
     <div id="control-panel-bottom">
-        <div class="btn btn-primary" style="height: 50%; width: 100%;" onclick="toggleSplashPage()" data-toggle="tooltip" data-placement="top" title="Show introduction with example links">Splash Page</div>
+        <div id ="control-panel-bottom-close" class="btn btn-primary" style="height: 50%; width: 100%;" data-toggle="tooltip" data-placement="top" title="Show introduction with example links">Splash Page</div>
         <div class="btn-group btn-group-justified bg-info" style="height: 50%; width: 100%;">
             <div id="button-export-svg" class="btn btn-primary" data-toggle="tooltip" data-placement="top" title="Download Visualisations">
                 <span class="glyphicon glyphicon-download-alt" aria-hidden="true"></span>
