@@ -329,8 +329,9 @@ class NeuroMarvl {
                     source
                 },
                 (data, status) => {
+                    console.log(`Data fetch from ${p[0]} location got configuration with length ${data.length} and "${status}" status`);
                     if (status.toLowerCase() == "success") {
-                        callbackWithSave();
+                        callbackWithSave(source, data);
                     }
                     else {
                         alert("Loading is: " + status + "\nData: " + data);
@@ -2023,7 +2024,6 @@ class NeuroMarvl {
     }
 
     setupCrossFilter = (attrs: Attributes) => {
-        console.log(attrs);///jm
         if (!attrs) return;
 
         // put attributes into an object array; round the attribute values for grouping in crossfilter

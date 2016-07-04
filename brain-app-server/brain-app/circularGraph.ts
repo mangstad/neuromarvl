@@ -270,8 +270,12 @@ class CircularGraph {
             return;
         }
 
-        var attrSort = $('#select-circular-layout-sort-' + this.id).val();
-        var attrBundle = $('#select-circular-layout-bundle-' + this.id).val();
+        let attrSort = $('#select-circular-layout-sort-' + this.id).val();
+        let attrBundle = $('#select-circular-layout-bundle-' + this.id).val();
+
+        let attributes = this.dataSet.attributes;
+        let edgeSettings = this.saveObj.edgeSettings;
+        let nodeSettings = this.saveObj.nodeSettings;
 
         //------------------------------------------------------------------------------------------------
         // Update Nodes and edges data
@@ -377,8 +381,8 @@ class CircularGraph {
                 }
 
                 if (edgeDirectionMode === "gradient") {
-                    var sourceColor = (String)(this.saveObj.edgeSettings.directionStartColor);
-                    var targetColor = (String)(this.saveObj.edgeSettings.directionEndColor);
+                    var sourceColor = (String)(edgeSettings.directionStartColor);
+                    var targetColor = (String)(edgeSettings.directionEndColor);
                 } else if (edgeColorMode === "node") {
                     var sourceColor = String(l.source.color);
                     var targetColor = String(l.target.color);
@@ -445,8 +449,8 @@ class CircularGraph {
             .each(function (chartData, i) {
                 //TODO: Colour conversion is already done elsewhere. Pass it to the graph so it doesn't need to be repeated for every node
 
-                var colorAttr = this.saveObj.nodeSettings.nodeColorAttribute;
-                var attrArray = this.dataSet.attributes.get(colorAttr);
+                var colorAttr = nodeSettings.nodeColorAttribute;
+                var attrArray = attributes.get(colorAttr);
                 var group = d3.select(this);
                 group.selectAll("path").remove();
                 if (colorAttr === "" || colorAttr === "none") {
@@ -459,19 +463,19 @@ class CircularGraph {
                     return;
                 }
 
-                if (this.saveObj.nodeSettings.nodeColorMode === "discrete") {
-                    var distincts = this.dataSet.attributes.info[colorAttr].distinctValues;
-                    var colorMap = d3.scale.ordinal().domain(distincts).range(this.saveObj.nodeSettings.nodeColorDiscrete);
+                if (nodeSettings.nodeColorMode === "discrete") {
+                    var distincts = attributes.info[colorAttr].distinctValues;
+                    var colorMap = d3.scale.ordinal().domain(distincts).range(nodeSettings.nodeColorDiscrete);
                 } else {
-                    var columnIndex = this.dataSet.attributes.columnNames.indexOf(colorAttr);
-                    var min = this.dataSet.attributes.getMin(columnIndex);
-                    var max = this.dataSet.attributes.getMax(columnIndex);
-                    var minColor = this.saveObj.nodeSettings.nodeColorContinuousMin;
-                    var maxColor = this.saveObj.nodeSettings.nodeColorContinuousMax;
+                    var columnIndex = attributes.columnNames.indexOf(colorAttr);
+                    var min = attributes.getMin(columnIndex);
+                    var max = attributes.getMax(columnIndex);
+                    var minColor = nodeSettings.nodeColorContinuousMin;
+                    var maxColor = nodeSettings.nodeColorContinuousMax;
                     var colorMap = d3.scale.linear().domain([min, max]).range([minColor, maxColor]);
                 }
 
-                if (this.dataSet.attributes.info[colorAttr].numElements === 1) {
+                if (attributes.info[colorAttr].numElements === 1) {
                     var color = chartData[colorAttr].map(function (val) {
                         return colorMap(val).replace("0x", "#");
                     });
@@ -512,7 +516,9 @@ class CircularGraph {
         }
 
         this.svgNodeBundleArray = [];
-        var children = this.colaGraph.nodeMeshes; // TODO: Need to be replaced with other objects!!
+        let children = this.colaGraph.nodeMeshes; // TODO: Need to be replaced with other objects!!
+        let attributes = this.dataSet.attributes;
+        let brainLabels = this.dataSet.brainLabels;
 
         // Loop through all nodes of the Cola Graph
         for (var i = 0; i < children.length; i++) {
@@ -524,35 +530,35 @@ class CircularGraph {
             var nodeObject = new Object();
             nodeObject["id"] = d.id;
 
-            if (this.dataSet.brainLabels) {
-                nodeObject["label"] = this.dataSet.brainLabels[d.id];
+            if (brainLabels) {
+                nodeObject["label"] = brainLabels[d.id];
             }
 
             // for every attributes
-            for (var j = 0; j < this.dataSet.attributes.columnNames.length; j++) {
+            for (var j = 0; j < attributes.columnNames.length; j++) {
 
-                var colname = this.dataSet.attributes.columnNames[j];
-                var value = this.dataSet.attributes.get(colname)[d.id];
+                var colname = attributes.columnNames[j];
+                var value = attributes.get(colname)[d.id];
                 nodeObject[colname] = value;
 
                 // add a special property for module id
                 if (colname == 'module_id') {
-                    nodeObject['moduleID'] = this.dataSet.attributes.get(colname)[d.id];
+                    nodeObject['moduleID'] = attributes.get(colname)[d.id];
                 }
 
                 //  Get domain of the attributes (assume all positive numbers in the array)
-                var columnIndex = this.dataSet.attributes.columnNames.indexOf(colname);
-                var min = this.dataSet.attributes.getMin(columnIndex);
-                var max = this.dataSet.attributes.getMax(columnIndex);
+                var columnIndex = attributes.columnNames.indexOf(colname);
+                var min = attributes.getMin(columnIndex);
+                var max = attributes.getMax(columnIndex);
 
                 // Scale value to between 0.05 to 1 
                 var attrMap = d3.scale.linear().domain([min, max]).range([0.05, 1]);
                 var scalevalue = attrMap(Math.max.apply(Math, value));
                 nodeObject['scale_' + colname] = scalevalue;
 
-                if (this.dataSet.attributes.info[colname].isDiscrete) { // if the attribute is discrete
+                if (attributes.info[colname].isDiscrete) { // if the attribute is discrete
                     // Scale to group attirbutes 
-                    var values = this.dataSet.attributes.info[colname].distinctValues;
+                    var values = attributes.info[colname].distinctValues;
                     nodeObject['bundle_group_' + colname] = values.indexOf(Math.max.apply(Math, value));
 
                 } else { // if the attribute is continuous
@@ -629,18 +635,20 @@ class CircularGraph {
     }
 
     GenerateCircularUI(sortByAttribute: string, bundleByAttribute: string) {
-        var nodeJson = JSON.parse(JSON.stringify(this.svgNodeBundleArray));
+        let attributes = this.dataSet.attributes;
+        let edgeSettings = this.saveObj.edgeSettings;
+        let nodeSettings = this.saveObj.nodeSettings;
 
-        var width = 250 + this.jDiv.width() / 2;
-        var height = (this.jDiv.height() - sliderSpace) / 2;
+        let nodeJson = JSON.parse(JSON.stringify(this.svgNodeBundleArray));
 
-        var diameter = 800,
+        let width = 250 + this.jDiv.width() / 2;
+        let height = (this.jDiv.height() - sliderSpace) / 2;
+
+        let diameter = 800,
             radius = diameter / 2,
             innerRadius = radius - 120;
 
-        var cluster;
-
-        cluster = d3.layout.cluster()
+        let cluster = d3.layout.cluster()
             .size([360, innerRadius])
             .sort(null) // Using built-in D3 sort destroy the order of the cluster => need to be investigated
             .value(function (d) {
@@ -648,16 +656,16 @@ class CircularGraph {
             });
 
 
-        var bundle = d3.layout.bundle();
+        let bundle = d3.layout.bundle();
 
         // Node pie chart
-        var pie = d3.layout.pie();
-        var dot = d3.svg.arc()
+        let pie = d3.layout.pie();
+        let dot = d3.svg.arc()
             .innerRadius(0)
             .outerRadius(5);
 
         // Link path
-        var line = d3.svg.line.radial()
+        let line = d3.svg.line.radial()
             //.tension(.85)
             .radius(function (d) {
                 return d.y;
@@ -673,7 +681,7 @@ class CircularGraph {
 
         // An alternative solutions to sorting the children while keeping 
         // the order of the clusters 
-        var tree = packages.root(nodeJson);
+        let tree = packages.root(nodeJson);
         if (sortByAttribute !== "none") {
             var groups = tree.children[0].children;
             // If  bundle is none, the children are not put into groups
@@ -740,8 +748,8 @@ class CircularGraph {
                 }
 
                 if (edgeDirectionMode === "gradient") {
-                    var sourceColor = (String)(this.saveObj.edgeSettings.directionStartColor);
-                    var targetColor = (String)(this.saveObj.edgeSettings.directionEndColor);
+                    var sourceColor = (String)(edgeSettings.directionStartColor);
+                    var targetColor = (String)(edgeSettings.directionEndColor);
                 } else if (edgeColorMode === "node") {
                     var sourceColor = String(l.source.color);
                     var targetColor = String(l.target.color);
@@ -822,8 +830,8 @@ class CircularGraph {
             .on("mouseover", function (d) { varMouseOveredCircularLayout(d); varMouseOveredSetNodeID(d.id); })
             .on("mouseout", function (d) { varMouseOutedCircularLayout(d); varMouseOutedSetNodeID(); })
             .each(function (chartData, i) {
-                var colorAttr = this.saveObj.nodeSettings.nodeColorAttribute;
-                var attrArray = this.dataSet.attributes.get(colorAttr);
+                var colorAttr = nodeSettings.nodeColorAttribute;
+                var attrArray = attributes.get(colorAttr);
                 var group = d3.select(this);
                 group.selectAll("path").remove();
                 if (colorAttr === "" || colorAttr === "none") {
@@ -835,18 +843,18 @@ class CircularGraph {
 
                     return;
                 } else {
-                    if (this.saveObj.nodeSettings.nodeColorMode === "discrete") {
-                        var distincts = this.dataSet.attributes.info[colorAttr].distinctValues;
-                        var colorMap = d3.scale.ordinal().domain(distincts).range(this.saveObj.nodeSettings.nodeColorDiscrete);
+                    if (nodeSettings.nodeColorMode === "discrete") {
+                        var distincts = attributes.info[colorAttr].distinctValues;
+                        var colorMap = d3.scale.ordinal().domain(distincts).range(nodeSettings.nodeColorDiscrete);
                     } else {
-                        var columnIndex = this.dataSet.attributes.columnNames.indexOf(colorAttr);
-                        var min = this.dataSet.attributes.getMin(columnIndex);
-                        var max = this.dataSet.attributes.getMax(columnIndex);
-                        var minColor = this.saveObj.nodeSettings.nodeColorContinuousMin;
-                        var maxColor = this.saveObj.nodeSettings.nodeColorContinuousMax;
+                        var columnIndex = attributes.columnNames.indexOf(colorAttr);
+                        var min = attributes.getMin(columnIndex);
+                        var max = attributes.getMax(columnIndex);
+                        var minColor = nodeSettings.nodeColorContinuousMin;
+                        var maxColor = nodeSettings.nodeColorContinuousMax;
                         var colorMap = d3.scale.linear().domain([min, max]).range([minColor, maxColor]);
                     }
-                    if (this.dataSet.attributes.info[colorAttr].numElements === 1) {
+                    if (attributes.info[colorAttr].numElements === 1) {
                         var color = chartData[colorAttr].map(function (val) {
                             return colorMap(val).replace("0x", "#");
                         });
@@ -892,15 +900,15 @@ class CircularGraph {
     }
 
     addAttributeBar() {
-        var varMouseOveredSetNodeID = (id) => { this.mouseOveredSetNodeID(id); }
-        var varMouseOutedSetNodeID = () => { this.mouseOutedSetNodeID(); }
-        var varMouseOveredCircularLayout = (d) => { this.mouseOveredCircularLayout(d); }
-        var varMouseOutedCircularLayout = (d) => { this.mouseOutedCircularLayout(d); }
-        var varCircularLayoutAttributeOnChange = (barID: number, val: string) => { this.circularLayoutAttributeOnChange(barID, val); }
-        var varUpdateCircularBarColor = (barID: number, color: string) => { this.updateCircularBarColor(barID, color); }
+        let varMouseOveredSetNodeID = (id) => { this.mouseOveredSetNodeID(id); }
+        let varMouseOutedSetNodeID = () => { this.mouseOutedSetNodeID(); }
+        let varMouseOveredCircularLayout = (d) => { this.mouseOveredCircularLayout(d); }
+        let varMouseOutedCircularLayout = (d) => { this.mouseOutedCircularLayout(d); }
+        let varCircularLayoutAttributeOnChange = (barID: number, val: string) => { this.circularLayoutAttributeOnChange(barID, val); }
+        let varUpdateCircularBarColor = (barID: number, color: string) => { this.updateCircularBarColor(barID, color); }
 
-        var id = this.attributeBars.length;
-        var bar = {
+        let id = this.attributeBars.length;
+        let bar = {
             id: id,
             color: "#bdc3c7", // default color
             attribute: "none", // default attribute
