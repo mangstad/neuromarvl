@@ -193,6 +193,8 @@ class Graph2D {
         var heightHalf = height / 2;
         var screenCoords = new THREE.Vector3();
         var unitRadius = 5;
+        let brainLabels = this.dataSet.brainLabels;
+        let attributes = this.dataSet.attributes;
 
         // Reset nodes and links
         this.nodes.splice(0, this.nodes.length);
@@ -207,37 +209,37 @@ class Graph2D {
 
             var nodeObject = new Object();
             nodeObject["id"] = d.id;
-            if (this.dataSet.brainLabels) {
-                nodeObject["label"] = this.dataSet.brainLabels[d.id];
+            if (brainLabels) {
+                nodeObject["label"] = brainLabels[d.id];
             }
             nodeObject["color"] = "#".concat(colaGraph.nodeMeshes[d.id].material.color.getHexString());
             nodeObject["radius"] = colaGraph.nodeMeshes[d.id].scale.x * unitRadius;
 
             // for every attributes
-            for (var j = 0; j < this.dataSet.attributes.columnNames.length; j++) {
+            for (var j = 0; j < attributes.columnNames.length; j++) {
 
-                var colname = this.dataSet.attributes.columnNames[j];
-                var value = this.dataSet.attributes.get(colname)[d.id];
+                var colname = attributes.columnNames[j];
+                var value = attributes.get(colname)[d.id];
                 nodeObject[colname] = value;
 
                 // add a special property for module id
                 if (colname == 'module_id') {
-                    nodeObject['moduleID'] = this.dataSet.attributes.get(colname)[d.id];
+                    nodeObject['moduleID'] = attributes.get(colname)[d.id];
                 }
 
                 //  Get domain of the attributes (assume all positive numbers in the array)
-                var columnIndex = this.dataSet.attributes.columnNames.indexOf(colname);
-                var min = this.dataSet.attributes.getMin(columnIndex);
-                var max = this.dataSet.attributes.getMax(columnIndex);
+                var columnIndex = attributes.columnNames.indexOf(colname);
+                var min = attributes.getMin(columnIndex);
+                var max = attributes.getMax(columnIndex);
 
                 // Scale value to between 0.05 to 1 
                 var attrMap = d3.scale.linear().domain([min, max]).range([0.05, 1]);
                 var scalevalue = attrMap(Math.max.apply(Math, value));
                 nodeObject['scale_' + colname] = scalevalue;
 
-                if (this.dataSet.attributes.info[colname].isDiscrete) { // if the attribute is discrete
+                if (attributes.info[colname].isDiscrete) { // if the attribute is discrete
                     // Scale to group attirbutes 
-                    var values = this.dataSet.attributes.info[colname].distinctValues;
+                    var values = attributes.info[colname].distinctValues;
                     nodeObject['bundle_group_' + colname] = values.indexOf(value.indexOf(Math.max.apply(Math, value)));
 
                 } else { // if the attribute is continuous
@@ -292,12 +294,14 @@ class Graph2D {
     }
 
     initSVGElements() {
-        var edgeDirectionMode = this.edgeDirectionMode;
-        var edgeColorMode = this.edgeColorMode;
-        var varDefs = this.svgDefs;
-        var varSvg = this.svg[0];
-        var varNS = varSvg[0].namespaceURI;
-        var varDefs = this.svgDefs;
+        let edgeDirectionMode = this.edgeDirectionMode;
+        let edgeColorMode = this.edgeColorMode;
+        let varDefs = this.svgDefs;
+        let varSvg = this.svg[0];
+        let varNS = varSvg[0].namespaceURI;
+        let nodeSettings = this.saveObj.nodeSettings;
+        let edgeSettings = this.saveObj.edgeSettings;
+        let attributes = this.dataSet.attributes;
         
         var link = this.svgAllElements.selectAll(".link")
             .data(this.links)
@@ -324,8 +328,8 @@ class Graph2D {
                 }
 
                 if (edgeDirectionMode === "gradient") {
-                    var sourceColor = (String)(this.saveObj.edgeSettings.directionStartColor);
-                    var targetColor = (String)(this.saveObj.edgeSettings.directionEndColor);
+                    var sourceColor = (String)(edgeSettings.directionStartColor);
+                    var targetColor = (String)(edgeSettings.directionEndColor);
                 } else if (edgeColorMode === "node") {
                     var sourceColor = String(l.source.color);
                     var targetColor = String(l.target.color);
@@ -410,8 +414,8 @@ class Graph2D {
             .on("mouseover", function (d) { varMouseOveredNode(d); varMouseOveredSetNodeID(d.id); })
             .on("mouseout", function (d) { varMouseOutedNode(d); varMouseOutedSetNodeID(); })
             .each(function (chartData) {
-                var colorAttr = this.saveObj.nodeSettings.nodeColorAttribute;
-                var attrArray = this.dataSet.attributes.get(colorAttr);
+                var colorAttr = nodeSettings.nodeColorAttribute;
+                var attrArray = attributes.get(colorAttr);
                 var group = d3.select(this);
                 group.selectAll("path").remove();
                 if (colorAttr === "" || colorAttr === "none") {
@@ -423,18 +427,18 @@ class Graph2D {
                             .innerRadius(0)
                             .outerRadius(chartData.radius));
                 } else {
-                    if (this.saveObj.nodeSettings.nodeColorMode === "discrete") {
-                        var distincts = this.dataSet.attributes.info[colorAttr].distinctValues;
-                        var colorMap = d3.scale.ordinal().domain(distincts).range(this.saveObj.nodeSettings.nodeColorDiscrete);
+                    if (nodeSettings.nodeColorMode === "discrete") {
+                        var distincts = attributes.info[colorAttr].distinctValues;
+                        var colorMap = d3.scale.ordinal().domain(distincts).range(nodeSettings.nodeColorDiscrete);
                     } else {
-                        var columnIndex = this.dataSet.attributes.columnNames.indexOf(colorAttr);
-                        var min = this.dataSet.attributes.getMin(columnIndex);
-                        var max = this.dataSet.attributes.getMax(columnIndex);
-                        var minColor = this.saveObj.nodeSettings.nodeColorContinuousMin;
-                        var maxColor = this.saveObj.nodeSettings.nodeColorContinuousMax;
+                        var columnIndex = attributes.columnNames.indexOf(colorAttr);
+                        var min = attributes.getMin(columnIndex);
+                        var max = attributes.getMax(columnIndex);
+                        var minColor = nodeSettings.nodeColorContinuousMin;
+                        var maxColor = nodeSettings.nodeColorContinuousMax;
                         var colorMap = d3.scale.linear().domain([min, max]).range([minColor, maxColor]);
                     }
-                    if (this.dataSet.attributes.info[colorAttr].numElements === 1) {
+                    if (attributes.info[colorAttr].numElements === 1) {
                         var color = chartData[colorAttr].map(function (val) {
                             return colorMap(val).replace("0x", "#");
                         });
@@ -476,16 +480,16 @@ class Graph2D {
     initSVGGraphWithoutCola(colaGraph: Graph3D) {
         this.colorMode = colaGraph.colorMode;
         this.directionMode = colaGraph.edgeDirectionMode;
-        var width = this.jDiv.width();
-        var height = this.jDiv.height() - sliderSpace;
-        var widthHalf = width / 2;
-        var heightHalf = height / 2;
-        var offsetx = 250;
-        var offsety = 0;
-        var initX = 3 / 5 * width;
-        var initY = 1 / 2 * height;
-
-        var unitRadius = 5;
+        let width = this.jDiv.width();
+        let height = this.jDiv.height() - sliderSpace;
+        let widthHalf = width / 2;
+        let heightHalf = height / 2;
+        let offsetx = 250;
+        let offsety = 0;
+        let initX = 3 / 5 * width;
+        let initY = 1 / 2 * height;
+        let attributes = this.dataSet.attributes;
+        let unitRadius = 5;
 
         this.nodes.splice(0, this.nodes.length);
         this.links.splice(0, this.links.length);
@@ -502,30 +506,30 @@ class Graph2D {
             nodeObject["radius"] = colaGraph.nodeMeshes[d.id].scale.x * unitRadius;
 
             // for every attributes
-            for (var j = 0; j < this.dataSet.attributes.columnNames.length; j++) {
+            for (var j = 0; j < attributes.columnNames.length; j++) {
 
-                var colname = this.dataSet.attributes.columnNames[j];
-                var value = this.dataSet.attributes.get(colname)[d.id];
+                var colname = attributes.columnNames[j];
+                var value = attributes.get(colname)[d.id];
                 nodeObject[colname] = value;
 
                 // add a special property for module id
                 if (colname == 'module_id') {
-                    nodeObject['moduleID'] = this.dataSet.attributes.get(colname)[d.id];
+                    nodeObject['moduleID'] = attributes.get(colname)[d.id];
                 }
 
                 //  Get domain of the attributes (assume all positive numbers in the array)
-                var columnIndex = this.dataSet.attributes.columnNames.indexOf(colname);
-                var min = this.dataSet.attributes.getMin(columnIndex);
-                var max = this.dataSet.attributes.getMax(columnIndex);
+                var columnIndex = attributes.columnNames.indexOf(colname);
+                var min = attributes.getMin(columnIndex);
+                var max = attributes.getMax(columnIndex);
 
                 // Scale value to between 0.05 to 1 
                 var attrMap = d3.scale.linear().domain([min, max]).range([0.05, 1]);
                 var scalevalue = attrMap(Math.max.apply(Math, value));
                 nodeObject['scale_' + colname] = scalevalue;
 
-                if (this.dataSet.attributes.info[colname].isDiscrete) { // if the attribute is discrete
+                if (attributes.info[colname].isDiscrete) { // if the attribute is discrete
                     // Scale to group attirbutes 
-                    var values = this.dataSet.attributes.info[colname].distinctValues;
+                    var values = attributes.info[colname].distinctValues;
                     nodeObject['bundle_group_' + colname] = values.indexOf(value.indexOf(Math.max.apply(Math, value)));
 
                 } else { // if the attribute is continuous
@@ -943,11 +947,12 @@ class Graph2D {
     }
 
     updateEdgeColor() {
-        var edgeColorMode = this.colorMode;
-        var edgeDirectionMode = this.directionMode;
-        var varSvg = this.svg[0];
-        var varNS = varSvg[0].namespaceURI;
-        var varDefs = this.svgDefs;
+        let edgeColorMode = this.colorMode;
+        let edgeDirectionMode = this.directionMode;
+        let varSvg = this.svg[0];
+        let varNS = varSvg[0].namespaceURI;
+        let varDefs = this.svgDefs;
+        let edgeSettings = this.saveObj.edgeSettings;
 
         var link = this.svgAllElements.selectAll(".link")
             .style("stroke", function (l) {
@@ -967,8 +972,8 @@ class Graph2D {
                 }
 
                 if (edgeDirectionMode === "gradient") {
-                    var sourceColor = (String)(this.saveObj.edgeSettings.directionStartColor);
-                    var targetColor = (String)(this.saveObj.edgeSettings.directionEndColor);
+                    var sourceColor = (String)(edgeSettings.directionStartColor);
+                    var targetColor = (String)(edgeSettings.directionEndColor);
                 } else if (edgeColorMode === "node") {
                     var sourceColor = String(l.source.color);
                     var targetColor = String(l.target.color);
@@ -1114,8 +1119,9 @@ class Graph2D {
     }
 
     update(colaGraph: Graph3D, isShownLabel: boolean) {
-
-        var unitRadius = 5;
+        let unitRadius = 5;
+        let nodeSettings = this.saveObj.nodeSettings;
+        let attributes = this.dataSet.attributes;
 
         for (var i = 0; i < this.nodes.length; i++) {
             var id = this.nodes[i].id;
@@ -1149,8 +1155,8 @@ class Graph2D {
             .data(this.nodes)
             .attr("r", function (d) { return d.radius; })
             .each(function (chartData) {
-                var colorAttr = this.saveObj.nodeSettings.nodeColorAttribute;
-                var attrArray = this.dataSet.attributes.get(colorAttr);
+                var colorAttr = nodeSettings.nodeColorAttribute;
+                var attrArray = attributes.get(colorAttr);
                 var group = d3.select(this);
                 group.selectAll("path").remove();
                 if (colorAttr === "" || colorAttr === "none") {
@@ -1165,18 +1171,18 @@ class Graph2D {
 
                 } else {
 
-                    if (this.saveObj.nodeSettings.nodeColorMode === "discrete") {
-                        var distincts = this.dataSet.attributes.info[colorAttr].distinctValues;
-                        var colorMap = d3.scale.ordinal().domain(distincts).range(this.saveObj.nodeSettings.nodeColorDiscrete);
+                    if (nodeSettings.nodeColorMode === "discrete") {
+                        var distincts = attributes.info[colorAttr].distinctValues;
+                        var colorMap = d3.scale.ordinal().domain(distincts).range(nodeSettings.nodeColorDiscrete);
                     } else {
-                        var columnIndex = this.dataSet.attributes.columnNames.indexOf(colorAttr);
-                        var min = this.dataSet.attributes.getMin(columnIndex);
-                        var max = this.dataSet.attributes.getMax(columnIndex);
-                        var minColor = this.saveObj.nodeSettings.nodeColorContinuousMin;
-                        var maxColor = this.saveObj.nodeSettings.nodeColorContinuousMax;
+                        var columnIndex = attributes.columnNames.indexOf(colorAttr);
+                        var min = attributes.getMin(columnIndex);
+                        var max = attributes.getMax(columnIndex);
+                        var minColor = nodeSettings.nodeColorContinuousMin;
+                        var maxColor = nodeSettings.nodeColorContinuousMax;
                         var colorMap = d3.scale.linear().domain([min, max]).range([minColor, maxColor]);
                     }
-                    if (this.dataSet.attributes.info[colorAttr].numElements === 1) {
+                    if (attributes.info[colorAttr].numElements === 1) {
                         var color = chartData[colorAttr].map(function (val) {
                             return colorMap(val).replace("0x", "#");
                         });

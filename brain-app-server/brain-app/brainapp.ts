@@ -180,7 +180,6 @@ class NeuroMarvl {
             commonInit();
         };
         let callbackNoSave = () => {
-            console.log(TL_VIEW);///jm
             this.applyModelToBrainView(TL_VIEW, $('#select-brain3d-model').val());
             this.toggleSplashPage();
             commonInit();
@@ -1490,7 +1489,6 @@ class NeuroMarvl {
             || "none";
 
         let id = this.viewToId(view);
-        console.log(id, view, $(view));///jm
 
         this.loadBrainModel(file, object => {
             $(view).empty();
@@ -1505,8 +1503,7 @@ class NeuroMarvl {
                 this.input.newTarget(id),
                 this.saveObj
             );
-
-            ///jm
+            
             //if (!dataSet) dataSet = new DataSet();
             this.apps[id].setDataSet(this.referenceDataSet);
 
@@ -2026,6 +2023,7 @@ class NeuroMarvl {
     }
 
     setupCrossFilter = (attrs: Attributes) => {
+        console.log(attrs);///jm
         if (!attrs) return;
 
         // put attributes into an object array; round the attribute values for grouping in crossfilter
@@ -2112,7 +2110,7 @@ class NeuroMarvl {
                 .group(group)
                 .x(d3.scale.linear().domain([minValue - offset, maxValue + offset]))
                 .xAxisLabel(columnName)
-                .xUnits(25)
+                .xUnits(() => 25)       //TODO: this could be smarter
                 .centerBar(true)
                 .on("filtered", filtered)
                 .xAxis().ticks(6);
