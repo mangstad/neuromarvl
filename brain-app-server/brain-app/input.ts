@@ -169,7 +169,7 @@ class InputTargetManager {
     divContextMenuColorPicker;
     contextMenuColorChanged: boolean = false;
 
-    regMouseLocationCallback(callback: (x:number, y:number) => number) {
+    regMouseLocationCallback(callback: (x: number, y: number) => number) {
         this.mouseLocationCallback = callback;
     }
 

@@ -4,6 +4,8 @@
     overflow: hidden !important;
 }
 
-.input-group button {
+.input-group button span {
     text-overflow: ellipsis !important;
+    display: inline-block;
+    white-space: nowrap;
 }

@@ -269,7 +269,7 @@ class DataSet {
 
 class SaveFile {
     // user-uploaded file names
-    loadExampleData: boolean = false;
+    loadExampleData: boolean;
     serverFileNameCoord: string;
     serverFileNameMatrix: string;
     serverFileNameAttr: string;
@@ -286,9 +286,10 @@ class SaveFile {
     // cross filter
     filteredRecords: any[];
 
-    constructor() {
 
-        this.edgeSettings = {
+    constructor(sourceObject) {
+        
+        this.edgeSettings = (sourceObject && sourceObject.edgeSettings) || {
             colorBy: "none", // node (default), none or weight 
             size: 1, // default
             directionMode: "none",
@@ -312,7 +313,7 @@ class SaveFile {
             }
         };
 
-        this.nodeSettings = {
+        this.nodeSettings = (sourceObject && sourceObject.nodeSettings) || {
             nodeSizeOrColor: '',
             nodeSizeAttribute: '',
             nodeSizeMin: 1,
@@ -325,12 +326,24 @@ class SaveFile {
             nodeColorContinuousMax: ''
         };
 
-        this.surfaceSettings = {
+        this.surfaceSettings = (sourceObject && sourceObject.surfaceSettings) || {
             opacity: 0.5
         };
-        this.saveApps = new Array(4);
-        for (var i = 0; i < 4; i++) {
-            this.saveApps[i] = null;
+        let saveApps = (sourceObject && sourceObject.saveApps) || [];
+        this.saveApps = saveApps
+            .filter(d => !!d)       // Some save files have null instead of apps
+            .map(d => new SaveApp(d))
+            ;
+
+        this.loadExampleData = (sourceObject && sourceObject.loadExampleData) || false;
+
+        if (sourceObject) {
+            if (sourceObject.serverFileNameCoord) this.serverFileNameCoord = sourceObject.serverFileNameCoord;
+            if (sourceObject.serverFileNameMatrix) this.serverFileNameMatrix = sourceObject.serverFileNameMatrix;
+            if (sourceObject.serverFileNameAttr) this.serverFileNameAttr = sourceObject.serverFileNameAttr;
+            if (sourceObject.serverFileNameLabel) this.serverFileNameLabel = sourceObject.serverFileNameLabel;
+
+            if (sourceObject.filteredRecords) this.serverFileNameCoord = sourceObject.filteredRecords;
         }
     }
 
@@ -373,11 +386,9 @@ class SaveFile {
         yamlObj["Brain Settings"] = {
             "Transparency": this.surfaceSettings.opacity
         };
-
-        for (var i = 0; i < 4; i++) {
-            if (this.saveApps[i]) {
-                yamlObj["viewport" + i] = this.saveApps[i].toYaml();
-            }
+        
+        for (let i in this.saveApps) {
+            yamlObj["viewport" + i] = this.saveApps[i].toYaml();
         }
 
         return jsyaml.safeDump(yamlObj);
@@ -423,7 +434,7 @@ class SaveFile {
 
         for (var i = 0; i < 4; i++) {
             if (yamlObj["viewport" + i]) {
-                this.saveApps[i] = new SaveApp();
+                this.saveApps[i] = new SaveApp({});
                 this.saveApps[i].fromYaml(yamlObj["viewport" + i]);
             }
         }
@@ -453,6 +464,23 @@ class SaveApp {
     circularLableAttribute: string;
     circularEdgeGradient: boolean;
     circularAttributeBars;
+
+    constructor(sourceObject) {
+        this.surfaceModel = (sourceObject && sourceObject.surfaceModel) || "";
+        this.brainSurfaceMode = (sourceObject && sourceObject.brainSurfaceMode) || "";
+        this.view = (sourceObject && sourceObject.view) || TL_VIEW;
+        this.dataSet = (sourceObject && sourceObject.dataSet) || new DataSet();
+        this.setDataSetView = (sourceObject && sourceObject.setDataSetView) || "";
+        this.edgeCount = (sourceObject && sourceObject.edgeCount) || 20;
+        this.showingTopologyNetwork = (sourceObject && sourceObject.showingTopologyNetwork) || false;
+        this.networkType = (sourceObject && sourceObject.networkType) || "";
+        this.circularBundleAttribute = (sourceObject && sourceObject.circularBundleAttribute) || "";
+        this.circularSortAttribute = (sourceObject && sourceObject.circularSortAttribute) || "";
+        this.circularLableAttribute = (sourceObject && sourceObject.circularLableAttribute) || "";
+        this.circularEdgeGradient = (sourceObject && sourceObject.circularEdgeGradient) || false;
+        this.circularAttributeBars = (sourceObject && sourceObject.circularAttributeBars) || "";
+    }
+
 
     toYaml() {
         var showGraph = (this.showingTopologyNetwork) ? "Yes" : "No";
