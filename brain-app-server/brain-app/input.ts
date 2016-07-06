@@ -166,7 +166,6 @@ class InputTargetManager {
     rightClickLabel;
     rightClickLabelAppended: boolean = false;
     selectedNodeID: number = -1;
-    divContextMenuColorPicker;
     contextMenuColorChanged: boolean = false;
 
     regMouseLocationCallback(callback: (x: number, y: number) => number) {
@@ -209,9 +208,8 @@ class InputTargetManager {
             this.fingerPositions[i] = [1, 1, 1];
 
         var varYokingViewAcrossPanels = () => { this.yokingViewAcrossPanels(); }
-
-        this.rightClickLabel = document.createElement('div');
-        this.rightClickLabel.id = 'right-click-label';
+        
+        this.rightClickLabel = document.getElementById("right-click-label");
 
         document.addEventListener('click', (event) => {
             if (this.isDragged) {
@@ -244,7 +242,9 @@ class InputTargetManager {
 
             // Remove label if exists
             if (this.rightClickLabelAppended) {
-                if (((<any>(event.target)).id != "input-context-menu-node-color") && (this.contextMenuColorChanged == false)) {
+                let isInLabel = $.contains(this.rightClickLabel, <Element>(event.target));
+                //TODO: Still need check on contextMenuColorChanged?
+                if (!isInLabel && !this.contextMenuColorChanged) {
                     document.body.removeChild(this.rightClickLabel);
                     this.selectedNodeID = -1;
                     this.rightClickLabelAppended = false;
@@ -287,10 +287,12 @@ class InputTargetManager {
 
             if (record) {
                 $('#div-context-menu-color-picker').css({ visibility: 'visible' });
-                if ($('#div-context-menu-color-picker').length > 0) this.divContextMenuColorPicker = $('#div-context-menu-color-picker').detach();
 
                 document.body.appendChild(this.rightClickLabel);
-                $('#right-click-label').empty(); // empty this.rightClickLabel
+                let attributes = document.getElementById("context-menu-attributes");
+                while (attributes.hasChildNodes()) {
+                    attributes.removeChild(attributes.lastChild);
+                }
 
                 this.rightClickLabel.style.position = 'absolute';
                 this.rightClickLabel.style.left = x + 'px';
@@ -303,22 +305,20 @@ class InputTargetManager {
                 // the first attribute is node id
                 this.selectedNodeID = record.id;
 
-                // Populate tdhe right click label
+                // Populate the right click label
                 for (var attr in record) {
                     if (record.hasOwnProperty(attr)) {
                         var text = document.createElement('div');
                         text.innerHTML = attr + ": " + record[attr];
                         text.style.marginBottom = '5px';
-                        this.rightClickLabel.appendChild(text);
+                        attributes.appendChild(text);
                     }
                 }
-
-                $(this.divContextMenuColorPicker).appendTo('#right-click-label');
 
                 // the last attribute is color
                 var color = parseInt(record.color);
                 var hex = color.toString(16);
-                (<any>document.getElementById('input-context-menu-node-color')).color.fromString(hex);   
+                (<any>$("#input-context-menu-node-color")).colorpicker("setValue", "#" + hex);
 
                 this.rightClickLabelAppended = true;
             }

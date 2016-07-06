@@ -312,6 +312,23 @@ class NeuroMarvl {
 
         $("#overlay-close").click(this.toggleSplashPage);
         $("#control-panel-bottom-close").click(this.toggleSplashPage);
+
+        // Create color pickers
+        (<any>$("#input-node-color")).colorpicker();
+        (<any>$("#input-surface-color")).colorpicker();
+        (<any>$("#input-min-color")).colorpicker();
+        (<any>$("#input-max-color")).colorpicker();
+        (<any>$("#input-edge-start-color")).colorpicker();
+        (<any>$("#input-edge-end-color")).colorpicker();
+        (<any>$("#input-edge-discretized-0-color")).colorpicker();
+        (<any>$("#input-edge-discretized-1-color")).colorpicker();
+        (<any>$("#input-edge-discretized-2-color")).colorpicker();
+        (<any>$("#input-edge-discretized-3-color")).colorpicker();
+        (<any>$("#input-edge-discretized-4-color")).colorpicker();
+        (<any>$("#input-edge-min-color")).colorpicker();
+        (<any>$("#input-edge-max-color")).colorpicker();
+        (<any>$("#input-edge-color")).colorpicker();
+        (<any>$("#input-context-menu-node-color")).colorpicker();
     }
 
     initFromSaveFile = (callbackWithSave, callbackNoSave) => {
@@ -788,13 +805,15 @@ class NeuroMarvl {
     }
 
     setSelectEdgeKeyBackgroundColor = (color: string) => {
+        if (color.length === 6) color = "#" + color; 
         var keySelection = <any>document.getElementById('select-edge-key');
-        keySelection.options[keySelection.selectedIndex].style.backgroundColor = '#' + color;
+        keySelection.options[keySelection.selectedIndex].style.backgroundColor = color;
     }
 
     setSelectNodeKeyBackgroundColor = (color: string) => {
+        if (color.length === 6) color = "#" + color; 
         var keySelection = <any>document.getElementById('select-node-key');
-        keySelection.options[keySelection.selectedIndex].style.backgroundColor = '#' + color;
+        keySelection.options[keySelection.selectedIndex].style.backgroundColor = color;
     }
 
     setDefaultEdgeDiscretizedValues = () => {
@@ -811,8 +830,10 @@ class NeuroMarvl {
     }
 
     setEdgeDirectionGradient = () => {
-        this.saveObj.edgeSettings.directionStartColor = $('#input-edge-start-color').val();
-        this.saveObj.edgeSettings.directionEndColor = $('#input-edge-end-color').val();
+        //this.saveObj.edgeSettings.directionStartColor = $('#input-edge-start-color').val();
+        //this.saveObj.edgeSettings.directionEndColor = $('#input-edge-end-color').val();
+        this.saveObj.edgeSettings.directionStartColor = (<any>$('#input-edge-start-color')).colorpicker("getValue");
+        this.saveObj.edgeSettings.directionEndColor = (<any>$('#input-edge-end-color')).colorpicker("getValue");
 
         if (this.apps[0]) this.apps[0].setEdgeDirectionGradient();
         if (this.apps[1]) this.apps[1].setEdgeDirectionGradient();
@@ -834,7 +855,7 @@ class NeuroMarvl {
             for (var i = 0; i < numCategory; i++) {
                 var to = Number($('#input-edge-discretized-' + i + '-to').val());
                 domainArray[domainArray.length] = to;
-                colorArray[colorArray.length] = "#" + $('#input-edge-discretized-' + i + '-color').val();
+                colorArray[colorArray.length] = (<any>$('#input-edge-discretized-' + i + '-color')).colorpicker("getValue");
             }
 
             // save updated settings 
@@ -850,10 +871,12 @@ class NeuroMarvl {
             config["colorArray"] = colorArray;
 
         } else if (this.commonData.edgeWeightColorMode === "continuous-normal") {
-            var minColor = $('#input-edge-min-color').val();
-            var maxColor = $('#input-edge-max-color').val();
-            minColor = '#' + minColor;
-            maxColor = '#' + maxColor;
+            //var minColor = $('#input-edge-min-color').val();
+            //var maxColor = $('#input-edge-max-color').val();
+            //minColor = '#' + minColor;
+            //maxColor = '#' + maxColor;
+            var minColor = (<any>$('#input-edge-min-color')).colorpicker("getValue");
+            var maxColor = (<any>$('#input-edge-max-color')).colorpicker("getValue");
 
             // save updated settings
             this.saveObj.edgeSettings.colorBy = "weight";
@@ -984,11 +1007,12 @@ class NeuroMarvl {
 
             }
             else {
-                var minColor = $('#input-min-color').val();
-                var maxColor = $('#input-max-color').val();
-
-                minColor = '#' + minColor;
-                maxColor = '#' + maxColor;
+                //var minColor = $('#input-min-color').val();
+                //var maxColor = $('#input-max-color').val();
+                //minColor = '#' + minColor;
+                //maxColor = '#' + maxColor;
+                let minColor = (<any>$('#input-min-color')).colorpicker("getValue");
+                let maxColor = (<any>$('#input-max-color')).colorpicker("getValue");
 
                 if (this.apps[0]) this.apps[0].setNodeColor(attribute, minColor, maxColor);
                 if (this.apps[1]) this.apps[1].setNodeColor(attribute, minColor, maxColor);
@@ -1316,6 +1340,7 @@ class NeuroMarvl {
 
         var minScale = Math.min.apply(Math, scaleArray);
         var maxScale = Math.max.apply(Math, scaleArray);
+        //TODO: Do we really need to call setNodeSizeOrColor for all these events?
         var slider = $("#div-node-size-slider")['bootstrapSlider']({
             range: true,
             min: 0.1,
@@ -1361,8 +1386,8 @@ class NeuroMarvl {
             option.style.backgroundColor = uniqueColors[i];
             $('#select-node-key').append(option);
         }
-
-        (<any>document.getElementById('input-node-color')).color.fromString(uniqueColors[0].substring(1));
+        
+        (<any>$("#input-node-color")).colorpicker("setValue", uniqueColors[0]);
     }
 
     // Find which view is currently located under the mouse
@@ -1429,9 +1454,10 @@ class NeuroMarvl {
     }
 
     setNodeColorInContextMenu = (color: string) => {
+        if (color.length === 6) color = "#" + color;
         if (this.apps[this.input.activeTarget]) {
             if ((this.input.rightClickLabelAppended) && (this.input.selectedNodeID >= 0)) {
-                this.apps[this.input.activeTarget].setANodeColor(this.input.selectedNodeID, '#' + color);
+                this.apps[this.input.activeTarget].setANodeColor(this.input.selectedNodeID, color);
                 this.input.contextMenuColorChanged = true;
             }
         }
@@ -1868,8 +1894,10 @@ class NeuroMarvl {
             } else if (this.loadObj.edgeSettings.weight.type === "continuous-normal") {
                 var setting = this.loadObj.edgeSettings.weight.continuousSetting;
 
-                $('#input-edge-min-color').val(setting.minColor.substring(1));
-                $('#input-edge-max-color').val(setting.maxColor.substring(1));
+                //$('#input-edge-min-color').val(setting.minColor.substring(1));
+                //$('#input-edge-max-color').val(setting.maxColor.substring(1));
+                (<any>$('#input-edge-min-color')).colorpicker("setValue", setting.minColor);
+                (<any>$('#input-edge-max-color')).colorpicker("setValue", setting.maxColor);
 
             } else if (this.loadObj.edgeSettings.weight.type === "continuous-discretized") {
                 var setting = this.loadObj.edgeSettings.weight.discretizedSetting;
@@ -1893,8 +1921,7 @@ class NeuroMarvl {
                 }
 
                 for (var i = 0; i < setting.numCategory; i++) {
-                    $('#input-edge-discretized-' + i + '-color')['colorpicker']('setValue', setting.colorArray[i]);
-                    (<any>document.getElementById('input-edge-discretized-' + i + '-color')).color.fromString(setting.colorArray[i].substring(1));
+                    (<any>$('#input-edge-discretized-' + i + '-color')).colorpicker("setValue", setting.colorArray[i]);
                 }
 
             } else {
@@ -1931,14 +1958,14 @@ class NeuroMarvl {
                 for (var i = 0; i < keySelection.length; i++) {
                     keySelection.options[i].style.backgroundColor = this.loadObj.nodeSettings.nodeColorDiscrete[i];
                 }
-
-                (<any>document.getElementById('input-node-color')).color.fromString(this.loadObj.nodeSettings.nodeColorDiscrete[0].substring(1));
+                
+                (<any>$("#input-node-color")).colorpicker("setValue", this.loadObj.nodeSettings.nodeColorDiscrete[0]);
 
                 this.setNodeSizeOrColor();
             }
             else {
-                (<any>document.getElementById('input-min-color')).color.fromString(this.loadObj.nodeSettings.nodeColorContinuousMin.substring(1));
-                (<any>document.getElementById('input-max-color')).color.fromString(this.loadObj.nodeSettings.nodeColorContinuousMax.substring(1));
+                (<any>$("#input-min-color")).colorpicker("setValue", this.loadObj.nodeSettings.nodeColorContinuousMin);
+                (<any>$("#input-max-color")).colorpicker("setValue", this.loadObj.nodeSettings.nodeColorContinuousMax);
                 this.setNodeSizeOrColor();
             }
         }
@@ -1992,7 +2019,7 @@ class NeuroMarvl {
     }
 
     setBrainSurfaceColor = (color: string) => {
-        this.brainSurfaceColor = '0x' + color;
+        this.brainSurfaceColor = '0x' + color.substring(1);
     }
 
     // Load the similarity matrix for the specified dataSet
@@ -2145,6 +2172,31 @@ class NeuroMarvl {
         $(document).keyup(e => {
             if (e.keyCode == 27) this.toggleSplashPage();   // esc
         });
+
+
+        // Colour pickers
+        $("#input-node-color").on("changeColor", e => {
+            this.setSelectNodeKeyBackgroundColor((<any>e).color.toHex());
+            this.setNodeSizeOrColor();
+        });
+        $("#input-surface-color").on("changeColor", e => this.setBrainSurfaceColor((<any>e).color.toHex()));
+        $("#input-min-color").on("changeColor", e => this.setNodeSizeOrColor());
+        $("#input-max-color").on("changeColor", e => this.setNodeSizeOrColor());
+        $("#input-edge-start-color").on("changeColor", e => this.setEdgeDirectionGradient());
+        $("#input-edge-end-color").on("changeColor", e => this.setEdgeDirectionGradient());
+        $("#input-edge-discretized-0-color").on("changeColor", e => this.setEdgeColorByWeight());
+        $("#input-edge-discretized-1-color").on("changeColor", e => this.setEdgeColorByWeight());
+        $("#input-edge-discretized-2-color").on("changeColor", e => this.setEdgeColorByWeight());
+        $("#input-edge-discretized-3-color").on("changeColor", e => this.setEdgeColorByWeight());
+        $("#input-edge-discretized-4-color").on("changeColor", e => this.setEdgeColorByWeight());
+        $("#input-edge-min-color").on("changeColor", e => this.setEdgeColorByWeight());
+        $("#input-edge-max-color").on("changeColor", e => this.setEdgeColorByWeight());
+        $("#input-edge-color").on("changeColor", e => {
+            this.setSelectEdgeKeyBackgroundColor((<any>e).color.toHex());
+            this.setEdgeColorByWeight()
+        });
+        $("#input-context-menu-node-color").on("changeColor", e => this.setNodeColorInContextMenu((<any>e).color.toHex()));
+
 
         $('#button-select-matrix').click(() => $("#select-matrix").click());
         $('#select-matrix').on('change', () => {
@@ -2330,7 +2382,8 @@ class NeuroMarvl {
                 if (keySelection.options[i].value == key) {
                     var color = keySelection.options[i].style.backgroundColor;
                     var hex = this.colorToHex(color);
-                    (<any>document.getElementById('input-node-color')).color.fromString(hex.substring(1));
+                    (<any>$("#input-node-color")).colorpicker("setValue", hex);
+
                     break;
                 }
             }
@@ -2346,7 +2399,7 @@ class NeuroMarvl {
                 if (keySelection.options[i].value == key) {
                     var color = keySelection.options[i].style.backgroundColor;
                     var hex = this.colorToHex(color);
-                    (<any>document.getElementById('input-edge-color')).color.fromString(hex.substring(1));
+                    (<any>$('#input-edge-color')).colorpicker("setValue", hex);
                     break;
                 }
             }
