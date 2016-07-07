@@ -173,18 +173,36 @@ class NeuroMarvl {
         this.initUI();
 
         let commonInit = () => {
+            console.log("commonInit");      ///jm
             this.initDataDependantUI();
             this.initListeners();
         }
+
         let callbackWithSave = (source, data) => {
-            this.initProject(data, source);
+            console.log("callbackWithSave");      ///jm
+
+            //this.initProject(data, source);
+            // Ensure that data is not empty
+            if (!data || !data.length) return;
+
+            this.loadObj = new SaveFile(jQuery.parseJSON(data));
+            this.saveObj.loadExampleData = (source !== "save");
+            for (var app of this.loadObj.saveApps) {
+                if (app.surfaceModel && (app.surfaceModel.length > 0)) {
+                    this.applyModelToBrainView(app.view, app.surfaceModel, app.brainSurfaceMode);
+                }
+            }
+
             commonInit();
         };
+
         let callbackNoSave = () => {
+            console.log("callbackNoSave");      ///jm
             this.applyModelToBrainView(TL_VIEW, $('#select-brain3d-model').val());
             this.toggleSplashPage();
             commonInit();
         };
+
         this.initFromSaveFile(callbackWithSave, callbackNoSave);
     }
 
@@ -194,7 +212,7 @@ class NeuroMarvl {
     */
 
     initUI = () => {
-        console.log("initUI");
+        console.log("initUI");      ///jm
 
         // Initialize the view sizes and pin location
         this.viewWidth = $('#outer-view-panel').width();
@@ -363,19 +381,19 @@ class NeuroMarvl {
         }
     }
 
-    initProject = (data: string, source = "save") => {
-        // Ensure that data is not empty
-        if (!data || !data.length) return;
+    //initProject = (data: string, source = "save") => {
+    //    // Ensure that data is not empty
+    //    if (!data || !data.length) return;
         
-        this.loadObj = new SaveFile(jQuery.parseJSON(data));
-        this.saveObj.loadExampleData = (source !== "save");
+    //    this.loadObj = new SaveFile(jQuery.parseJSON(data));
+    //    this.saveObj.loadExampleData = (source !== "save");
 
-        for (var app of this.loadObj.saveApps) {
-            if (app.surfaceModel && (app.surfaceModel.length > 0)) {
-                this.applyModelToBrainView(app.view, app.surfaceModel, app.brainSurfaceMode);
-            }
-        }
-    }
+    //    for (var app of this.loadObj.saveApps) {
+    //        if (app.surfaceModel && (app.surfaceModel.length > 0)) {
+    //            this.applyModelToBrainView(app.view, app.surfaceModel, app.brainSurfaceMode);
+    //        }
+    //    }
+    //}
 
 
     /*
@@ -1508,10 +1526,11 @@ class NeuroMarvl {
 
     viewToId = (view: string): number => {
         switch (view) {
+            case TL_VIEW: return 0;
             case TR_VIEW: return 1;
             case BL_VIEW: return 2;
             case BR_VIEW: return 3;
-            default: return 0;      // tl_view
+            default: return -1;
         }
     }
 
