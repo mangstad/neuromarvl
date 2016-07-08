@@ -1761,6 +1761,7 @@ class Brain3DApp implements Application, Loopable {
     restart() {
         if (!this.dataSet || !this.dataSet.verify()) return;
         console.log("restarted");
+        console.trace();///jm
         // Create the dissimilarity matrix from the similarity matrix (we need dissimilarity for Cola)
         for (var i = 0; i < this.dataSet.simMatrix.length; ++i) {
             this.dissimilarityMatrix.push(this.dataSet.simMatrix[i].map((sim) => {

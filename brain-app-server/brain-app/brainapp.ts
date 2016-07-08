@@ -173,15 +173,12 @@ class NeuroMarvl {
         this.initUI();
 
         let commonInit = () => {
-            console.log("commonInit");      ///jm
             this.initDataDependantUI();
             this.initListeners();
         }
 
         let callbackWithSave = (source, data) => {
-            console.log("callbackWithSave");      ///jm
-
-            //this.initProject(data, source);
+            
             // Ensure that data is not empty
             if (!data || !data.length) return;
 
@@ -197,7 +194,6 @@ class NeuroMarvl {
         };
 
         let callbackNoSave = () => {
-            console.log("callbackNoSave");      ///jm
             this.applyModelToBrainView(TL_VIEW, $('#select-brain3d-model').val());
             this.toggleSplashPage();
             commonInit();
@@ -380,20 +376,6 @@ class NeuroMarvl {
             callbackNoSave();
         }
     }
-
-    //initProject = (data: string, source = "save") => {
-    //    // Ensure that data is not empty
-    //    if (!data || !data.length) return;
-        
-    //    this.loadObj = new SaveFile(jQuery.parseJSON(data));
-    //    this.saveObj.loadExampleData = (source !== "save");
-
-    //    for (var app of this.loadObj.saveApps) {
-    //        if (app.surfaceModel && (app.surfaceModel.length > 0)) {
-    //            this.applyModelToBrainView(app.view, app.surfaceModel, app.brainSurfaceMode);
-    //        }
-    //    }
-    //}
 
 
     /*
@@ -602,6 +584,9 @@ class NeuroMarvl {
     }
 
     loadExampleData = (view, func) => {
+        console.log("loadExampleData");      ///jm
+        console.trace();
+
         var status = {
             coordLoaded: false,
             matrixLoaded: false,
@@ -1535,6 +1520,7 @@ class NeuroMarvl {
     }
 
     applyModelToBrainView = (view: string, model: string, brainSurfaceMode?) => {
+        console.log("applyModelToBrainView");///jm
         this.resetBrain3D();
 
         let file = (model === 'ch2') && 'BrainMesh_ch2.obj'
@@ -1548,6 +1534,7 @@ class NeuroMarvl {
 
         this.loadBrainModel(file, object => {
             $(view).empty();
+            /*
             this.apps[id] = new Brain3DApp(
                 {
                     id,
@@ -1562,6 +1549,22 @@ class NeuroMarvl {
             
             //if (!dataSet) dataSet = new DataSet();
             this.apps[id].setDataSet(this.referenceDataSet);
+            */
+            ///jm
+            let makeBrain = () => {
+                this.apps[id] = new Brain3DApp(
+                    {
+                        id,
+                        jDiv: $(view),
+                        brainModelOrigin: object,
+                        brainSurfaceMode
+                    },
+                    this.commonData,
+                    this.input.newTarget(id),
+                    this.saveObj
+                );
+                this.apps[id].setDataSet(this.referenceDataSet);
+            }
 
             var app = this.saveObj.saveApps[id] = (this.loadObj && this.loadObj.saveApps[id]) || new SaveApp({}); // create a new instance (if an old instance exists)
             app.surfaceModel = model;
@@ -1573,14 +1576,16 @@ class NeuroMarvl {
                 // Load dataset into the webapp
                 if (this.loadObj.loadExampleData) {
                     this.loadExampleData(app.setDataSetView, view => {
+                        makeBrain();///jm
                         this.setDataset(view);
-                        this.initApp(id)
+                        this.initApp(id);
                         CommonUtilities.launchAlertMessage(CommonUtilities.alertType.SUCCESS,
                             "Default example dataset is loaded.");
                     });
                 } else {
                     var source = (this.saveObj.loadExampleData ? "save_examples" : "save");
                     this.loadUploadedData(this.loadObj, app.setDataSetView, view => {
+                        makeBrain();///jm
                         // Set data set to the right view
                         this.setDataset(view);
                         this.initApp(id);
@@ -1591,6 +1596,13 @@ class NeuroMarvl {
             }
         });
     }
+
+    ///jm
+    //forceUpdateAllViews = () => {
+    //    for (let i in this.apps) {
+    //        this.apps[i].needUpdate = true;
+    //    }
+    //}
 
     setDataset = (view: string) => {
         this.resetDataSetIcon();
@@ -2061,6 +2073,8 @@ class NeuroMarvl {
             }
         })
         dataSet.setSimMatrix(simMatrix);
+        //this.setEdgeSize();     // Force edges to refresh       ///jm
+        //this.forceUpdateAllViews();///jm
     }
 
     // Load the attributes for the specified dataSet
@@ -2077,6 +2091,8 @@ class NeuroMarvl {
         var newAttributes = new Attributes(text);
         dataSet.attributes = newAttributes;
         dataSet.notifyAttributes();
+        //this.setNodeSizeOrColor();  // Force redraw for new attributes      ///jm
+        //this.forceUpdateAllViews();///jm
     }
 
     setupCrossFilter = (attrs: Attributes) => {
