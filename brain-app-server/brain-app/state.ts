@@ -317,11 +317,10 @@ class SaveFile {
             nodeSizeOrColor: '',
             nodeSizeAttribute: '',
             nodeSizeMin: 1,
-            nodeSizeMax: 1,
-
+            nodeSizeMax: 5,
             nodeColorAttribute: '',
             nodeColorMode: '',
-            nodeColorDiscrete: [],
+            nodeColorDiscrete: ["#1f77b4", "#a2b0e8", "#ff7f0e", "#fffb87", "#2ca02c"],
             nodeColorContinuousMin: '',
             nodeColorContinuousMax: ''
         };
@@ -449,7 +448,7 @@ class SaveApp {
     dataSet: DataSet;
 
     // determine which viewport
-    setDataSetView: string;
+    //setDataSetView: string;
 
     // determine edgeCount setting
     edgeCount: number;
@@ -470,7 +469,7 @@ class SaveApp {
         this.brainSurfaceMode = (sourceObject && sourceObject.brainSurfaceMode) || "";
         this.view = (sourceObject && sourceObject.view) || TL_VIEW;
         this.dataSet = (sourceObject && sourceObject.dataSet) || new DataSet();
-        this.setDataSetView = (sourceObject && sourceObject.setDataSetView) || "";
+        //this.setDataSetView = (sourceObject && sourceObject.setDataSetView) || "";
         this.edgeCount = (sourceObject && sourceObject.edgeCount) || 20;
         this.showingTopologyNetwork = (sourceObject && sourceObject.showingTopologyNetwork) || false;
         this.networkType = (sourceObject && sourceObject.networkType) || "";

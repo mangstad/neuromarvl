@@ -237,9 +237,7 @@ class Brain3DApp implements Application, Loopable {
     getNodeColors(): number[][] {
         // Get the colour array, a mapping of the configured colour attribute to colour values
         let colorAttribute = this.saveObj.nodeSettings.nodeColorAttribute;
-        console.log(this.saveObj);
-        console.log(colorAttribute);
-
+        
         if (colorAttribute === "none" || colorAttribute === "") {
             return Array(this.dataSet.attributes.numRecords).map(d => [0xd3d3d3]);
         }
@@ -925,7 +923,6 @@ class Brain3DApp implements Application, Loopable {
     initEdgeCountSlider(app: SaveApp) {
         this.edgeCountSliderOnChange(app.edgeCount);
         $('#edge-count-slider-' + this.id).val(<any>app.edgeCount);
-        
     }
 
     initShowNetwork(app: SaveApp) {
@@ -1068,6 +1065,7 @@ class Brain3DApp implements Application, Loopable {
 
     edgeCountSliderOnChange(numEdges) {
         this.edgeCountSliderValue = numEdges;
+        if (!this.dataSet.sortedSimilarities) return;
 
         var max = this.dataSet.sortedSimilarities.length;
         if (numEdges > max) numEdges = max;
@@ -1760,8 +1758,7 @@ class Brain3DApp implements Application, Loopable {
     // Initialize or re-initialize the visualisation.
     restart() {
         if (!this.dataSet || !this.dataSet.verify()) return;
-        console.log("restarted");
-        console.trace();///jm
+        console.log("Restarted view: " + this.id);
         // Create the dissimilarity matrix from the similarity matrix (we need dissimilarity for Cola)
         for (var i = 0; i < this.dataSet.simMatrix.length; ++i) {
             this.dissimilarityMatrix.push(this.dataSet.simMatrix[i].map((sim) => {
@@ -1771,19 +1768,14 @@ class Brain3DApp implements Application, Loopable {
         }
 
         // Set up the node colorings
-        //this.nodeColorings = this.dataSet.attributes.attrValues[0].map((group: number[]) => {
-        //    return 0xd3d3d3;
-        //});
         let nodeColors = this.getNodeColors();
-        console.log(nodeColors);
 
         // Set up loop
 
         // Set up the graphs
-        var edgeMatrix = this.dataSet.adjMatrixFromEdgeCount(maxEdgesShowable); // Don''t create more edges than we will ever be showing
+        var edgeMatrix = this.dataSet.adjMatrixFromEdgeCount(maxEdgesShowable); // Don't create more edges than we will ever be showing
 
         if (this.physioGraph) this.physioGraph.destroy();
-        //this.physioGraph = new Graph3D(this.brainObject, edgeMatrix, this.nodeColorings, this.dataSet.simMatrix, this.dataSet.brainLabels, this.commonData);
         this.physioGraph = new Graph3D(this.brainObject, edgeMatrix, nodeColors, this.dataSet.simMatrix, this.dataSet.brainLabels, this.commonData, this.saveObj);
 
         if (this.brainSurfaceMode === 0) {
@@ -1792,7 +1784,6 @@ class Brain3DApp implements Application, Loopable {
             var newCoords = this.computeMedialViewCoords();
             this.physioGraph.setNodePositions(newCoords);
         } else {
-            
             console.log("ERROR: Wrong Brain Surface Mode");
         }
 

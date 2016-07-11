@@ -55,83 +55,9 @@ class Graph2DAlt {
     initGraph(colaGraph: Graph3D, camera) {
         // Use this.dataSet to build the elements for the cytoscape graph.
         // Include default values that are input to style fuctions.
-
-        console.log(this.dataSet);
-        console.log(this.commonData);
-        console.log(this.saveObj);
-
-        /*
-        let edgeMatrix = this.dataSet.adjMatrixFromEdgeCount(maxEdgesShowable);
-
-        let edges = [];
-        for (let i in edgeMatrix) {
-            for (let j in edgeMatrix[i]) {
-                if (i === j) continue;      // Skip self edges
-                if (this.dataSet.info.isSymmetricalMatrix && (i < j)) continue;     // Don't need redundant half of symmetric matrix
-                let value = edgeMatrix[i][j];
-                if (value <= 0) continue;      // Skip any filtered out (null) or insignificant
-                edges.push({
-                    data: {
-                        id: `e_${i}_${j}`,
-                        source: `n_${i}`,
-                        target: `n_${j}`,
-                        value,
-
-                        color: "black"
-                    }
-                });
-            }
-        }
-        let nodes = [];
-        for (let i = 0; i < this.dataSet.info.nodeCount; i++) {
-            // Use projection of colaGraph to screen space to initialise positions
-            //TODO: getting (0,0) for position
-            //let node3d = colaGraph.nodeMeshes[i];
-            //let position;
-            //position = (new THREE.Vector3()).setFromMatrixPosition(colaGraph.nodeMeshes[i].matrixWorld);
-            //position.project(camera);
-
-            // Map the nodes attribute values to node data, for quick application of styling
-            let attributes = {};
-            let columnNames = this.dataSet.attributes.columnNames;
-            let values = this.dataSet.attributes.attrValues;
-            for (let j in columnNames) {
-                attributes[columnNames[j]] = values[j][i];
-            }
-
-            nodes.push({
-                data: {
-                    id: `n_${i}`,
-
-                    attributes,
-                    radius: 5,
-                    color: "black"
-                },
-                //position: {
-                //    x: position.x,
-                //    y: position.y
-                //}
-            });
-        }
         
-        console.log(nodes);
-        console.log(edges);
-        this.elements = nodes.concat(edges);
-        */
-
-
-
-        //this.colorMode = colaGraph.colorMode;
-        //this.directionMode = colaGraph.edgeDirectionMode;
         var width = this.jDiv.width();
         var height = this.jDiv.height();
-        //var widthHalf = width / 2;
-        //var heightHalf = height / 2;
-        //var offsetx = 250;
-        //var offsety = 0;
-
-        //var initX = width * 0.5;
-        //var initY = height * 0.5;
 
         var unitRadius = 5;
 
@@ -260,9 +186,6 @@ class Graph2DAlt {
             }
         }));
         var elements = nodes.concat(<any>edges);
-        //var elements = this.elements;
-
-        //console.log(nodes);
 
         // Default layout is simple and fast
         var layout = <any>{

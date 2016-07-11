@@ -133,7 +133,6 @@ class NeuroMarvl {
     commonData = new CommonData();
     brainSurfaceColor: string;
     saveObj = new SaveFile({});
-    loadObj: SaveFile;
     loader;     // THREE.ObjLoader
     apps: Application[];
 
@@ -156,12 +155,11 @@ class NeuroMarvl {
 
         // Set up OBJ loading
         let manager = new THREE.LoadingManager();
-        manager.onProgress = (item, loaded, total) => {
-            console.log(item, loaded, total);
-        };
+        //manager.onProgress = (item, loaded, total) => {
+        //    console.log(item, loaded, total);
+        //};
         this.loader = new (<any>THREE).OBJLoader(manager);
-
-        //this.apps = Array<Application>(null, null, null, null);
+        
         this.apps = Array<Application>();
 
         // Set up the class that will manage which view should be receiving input
@@ -182,21 +180,18 @@ class NeuroMarvl {
             // Ensure that data is not empty
             if (!data || !data.length) return;
 
-            this.loadObj = new SaveFile(jQuery.parseJSON(data));
+            this.saveObj = new SaveFile(jQuery.parseJSON(data));
             this.saveObj.loadExampleData = (source !== "save");
-            for (var app of this.loadObj.saveApps) {
+            for (var app of this.saveObj.saveApps) {
                 if (app.surfaceModel && (app.surfaceModel.length > 0)) {
-                    this.applyModelToBrainView(app.view, app.surfaceModel, app.brainSurfaceMode);
+                    this.applyModelToBrainView(app.view, app.surfaceModel, commonInit, app.brainSurfaceMode);
                 }
             }
-
-            commonInit();
         };
 
         let callbackNoSave = () => {
-            this.applyModelToBrainView(TL_VIEW, $('#select-brain3d-model').val());
+            this.applyModelToBrainView(TL_VIEW, $('#select-brain3d-model').val(), commonInit);
             this.toggleSplashPage();
-            commonInit();
         };
 
         this.initFromSaveFile(callbackWithSave, callbackNoSave);
@@ -208,8 +203,6 @@ class NeuroMarvl {
     */
 
     initUI = () => {
-        console.log("initUI");      ///jm
-
         // Initialize the view sizes and pin location
         this.viewWidth = $('#outer-view-panel').width();
         this.viewHeight = $('#outer-view-panel').height();
@@ -384,14 +377,14 @@ class NeuroMarvl {
 
     initApp = id => {
         // init edge count
-        var app = this.loadObj.saveApps[id];
+        var app = this.saveObj.saveApps[id];
         if ((app.surfaceModel != null) && (app.surfaceModel.length > 0)) {
             this.apps[id].initEdgeCountSlider(app);
         }
 
         // init cross filter
-        if ((this.loadObj.filteredRecords != null) && (this.loadObj.filteredRecords.length > 0)) {
-            this.referenceDataSet.attributes.filteredRecords = this.loadObj.filteredRecords.slice(0);
+        if ((this.saveObj.filteredRecords != null) && (this.saveObj.filteredRecords.length > 0)) {
+            this.referenceDataSet.attributes.filteredRecords = this.saveObj.filteredRecords.slice(0);
             this.applyFilterButtonOnClick();
         }
 
@@ -400,28 +393,6 @@ class NeuroMarvl {
             this.apps[id].initShowNetwork(app);
         }
 
-
-        // init the node size and color given the current UI. The UI needs to be redesigned.
-        if ((this.loadObj.nodeSettings.nodeSizeOrColor != null) && (this.loadObj.nodeSettings.nodeSizeOrColor.length > 0)) {
-            if (this.loadObj.nodeSettings.nodeSizeOrColor == "node-size") {
-                this.initNodeColor();
-                this.initNodeSize();
-            }
-            else if (this.loadObj.nodeSettings.nodeSizeOrColor == "node-color") {
-                this.initNodeSize();
-                this.initNodeColor();
-            }
-        }
-
-        // init edge size and color.
-        if (this.loadObj.edgeSettings != null) {
-            this.initEdgeSizeAndColor();
-        }
-
-        // init Surface Setting
-        if (this.loadObj.surfaceSettings != null) {
-            this.initSurfaceSettings();
-        }
         this.removeLoadingNotification();
     }
 
@@ -430,6 +401,28 @@ class NeuroMarvl {
         this.resetBrain3D();
         this.resetDataSetIcon();
         this.showVisIcons();
+
+        // init the node size and color given the current UI. The UI needs to be redesigned.
+        if ((this.saveObj.nodeSettings.nodeSizeOrColor != null) && (this.saveObj.nodeSettings.nodeSizeOrColor.length > 0)) {
+            if (this.saveObj.nodeSettings.nodeSizeOrColor == "node-size") {
+                this.initNodeColor();
+                this.initNodeSize();
+            }
+            else if (this.saveObj.nodeSettings.nodeSizeOrColor == "node-color") {
+                this.initNodeSize();
+                this.initNodeColor();
+            }
+        }
+
+        // init edge size and color.
+        if (this.saveObj.edgeSettings != null) {
+            this.initEdgeSizeAndColor();
+        }
+
+        // init Surface Setting
+        if (this.saveObj.surfaceSettings != null) {
+            this.initSurfaceSettings();
+        }
 
         this.selectView(TL_VIEW);
     }
@@ -583,10 +576,8 @@ class NeuroMarvl {
         reader.readAsText(file);
     }
 
-    loadExampleData = (view, func) => {
-        console.log("loadExampleData");      ///jm
-        console.trace();
-
+    //loadExampleData = (view, func) => {
+    loadExampleData = func => {
         var status = {
             coordLoaded: false,
             matrixLoaded: false,
@@ -596,7 +587,8 @@ class NeuroMarvl {
 
         var callback = () => {
             if (status.coordLoaded && status.matrixLoaded && status.attrLoaded && status.labelLoaded) {
-                func(view);
+                //func(view);
+                func();
             }
         }
         $.get('brain-app/data/coords.txt', text => {
@@ -683,22 +675,24 @@ class NeuroMarvl {
         $('#' + file).tooltip('fixTitle');
     }
 
-    loadUploadedData = (loadObj, view, func, source = "save") => {
+    //loadUploadedData = (saveObj, view, func, source = "save") => {
+      loadUploadedData = (saveObj, func, source = "save") => {
         this.saveObj.loadExampleData = false;
         var status = {
             coordLoaded: false,
             matrixLoaded: false,
             attrLoaded: false,
-            labelLoaded: (loadObj.serverFileNameLabel) ? false : true
+            labelLoaded: (saveObj.serverFileNameLabel) ? false : true
         };
 
         var callback = () => {
             if (status.coordLoaded && status.matrixLoaded && status.attrLoaded && status.labelLoaded) {
-                func(view);
+                //func(view);
+                func();
             }
         }
 
-        $.get('brain-app/' + source + '/' + loadObj.serverFileNameCoord, text => {
+        $.get('brain-app/' + source + '/' + saveObj.serverFileNameCoord, text => {
             this.parseCoordinates(text);
             //$('#shared-coords').css({ color: 'green' });
             $('#label-coords')
@@ -706,13 +700,13 @@ class NeuroMarvl {
                 .css({ color: 'green' });
             status.coordLoaded = true;
             // change status
-            //document.getElementById("button-select-coords").innerHTML = loadObj.serverFileNameCoord;
-            document.getElementById("button-select-coords-filename").innerHTML = loadObj.serverFileNameCoord;
+            //document.getElementById("button-select-coords").innerHTML = saveObj.serverFileNameCoord;
+            document.getElementById("button-select-coords-filename").innerHTML = saveObj.serverFileNameCoord;
             this.changeFileStatus("coords-status", "uploaded");
 
             callback();
         });
-        $.get('brain-app/' + source + '/' + loadObj.serverFileNameMatrix, text => {
+        $.get('brain-app/' + source + '/' + saveObj.serverFileNameMatrix, text => {
             this.parseSimilarityMatrix(text, this.referenceDataSet);
             //$('#d1-mat').css({ color: 'green' });
             $('#label-similarity-matrix')
@@ -721,13 +715,13 @@ class NeuroMarvl {
             status.matrixLoaded = true;
 
             // change status
-            //document.getElementById("button-select-matrix").innerHTML = loadObj.serverFileNameMatrix;
-            document.getElementById("button-select-matrix-filename").innerHTML = loadObj.serverFileNameMatrix;
+            //document.getElementById("button-select-matrix").innerHTML = saveObj.serverFileNameMatrix;
+            document.getElementById("button-select-matrix-filename").innerHTML = saveObj.serverFileNameMatrix;
             this.changeFileStatus("matrix-status", "uploaded");
 
             callback();
         });
-        $.get('brain-app/' + source + '/' + loadObj.serverFileNameAttr, text => {
+        $.get('brain-app/' + source + '/' + saveObj.serverFileNameAttr, text => {
             this.parseAttributes(text, this.referenceDataSet);
             //$('#d1-att').css({ color: 'green' });
             $('#label-attributes')
@@ -736,15 +730,15 @@ class NeuroMarvl {
             this.setupAttributeTab();
             status.attrLoaded = true;
             // change status
-            //document.getElementById("button-select-attrs").innerHTML = loadObj.serverFileNameAttr;
-            document.getElementById("button-select-attrs-filename").innerHTML = loadObj.serverFileNameAttr;
+            //document.getElementById("button-select-attrs").innerHTML = saveObj.serverFileNameAttr;
+            document.getElementById("button-select-attrs-filename").innerHTML = saveObj.serverFileNameAttr;
             this.changeFileStatus("attrs-status", "uploaded");
 
             callback()
         });
         // Check if Label file is uploaded
-        if (loadObj.serverFileNameLabel) {
-            $.get('brain-app/' + source + '/' + loadObj.serverFileNameLabel, text => {
+        if (saveObj.serverFileNameLabel) {
+            $.get('brain-app/' + source + '/' + saveObj.serverFileNameLabel, text => {
                 this.parseLabels(text);
                 //$('#shared-labels').css({ color: 'green' });
                 $('#label-labels')
@@ -754,8 +748,8 @@ class NeuroMarvl {
             status.labelLoaded = true;
 
             // change status
-            //document.getElementById("button-select-labels").innerHTML = loadObj.serverFileNameLabel;
-            document.getElementById("button-select-labels-filename").innerHTML = loadObj.serverFileNameLabel;
+            //document.getElementById("button-select-labels").innerHTML = saveObj.serverFileNameLabel;
+            document.getElementById("button-select-labels-filename").innerHTML = saveObj.serverFileNameLabel;
             this.changeFileStatus("labels-status", "uploaded");
 
             callback();
@@ -979,7 +973,7 @@ class NeuroMarvl {
             if (this.apps[1]) this.apps[1].setNodeSize(newScaleArray);
             if (this.apps[2]) this.apps[2].setNodeSize(newScaleArray);
             if (this.apps[3]) this.apps[3].setNodeSize(newScaleArray);
-
+            
             this.saveObj.nodeSettings.nodeSizeMin = values[0];
             this.saveObj.nodeSettings.nodeSizeMax = values[1];
             this.saveObj.nodeSettings.nodeSizeAttribute = attribute;
@@ -1090,11 +1084,11 @@ class NeuroMarvl {
         var file = (<any>$('#input-select-load-file').get(0)).files[0];
         var reader = new FileReader();
         reader.onload = () => {
-            this.loadObj = new SaveFile({});
-            this.loadObj.fromYaml(reader.result.toLowerCase());
+            this.saveObj = new SaveFile({});
+            this.saveObj.fromYaml(reader.result.toLowerCase());
 
             for (var i = 0; i < 4; i++) {
-                if (!jQuery.isEmptyObject(this.loadObj.saveApps[i])) {
+                if (!jQuery.isEmptyObject(this.saveObj.saveApps[i])) {
                     this.initApp(i);
                 }
             }
@@ -1325,7 +1319,6 @@ class NeuroMarvl {
         var max = this.referenceDataSet.attributes.getMax(columnIndex);
 
         var scaleArray: number[];
-        //var scaleFactor = 0.5;
         var scaleFactor = 1;
 
         scaleArray = attrArray.map((value) => { return scaleFactor * value[0]; });
@@ -1519,8 +1512,8 @@ class NeuroMarvl {
         }
     }
 
-    applyModelToBrainView = (view: string, model: string, brainSurfaceMode?) => {
-        console.log("applyModelToBrainView");///jm
+    //applyModelToBrainView = (view: string, model: string, brainSurfaceMode?) => {
+    applyModelToBrainView = (view: string, model: string, finalCallback?, brainSurfaceMode?) => {
         this.resetBrain3D();
 
         let file = (model === 'ch2') && 'BrainMesh_ch2.obj'
@@ -1534,23 +1527,6 @@ class NeuroMarvl {
 
         this.loadBrainModel(file, object => {
             $(view).empty();
-            /*
-            this.apps[id] = new Brain3DApp(
-                {
-                    id,
-                    jDiv: $(view),
-                    brainModelOrigin: object,
-                    brainSurfaceMode
-                },
-                this.commonData,
-                this.input.newTarget(id),
-                this.saveObj
-            );
-            
-            //if (!dataSet) dataSet = new DataSet();
-            this.apps[id].setDataSet(this.referenceDataSet);
-            */
-            ///jm
             let makeBrain = () => {
                 this.apps[id] = new Brain3DApp(
                     {
@@ -1564,115 +1540,53 @@ class NeuroMarvl {
                     this.saveObj
                 );
                 this.apps[id].setDataSet(this.referenceDataSet);
+                
+                this.setDataset(view);
+                this.initApp(id);
+                if (finalCallback) finalCallback();
             }
 
-            var app = this.saveObj.saveApps[id] = (this.loadObj && this.loadObj.saveApps[id]) || new SaveApp({}); // create a new instance (if an old instance exists)
+            var app = this.saveObj.saveApps[id] = (this.saveObj && this.saveObj.saveApps[id]) || new SaveApp({}); // create a new instance (if an old instance exists)
             app.surfaceModel = model;
             app.view = view;
 
             $('#button-save-app').button({ disabled: false });
 
-            if (this.loadObj) {
+            if (this.saveObj) {
                 // Load dataset into the webapp
-                if (this.loadObj.loadExampleData) {
-                    this.loadExampleData(app.setDataSetView, view => {
-                        makeBrain();///jm
-                        this.setDataset(view);
-                        this.initApp(id);
-                        CommonUtilities.launchAlertMessage(CommonUtilities.alertType.SUCCESS,
-                            "Default example dataset is loaded.");
+                if (this.saveObj.loadExampleData) {
+                    this.loadExampleData(() => {
+                        makeBrain();
+                        CommonUtilities.launchAlertMessage(CommonUtilities.alertType.SUCCESS, "Default example dataset is loaded.");
                     });
-                } else {
+                }
+                else if (this.saveObj.serverFileNameCoord && this.saveObj.serverFileNameMatrix && this.saveObj.serverFileNameAttr) {
                     var source = (this.saveObj.loadExampleData ? "save_examples" : "save");
-                    this.loadUploadedData(this.loadObj, app.setDataSetView, view => {
-                        makeBrain();///jm
-                        // Set data set to the right view
-                        this.setDataset(view);
-                        this.initApp(id);
-                        CommonUtilities.launchAlertMessage(CommonUtilities.alertType.SUCCESS,
-                            "Uploaded dataset is loaded.");
+                    this.loadUploadedData(this.saveObj, () => {
+                        makeBrain();
+                        CommonUtilities.launchAlertMessage(CommonUtilities.alertType.SUCCESS, "Uploaded dataset is loaded.");
                     }, source);
+                }
+                else {
+                    makeBrain();
+                    CommonUtilities.launchAlertMessage(CommonUtilities.alertType.SUCCESS, "No dataset loaded.");
                 }
             }
         });
     }
-
-    ///jm
-    //forceUpdateAllViews = () => {
-    //    for (let i in this.apps) {
-    //        this.apps[i].needUpdate = true;
-    //    }
-    //}
+    
 
     setDataset = (view: string) => {
         this.resetDataSetIcon();
-        //TODO: Not actually cloning dataset yet, as the rest of the project isn't ready for it yet. Use clone when basic data structure is fixed, then multiple views is working.
 
         let id = this.viewToId(view);
         if (!this.referenceDataSet) {
             // Get a dataset from the default example
-            this.loadExampleData(view, view => this.apps[id].setDataSet(this.referenceDataSet));
+            this.loadExampleData(() => this.apps[id].setDataSet(this.referenceDataSet));
         } else {
             if (!this.referenceDataSet.verify()) return;
             this.apps[id].setDataSet(this.referenceDataSet);
         }
-        /*
-        if (!this.referenceDataSet) {
-            this.loadExampleData(view, view => {
-                var clonedDataSet = this.referenceDataSet.clone();
-                var appID = -1;
-                switch (view) {
-                    case TL_VIEW:
-                        if (this.apps[0]) this.apps[0].setDataSet(clonedDataSet);
-                        appID = 0;
-                        break;
-                    case TR_VIEW:
-                        if (this.apps[1]) this.apps[1].setDataSet(clonedDataSet);
-                        appID = 1;
-                        break;
-                    case BL_VIEW:
-                        if (this.apps[2]) this.apps[2].setDataSet(clonedDataSet);
-                        appID = 2;
-                        break;
-                    case BR_VIEW:
-                        if (this.apps[3]) this.apps[3].setDataSet(clonedDataSet);
-                        appID = 3;
-                        break;
-                }
-
-                if (appID != -1) {
-                    this.saveObj.saveApps[appID].setDataSetView = view;
-                }
-            });
-        } else {
-            if (!this.referenceDataSet.verify()) return;
-            var clonedDataSet = this.referenceDataSet.clone();
-            var appID = -1;
-            switch (view) {
-                case TL_VIEW:
-                    if (this.apps[0]) this.apps[0].setDataSet(clonedDataSet);
-                    appID = 0;
-                    break;
-                case TR_VIEW:
-                    if (this.apps[1]) this.apps[1].setDataSet(clonedDataSet);
-                    appID = 1;
-                    break;
-                case BL_VIEW:
-                    if (this.apps[2]) this.apps[2].setDataSet(clonedDataSet);
-                    appID = 2;
-                    break;
-                case BR_VIEW:
-                    if (this.apps[3]) this.apps[3].setDataSet(clonedDataSet);
-                    appID = 3;
-                    break;
-            }
-
-            if (appID != -1) {
-                this.saveObj.saveApps[appID].setDataSetView = view;
-            }
-
-        }
-        */
     }
 
     setEdgeDirection = () => {
@@ -1799,8 +1713,7 @@ class NeuroMarvl {
     setEdgeSize = () => {
         var edgeSize = $("#div-edge-size-slider")['bootstrapSlider']().data('bootstrapSlider').getValue();
         this.saveObj.edgeSettings.size = edgeSize;
-
-
+        
         if (this.apps[0]) this.apps[0].setEdgeSize(edgeSize);
         if (this.apps[1]) this.apps[1].setEdgeSize(edgeSize);
         if (this.apps[2]) this.apps[2].setEdgeSize(edgeSize);
@@ -1837,9 +1750,6 @@ class NeuroMarvl {
     }
 
     parseCoordinates = (text: string) => {
-
-        //if (!this.referenceDataSet) this.referenceDataSet = new DataSet();
-
         // For some reason the text file uses a carriage return to separate coordinates (ARGGgggh!!!!)
         //var lines = text.split(String.fromCharCode(13));
         var lines = text.replace(/\t|\,/g, ' ').trim().split(/\r\n|\r|\n/g).map(s => s.trim());
@@ -1886,52 +1796,52 @@ class NeuroMarvl {
     }
 
     initSurfaceSettings = () => {
-        if (this.loadObj.surfaceSettings.opacity) {
-            $("#div-surface-opacity-slider")['bootstrapSlider']().data('bootstrapSlider').setValue(this.loadObj.surfaceSettings.opacity);
+        if (this.saveObj.surfaceSettings.opacity) {
+            $("#div-surface-opacity-slider")['bootstrapSlider']().data('bootstrapSlider').setValue(this.saveObj.surfaceSettings.opacity);
             this.setSurfaceOpacity();
         }
     }
 
     initEdgeSizeAndColor = () => {
 
-        $('select-edge-direction').val(this.loadObj.edgeSettings.directionMode);
+        $('select-edge-direction').val(this.saveObj.edgeSettings.directionMode);
         this.setEdgeDirection();
 
-        if (this.loadObj.edgeSettings.colorBy === "none") {
+        if (this.saveObj.edgeSettings.colorBy === "none") {
             $('#select-edge-color').val("none");
             this.setEdgeColor();
 
-        } else if (this.loadObj.edgeSettings.colorBy === "node") {
+        } else if (this.saveObj.edgeSettings.colorBy === "node") {
             $('#select-edge-color').val("node");
             this.setEdgeColor();
 
-        } else if (this.loadObj.edgeSettings.colorBy === "weight") {
+        } else if (this.saveObj.edgeSettings.colorBy === "weight") {
             $('#select-edge-color').val("weight");
-            if (this.loadObj.edgeSettings.weight.type === "continuous-discretized") {
+            if (this.saveObj.edgeSettings.weight.type === "continuous-discretized") {
                 $('#checkbox-edge-color-discretized').prop('checked', true);
             }
 
             // make all corresponding elements visible
             this.setEdgeColor();
 
-            if (this.loadObj.edgeSettings.weight.type === "discrete") {
-                var setting = this.loadObj.edgeSettings.weight.discreteSetting;
+            if (this.saveObj.edgeSettings.weight.type === "discrete") {
+                var setting = this.saveObj.edgeSettings.weight.discreteSetting;
                 var keySelection = <any>document.getElementById('select-edge-key');
 
                 for (var i = 0; i < setting.valueArray; i++) {
                     keySelection.options[i].style.backgroundColor = setting.colorArray[i];
                 }
 
-            } else if (this.loadObj.edgeSettings.weight.type === "continuous-normal") {
-                var setting = this.loadObj.edgeSettings.weight.continuousSetting;
+            } else if (this.saveObj.edgeSettings.weight.type === "continuous-normal") {
+                var setting = this.saveObj.edgeSettings.weight.continuousSetting;
 
                 //$('#input-edge-min-color').val(setting.minColor.substring(1));
                 //$('#input-edge-max-color').val(setting.maxColor.substring(1));
                 (<any>$('#input-edge-min-color')).colorpicker("setValue", setting.minColor);
                 (<any>$('#input-edge-max-color')).colorpicker("setValue", setting.maxColor);
 
-            } else if (this.loadObj.edgeSettings.weight.type === "continuous-discretized") {
-                var setting = this.loadObj.edgeSettings.weight.discretizedSetting;
+            } else if (this.saveObj.edgeSettings.weight.type === "continuous-discretized") {
+                var setting = this.saveObj.edgeSettings.weight.discretizedSetting;
 
                 $('#select-edge-color-number-discretized-category').val(setting.numCategory);
                 for (var i = 0; i < 5; i++) {
@@ -1964,46 +1874,41 @@ class NeuroMarvl {
     }
 
     initNodeSize = () => {
-        if ((this.loadObj.nodeSettings.nodeSizeAttribute != null) && (this.loadObj.nodeSettings.nodeSizeAttribute.length > 0)) {
+        if ((this.saveObj.nodeSettings.nodeSizeAttribute != null) && (this.saveObj.nodeSettings.nodeSizeAttribute.length > 0)) {
             $('#select-node-size-color').val("node-size");
-            $('#select-attribute').val(this.loadObj.nodeSettings.nodeSizeAttribute);
+            $('#select-attribute').val(this.saveObj.nodeSettings.nodeSizeAttribute);
+            
+            $("#div-node-size-slider")['bootstrapSlider']().data('bootstrapSlider').setValue([this.saveObj.nodeSettings.nodeSizeMin, this.saveObj.nodeSettings.nodeSizeMax]);
+
+            $("#label_node_size_range").text(this.saveObj.nodeSettings.nodeSizeMin + " - " + this.saveObj.nodeSettings.nodeSizeMax);
+            
             this.selectNodeSizeColorOnChange();
-
-            $("#div-node-size-slider")['bootstrapSlider']().data('bootstrapSlider').setValue([this.loadObj.nodeSettings.nodeSizeMin, this.loadObj.nodeSettings.nodeSizeMax]);
-
-            $("#label_node_size_range").text(this.loadObj.nodeSettings.nodeSizeMin + " - " + this.loadObj.nodeSettings.nodeSizeMax);
-
-            this.setNodeSizeOrColor();
         }
     }
 
     initNodeColor = () => {
-        if ((this.loadObj.nodeSettings.nodeColorAttribute != null) && (this.loadObj.nodeSettings.nodeColorAttribute.length > 0)) {
+        if ((this.saveObj.nodeSettings.nodeColorAttribute != null) && (this.saveObj.nodeSettings.nodeColorAttribute.length > 0)) {
             $('#select-node-size-color').val("node-color");
-            $('#select-attribute').val(this.loadObj.nodeSettings.nodeColorAttribute);
-            this.selectNodeSizeColorOnChange();
+            $('#select-attribute').val(this.saveObj.nodeSettings.nodeColorAttribute);
 
-            if (this.referenceDataSet.attributes.info[this.loadObj.nodeSettings.nodeColorAttribute].isDiscrete) {
+            if (this.referenceDataSet.attributes.info[this.saveObj.nodeSettings.nodeColorAttribute].isDiscrete) {
                 var keySelection = <any>document.getElementById('select-node-key');
 
                 for (var i = 0; i < keySelection.length; i++) {
-                    keySelection.options[i].style.backgroundColor = this.loadObj.nodeSettings.nodeColorDiscrete[i];
+                    keySelection.options[i].style.backgroundColor = this.saveObj.nodeSettings.nodeColorDiscrete[i];
                 }
                 
-                (<any>$("#input-node-color")).colorpicker("setValue", this.loadObj.nodeSettings.nodeColorDiscrete[0]);
-
-                this.setNodeSizeOrColor();
+                (<any>$("#input-node-color")).colorpicker("setValue", this.saveObj.nodeSettings.nodeColorDiscrete[0]);
             }
             else {
-                (<any>$("#input-min-color")).colorpicker("setValue", this.loadObj.nodeSettings.nodeColorContinuousMin);
-                (<any>$("#input-max-color")).colorpicker("setValue", this.loadObj.nodeSettings.nodeColorContinuousMax);
-                this.setNodeSizeOrColor();
+                (<any>$("#input-min-color")).colorpicker("setValue", this.saveObj.nodeSettings.nodeColorContinuousMin);
+                (<any>$("#input-max-color")).colorpicker("setValue", this.saveObj.nodeSettings.nodeColorContinuousMax);
             }
+            this.selectNodeSizeColorOnChange();
         }
     }
 
     showLoadingNotification = () => {
-        //console.log("function: cursorWait()");
         //$('body').css({ cursor: 'wait' });
 
         document.body.appendChild(this.divLoadingNotification);
@@ -2020,10 +1925,6 @@ class NeuroMarvl {
         var text = document.createElement('div');
         text.innerHTML = "Loading...";
         this.divLoadingNotification.appendChild(text);
-
-        //var button = document.createElement('button');
-        //button.textContent = "continue";
-        //divLoadingNotification.appendChild(button);
     }
 
     removeLoadingNotification = () => {
@@ -2063,8 +1964,6 @@ class NeuroMarvl {
 
     parseSimilarityMatrix = (text: string, dataSet: DataSet) => {
     //TODO: Move into DataSet class
-        //if (!dataSet) dataSet = new DataSet();
-        //var lines = text.split('\n').map(s => s.trim());
         var lines = text.replace(/\t|\,/g, ' ').trim().split(/\r\n|\r|\n/g).map(s => s.trim());
         var simMatrix = [];
         lines.forEach((line, i) => {
@@ -2074,7 +1973,6 @@ class NeuroMarvl {
         })
         dataSet.setSimMatrix(simMatrix);
         //this.setEdgeSize();     // Force edges to refresh       ///jm
-        //this.forceUpdateAllViews();///jm
     }
 
     // Load the attributes for the specified dataSet
@@ -2087,12 +1985,10 @@ class NeuroMarvl {
 
     parseAttributes = (text: string, dataSet: DataSet) => {
     //TODO: Move into DataSet class
-        //if (!dataSet) dataSet = new DataSet();
         var newAttributes = new Attributes(text);
         dataSet.attributes = newAttributes;
         dataSet.notifyAttributes();
         //this.setNodeSizeOrColor();  // Force redraw for new attributes      ///jm
-        //this.forceUpdateAllViews();///jm
     }
 
     setupCrossFilter = (attrs: Attributes) => {
@@ -2130,7 +2026,6 @@ class NeuroMarvl {
 
         // convert the object array to json format
         var json = JSON.parse(JSON.stringify(objectArray));
-        //console.log(json);
 
         // create crossfilter
         var cfilter = crossfilter(json);
@@ -2149,15 +2044,8 @@ class NeuroMarvl {
         // create the charts 
         // listener
         let filtered = () => {
-            //console.log("filter event...");
-
             this.referenceDataSet.attributes.filteredRecords = dimArray[0].top(Number.POSITIVE_INFINITY);
             this.referenceDataSet.attributes.filteredRecordsHighlightChanged = true;
-            //console.log(dimArray);
-            if (this.referenceDataSet.attributes.filteredRecords) {
-                //console.log(fcount + "). count: " + this.referenceDataSet.attributes.filteredRecords.length);
-                //fcount++; 
-            }
 
             $('#button-apply-filter').button("enable");
         }
@@ -2363,7 +2251,8 @@ class NeuroMarvl {
             }
         });
 
-        $('#load-example-data').button().click(() => this.loadExampleData(0, view => {}));
+        //$('#load-example-data').button().click(() => this.loadExampleData(0, view => { }));
+        $('#load-example-data').button().click(() => this.loadExampleData(() => { }));
 
         $('#button-apply-filter').button().click(this.applyFilterButtonOnClick);
 
@@ -2455,6 +2344,7 @@ class NeuroMarvl {
                 stop: event => {
                     var model = $('#select-brain3d-model').val();
                     var view = this.getViewUnderMouse(event.pageX, event.pageY);
+                    //this.applyModelToBrainView(view, model);
                     this.applyModelToBrainView(view, model);
                 }
             }
