@@ -224,12 +224,12 @@ class CircularGraph {
         if (this.circularMouseDownEventListenerAdded == false) {
             this.circularMouseDownEventListenerAdded = true;
             document.addEventListener('mouseup', (event) => {
-                if ((!$(event.target).hasClass(varClass)) &&
-                    ((<any>(event.target)).id != "input-circular-layout-bar1-color") &&
-                    ((<any>(event.target)).id != "input-circular-layout-bar2-color") &&
-                    (this.circularBarColorChange == false)) {
+                let menu = document.getElementById("div-circular-layout-menu-" + this.id);
+                if ((!$(event.target).hasClass(varClass))
+                    && !$.contains(menu, <Element>(event.target))
+                    && !this.circularBarColorChange)
+                {
                     $('#div-circular-layout-menu-' + this.id).hide();
-
                 }
 
                 this.circularBarColorChange = false;
@@ -942,18 +942,17 @@ class CircularGraph {
             .on("change", function () {
                 varCircularLayoutAttributeOnChange(bar.id, $(this).val());
             }));
-        $('#div-circular-bar' + bar.id + '-' + this.id).append($('<input id="input-circular-layout-bar' + bar.id + '-color" class=' + this.circularCSSClass + '>')
-            .attr("value", "bdc3c7")
-            .css({ 'width': '80px', 'background-color': '#feeebd', 'border': '1px solid grey' })
-            .on("change", function () {
-                varUpdateCircularBarColor(bar.id, "#" + this.value);
-            }));
-
-        var myPicker = new jscolor.color(document.getElementById('input-circular-layout-bar' + bar.id + '-color'), {
-            pickerFace: 3,
-            pickerFaceColor: '#feeebd',
-            styleElement: 'input-circular-layout-bar' + bar.id + '-color'
-        });
+        $('#div-circular-bar' + bar.id + '-' + this.id)
+            .append($(`
+                <div id="input-circular-layout-bar${bar.id}-color" class="${this.circularCSSClass} input-group colorpicker-component" style="width: 12em" >
+                    <input type="text" value="bdc3c7" class="form-control"/>
+                    <span class="input-group-addon"><i></i></span>
+                </div>
+                `)
+        );
+        let $pickerDiv = (<any>$(`#input-circular-layout-bar${bar.id}-color`));
+        $pickerDiv.colorpicker();
+        $pickerDiv.on("changeColor", e => varUpdateCircularBarColor(bar.id, (<any>e).color.toHex()));
 
 
         $('#select-circular-layout-attribute-' + bar.id + '-' + this.id).empty();
