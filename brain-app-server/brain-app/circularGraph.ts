@@ -453,7 +453,8 @@ class CircularGraph {
                 var attrArray = attributes.get(colorAttr);
                 var group = d3.select(this);
                 group.selectAll("path").remove();
-                if (colorAttr === "" || colorAttr === "none") {
+                //if (colorAttr === "" || colorAttr === "none") {
+                if (!attributes.info[colorAttr]) {
                     group.selectAll(".path")
                         .data(pie([1]))
                         .enter().append('path')
@@ -834,7 +835,8 @@ class CircularGraph {
                 var attrArray = attributes.get(colorAttr);
                 var group = d3.select(this);
                 group.selectAll("path").remove();
-                if (colorAttr === "" || colorAttr === "none") {
+                //if (colorAttr === "" || colorAttr === "none") {
+                if (!attributes.info[colorAttr]) {
                     group.selectAll(".path")
                         .data(pie([1]))
                         .enter().append('path')

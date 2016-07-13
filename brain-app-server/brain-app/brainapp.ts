@@ -575,8 +575,7 @@ class NeuroMarvl {
         }
         reader.readAsText(file);
     }
-
-    //loadExampleData = (view, func) => {
+    
     loadExampleData = func => {
         var status = {
             coordLoaded: false,
@@ -587,7 +586,6 @@ class NeuroMarvl {
 
         var callback = () => {
             if (status.coordLoaded && status.matrixLoaded && status.attrLoaded && status.labelLoaded) {
-                //func(view);
                 func();
             }
         }
@@ -599,7 +597,6 @@ class NeuroMarvl {
                 .css({ color: 'green' });
             status.coordLoaded = true;
             // change status
-            //document.getElementById("button-select-coords").innerHTML = "coords.txt";
             document.getElementById("button-select-coords-filename").innerHTML = "coords.txt";
             this.changeFileStatus("coords-status", "uploaded");
 
@@ -614,7 +611,6 @@ class NeuroMarvl {
             status.matrixLoaded = true;
 
             // change status
-            //document.getElementById("button-select-matrix").innerHTML = "mat1.txt";
             document.getElementById("button-select-matrix-filename").innerHTML = "mat1.txt";
             this.changeFileStatus("matrix-status", "uploaded");
 
@@ -630,7 +626,6 @@ class NeuroMarvl {
             this.setupAttributeTab();
             status.attrLoaded = true;
             // change status
-            //document.getElementById("button-select-attrs").innerHTML = "attributes1.txt";
             document.getElementById("button-select-attrs-filename").innerHTML = "attributes1.txt";
             this.changeFileStatus("attrs-status", "uploaded");
 
@@ -645,7 +640,6 @@ class NeuroMarvl {
             status.labelLoaded = true;
 
             // change status
-            //document.getElementById("button-select-labels").innerHTML = "labels.txt";
             document.getElementById("button-select-labels-filename").innerHTML = "labels.txt";
             this.changeFileStatus("labels-status", "uploaded");
 
@@ -674,9 +668,8 @@ class NeuroMarvl {
         }
         $('#' + file).tooltip('fixTitle');
     }
-
-    //loadUploadedData = (saveObj, view, func, source = "save") => {
-      loadUploadedData = (saveObj, func, source = "save") => {
+    
+    loadUploadedData = (saveObj, func, source = "save") => {
         this.saveObj.loadExampleData = false;
         var status = {
             coordLoaded: false,
@@ -687,7 +680,6 @@ class NeuroMarvl {
 
         var callback = () => {
             if (status.coordLoaded && status.matrixLoaded && status.attrLoaded && status.labelLoaded) {
-                //func(view);
                 func();
             }
         }
@@ -700,7 +692,6 @@ class NeuroMarvl {
                 .css({ color: 'green' });
             status.coordLoaded = true;
             // change status
-            //document.getElementById("button-select-coords").innerHTML = saveObj.serverFileNameCoord;
             document.getElementById("button-select-coords-filename").innerHTML = saveObj.serverFileNameCoord;
             this.changeFileStatus("coords-status", "uploaded");
 
@@ -715,7 +706,6 @@ class NeuroMarvl {
             status.matrixLoaded = true;
 
             // change status
-            //document.getElementById("button-select-matrix").innerHTML = saveObj.serverFileNameMatrix;
             document.getElementById("button-select-matrix-filename").innerHTML = saveObj.serverFileNameMatrix;
             this.changeFileStatus("matrix-status", "uploaded");
 
@@ -730,7 +720,6 @@ class NeuroMarvl {
             this.setupAttributeTab();
             status.attrLoaded = true;
             // change status
-            //document.getElementById("button-select-attrs").innerHTML = saveObj.serverFileNameAttr;
             document.getElementById("button-select-attrs-filename").innerHTML = saveObj.serverFileNameAttr;
             this.changeFileStatus("attrs-status", "uploaded");
 
@@ -748,7 +737,6 @@ class NeuroMarvl {
             status.labelLoaded = true;
 
             // change status
-            //document.getElementById("button-select-labels").innerHTML = saveObj.serverFileNameLabel;
             document.getElementById("button-select-labels-filename").innerHTML = saveObj.serverFileNameLabel;
             this.changeFileStatus("labels-status", "uploaded");
 
@@ -760,20 +748,24 @@ class NeuroMarvl {
 
     setupAttributeTab = () => {
         if (this.referenceDataSet && this.referenceDataSet.attributes) {
-            $('#select-attribute').empty();
+            let $selectAttribute = $('#select-attribute');
+
+            let oldAttributeValue = $selectAttribute.val();
+            let gotOldValue = false;
+
+            $selectAttribute.empty();
             for (var i = 0; i < this.referenceDataSet.attributes.columnNames.length; ++i) {
                 var columnName = this.referenceDataSet.attributes.columnNames[i];
-                $('#select-attribute').append('<option value = "' + columnName + '">' + columnName + '</option>');
+                $selectAttribute.append('<option value = "' + columnName + '">' + columnName + '</option>');
+                if (columnName === oldAttributeValue) gotOldValue = true;
             }
+            if (gotOldValue) $selectAttribute.val(oldAttributeValue);
 
             $('#div-set-node-scale').show();
 
             $('#div-node-size').hide();
             $('#div-node-color-pickers').hide();
             $('#div-node-color-pickers-discrete').hide();
-
-            $('#select-node-size-color').val('node-default');
-            $('#select-attribute').prop("disabled", "disabled");
 
             this.setupCrossFilter(this.referenceDataSet.attributes);
         }
@@ -827,8 +819,6 @@ class NeuroMarvl {
     }
 
     setEdgeDirectionGradient = () => {
-        //this.saveObj.edgeSettings.directionStartColor = $('#input-edge-start-color').val();
-        //this.saveObj.edgeSettings.directionEndColor = $('#input-edge-end-color').val();
         this.saveObj.edgeSettings.directionStartColor = (<any>$('#input-edge-start-color')).colorpicker("getValue");
         this.saveObj.edgeSettings.directionEndColor = (<any>$('#input-edge-end-color')).colorpicker("getValue");
 
@@ -868,10 +858,6 @@ class NeuroMarvl {
             config["colorArray"] = colorArray;
 
         } else if (this.commonData.edgeWeightColorMode === "continuous-normal") {
-            //var minColor = $('#input-edge-min-color').val();
-            //var maxColor = $('#input-edge-max-color').val();
-            //minColor = '#' + minColor;
-            //maxColor = '#' + maxColor;
             var minColor = (<any>$('#input-edge-min-color')).colorpicker("getValue");
             var maxColor = (<any>$('#input-edge-max-color')).colorpicker("getValue");
 
@@ -995,19 +981,13 @@ class NeuroMarvl {
                 }
                 this.saveObj.nodeSettings.nodeColorMode = "discrete";
                 this.saveObj.nodeSettings.nodeColorDiscrete = colorArray.slice(0);
-
-
+                
                 if (this.apps[0]) this.apps[0].setNodeColorDiscrete(attribute, keyArray, colorArray);
                 if (this.apps[1]) this.apps[1].setNodeColorDiscrete(attribute, keyArray, colorArray);
                 if (this.apps[2]) this.apps[2].setNodeColorDiscrete(attribute, keyArray, colorArray);
                 if (this.apps[3]) this.apps[3].setNodeColorDiscrete(attribute, keyArray, colorArray);
-
             }
             else {
-                //var minColor = $('#input-min-color').val();
-                //var maxColor = $('#input-max-color').val();
-                //minColor = '#' + minColor;
-                //maxColor = '#' + maxColor;
                 let minColor = (<any>$('#input-min-color')).colorpicker("getValue");
                 let maxColor = (<any>$('#input-max-color')).colorpicker("getValue");
 
@@ -1368,7 +1348,6 @@ class NeuroMarvl {
         var attrArray = this.referenceDataSet.attributes.get(attribute);
         var uniqueKeys = this.referenceDataSet.attributes.info[attribute].distinctValues;
 
-
         var d3ColorSelector = d3.scale.category20();
 
         var uniqueColors = uniqueKeys.map((group: number) => { return d3ColorSelector(group); });
@@ -1388,25 +1367,6 @@ class NeuroMarvl {
 
     // Find which view is currently located under the mouse
     getViewUnderMouse = (x, y) => {
-        //var innerViewLeft = $(TL_VIEW).offset().left;
-        //if (x < innerViewLeft) {
-        //    return null;
-        //} else {
-            //x -= innerViewLeft;
-            //if (y < $(TL_VIEW).height()) {
-            //    if (x < $(TL_VIEW).width()) {
-            //        return TL_VIEW;
-            //    } else {
-            //        return TR_VIEW;
-            //    }
-            //} else {
-            //    if (x < $(TL_VIEW).width()) {
-            //        return BL_VIEW;
-            //    } else {
-            //        return BR_VIEW;
-            //    }
-            //}
-        //}
         let $view = $(TL_VIEW);
         let innerViewLeft = $view.offset().left;
         if (x < innerViewLeft) return "";
@@ -1429,24 +1389,6 @@ class NeuroMarvl {
     getActiveTargetUnderMouse = (x: number, y: number) => {
         let view = this.getViewUnderMouse(x, y);
         return this.viewToId(view);
-        /*
-        var id = -1;
-        switch (this.getViewUnderMouse(x, y)) {
-            case TL_VIEW:
-                id = 0;
-                break;
-            case TR_VIEW:
-                id = 1;
-                break;
-            case BL_VIEW:
-                id = 2;
-                break;
-            case BR_VIEW:
-                id = 3;
-                break;
-        }
-        return id;
-        */
     }
 
     setNodeColorInContextMenu = (color: string) => {
@@ -1790,7 +1732,6 @@ class NeuroMarvl {
     }
 
     parseLabels = (text: string) => {
-        //if (!this.referenceDataSet) this.referenceDataSet = new DataSet();
         this.referenceDataSet.brainLabels = text.replace(/\t|\n|\r/g, ' ').trim().split(' ').map(s => s.trim());
         this.commonData.notifyLabels();
     }
@@ -1822,7 +1763,6 @@ class NeuroMarvl {
             }
 
             // make all corresponding elements visible
-            this.setEdgeColor();
 
             if (this.saveObj.edgeSettings.weight.type === "discrete") {
                 var setting = this.saveObj.edgeSettings.weight.discreteSetting;
@@ -1834,9 +1774,7 @@ class NeuroMarvl {
 
             } else if (this.saveObj.edgeSettings.weight.type === "continuous-normal") {
                 var setting = this.saveObj.edgeSettings.weight.continuousSetting;
-
-                //$('#input-edge-min-color').val(setting.minColor.substring(1));
-                //$('#input-edge-max-color').val(setting.maxColor.substring(1));
+                
                 (<any>$('#input-edge-min-color')).colorpicker("setValue", setting.minColor);
                 (<any>$('#input-edge-max-color')).colorpicker("setValue", setting.maxColor);
 
@@ -1868,8 +1806,8 @@ class NeuroMarvl {
             } else {
                 throw "Load Data: Wrong data type setting for weight";
             }
-
-            this.setEdgeColorByWeight();
+            
+            this.setEdgeColor();
         }
     }
 
@@ -1972,7 +1910,6 @@ class NeuroMarvl {
             }
         })
         dataSet.setSimMatrix(simMatrix);
-        //this.setEdgeSize();     // Force edges to refresh       ///jm
     }
 
     // Load the attributes for the specified dataSet
@@ -1988,7 +1925,6 @@ class NeuroMarvl {
         var newAttributes = new Attributes(text);
         dataSet.attributes = newAttributes;
         dataSet.notifyAttributes();
-        //this.setNodeSizeOrColor();  // Force redraw for new attributes      ///jm
     }
 
     setupCrossFilter = (attrs: Attributes) => {

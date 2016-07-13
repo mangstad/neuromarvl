@@ -238,7 +238,8 @@ class Brain3DApp implements Application, Loopable {
         // Get the colour array, a mapping of the configured colour attribute to colour values
         let colorAttribute = this.saveObj.nodeSettings.nodeColorAttribute;
         
-        if (colorAttribute === "none" || colorAttribute === "") {
+        //if (colorAttribute === "none" || colorAttribute === "") {
+        if (!this.dataSet.attributes.info[colorAttribute]) {
             return Array(this.dataSet.attributes.numRecords).map(d => [0xd3d3d3]);
         }
 
@@ -1759,6 +1760,11 @@ class Brain3DApp implements Application, Loopable {
     restart() {
         if (!this.dataSet || !this.dataSet.verify()) return;
         console.log("Restarted view: " + this.id);
+        //console.trace();///
+        //console.log(this.dataSet);///
+        //console.log(this.saveObj);///
+        //console.log(this.commonData);///
+
         // Create the dissimilarity matrix from the similarity matrix (we need dissimilarity for Cola)
         for (var i = 0; i < this.dataSet.simMatrix.length; ++i) {
             this.dissimilarityMatrix.push(this.dataSet.simMatrix[i].map((sim) => {
@@ -1769,6 +1775,7 @@ class Brain3DApp implements Application, Loopable {
 
         // Set up the node colorings
         let nodeColors = this.getNodeColors();
+        //console.log(nodeColors);///
 
         // Set up loop
 
@@ -1809,6 +1816,8 @@ class Brain3DApp implements Application, Loopable {
         this.colaGraph.findNodeConnectivity(this.filteredAdjMatrix, this.dissimilarityMatrix, null);
         this.colaGraph.setEdgeVisibilities(this.filteredAdjMatrix);
         this.edgeCountSliderOnChange(Number(this.edgeCountSliderValue));
+
+        //console.log(this.filteredAdjMatrix);///
         
         // Enable the slider
         $('#edge-count-slider-' + this.id).prop('disabled', false);
