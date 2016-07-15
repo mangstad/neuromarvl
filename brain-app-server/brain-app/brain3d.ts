@@ -892,12 +892,15 @@ class Brain3DApp implements Application, Loopable {
     }
 
     setSurfaceOpacity(opacity: number) {
-        //for (var i = 0; i < this.surfaceUniformList.length; i++) {
-        //    this.surfaceUniformList[i].opacity.value = opacity; 
-        //}
         for (let object of this.brainSurface.children) {
             object.material.opacity = opacity;
             object.material.needsUpdate = true;
+        }
+    }
+
+    setSurfaceColor(color: string) {
+        for (let object of this.brainSurface.children) {
+            object.material.color.set(color);
         }
     }
 

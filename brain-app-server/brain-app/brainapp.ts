@@ -39,6 +39,7 @@ interface Application {
     // Brain Surface
     setBrainMode(brainMode);
     setSurfaceOpacity(opacity);
+    setSurfaceColor(color: string);
 
     // Node Attributes
     setNodeDefaultSizeColor();
@@ -1453,8 +1454,7 @@ class NeuroMarvl {
             default: return -1;
         }
     }
-
-    //applyModelToBrainView = (view: string, model: string, brainSurfaceMode?) => {
+    
     applyModelToBrainView = (view: string, model: string, finalCallback?, brainSurfaceMode?) => {
         this.resetBrain3D();
 
@@ -1882,14 +1882,19 @@ class NeuroMarvl {
                 return;
             }
 
-            var surfaceColor = parseInt(this.brainSurfaceColor);
+            //var surfaceColor = parseInt(this.brainSurfaceColor);
 
             callback(object);
         });
     }
 
     setBrainSurfaceColor = (color: string) => {
-        this.brainSurfaceColor = '0x' + color.substring(1);
+        this.saveObj.surfaceSettings.color = color;
+
+        if (this.apps[0]) this.apps[0].setSurfaceColor(color);
+        if (this.apps[1]) this.apps[1].setSurfaceColor(color);
+        if (this.apps[2]) this.apps[2].setSurfaceColor(color);
+        if (this.apps[3]) this.apps[3].setSurfaceColor(color);
     }
 
     // Load the similarity matrix for the specified dataSet
