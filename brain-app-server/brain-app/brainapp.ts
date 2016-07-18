@@ -176,16 +176,15 @@ class NeuroMarvl {
             this.initListeners();
         }
 
-        let callbackWithSave = (source, data) => {
+        let callbackWithSave = (useSavedExample: boolean, data: string) => {
             
             // Ensure that data is not empty
             if (!data || !data.length) return;
 
             this.saveObj = new SaveFile(jQuery.parseJSON(data));
-            this.saveObj.loadExampleData = (source !== "save");
             for (var app of this.saveObj.saveApps) {
                 if (app.surfaceModel && (app.surfaceModel.length > 0)) {
-                    this.applyModelToBrainView(app.view, app.surfaceModel, commonInit, app.brainSurfaceMode);
+                    this.applyModelToBrainView(app.view, app.surfaceModel, commonInit, useSavedExample, app.brainSurfaceMode);
                 }
             }
         };
@@ -339,7 +338,7 @@ class NeuroMarvl {
         (<any>$("#input-context-menu-node-color")).colorpicker();
     }
 
-    initFromSaveFile = (callbackWithSave, callbackNoSave) => {
+    initFromSaveFile = (callbackWithSave: (useSavedExample: boolean, data: string) => void, callbackNoSave: () => void) => {
         var query = window.location.search.substring(1);
         if (query && query.length > 0) {
             this.showLoadingNotification();
@@ -349,16 +348,16 @@ class NeuroMarvl {
 
             var json;
             // Only let source be from "save_examples" (if specified by "example") or default to "save".
-            var source = (p[0] == "example") ? "save_examples" : "save";
+            let useSavedExample = (p[0] == "example");
             $.post("brain-app/getapp.aspx",
                 {
                     filename: p[1],
-                    source
+                    useSavedExample
                 },
                 (data, status) => {
                     console.log(`Data fetch from ${p[0]} location got configuration with length ${data.length} and "${status}" status`);
                     if (status.toLowerCase() == "success") {
-                        callbackWithSave(source, data);
+                        callbackWithSave(useSavedExample, data);
                     }
                     else {
                         alert("Loading is: " + status + "\nData: " + data);
@@ -646,8 +645,6 @@ class NeuroMarvl {
 
             callback();
         });
-
-        this.saveObj.loadExampleData = true;
     }
 
     changeFileStatus = (file, status) => {
@@ -670,8 +667,7 @@ class NeuroMarvl {
         $('#' + file).tooltip('fixTitle');
     }
     
-    loadUploadedData = (saveObj, func, source = "save") => {
-        this.saveObj.loadExampleData = false;
+    loadUploadedData = (saveObj, func, useSavedExample?: boolean) => {
         var status = {
             coordLoaded: false,
             matrixLoaded: false,
@@ -679,6 +675,8 @@ class NeuroMarvl {
             labelLoaded: (saveObj.serverFileNameLabel) ? false : true
         };
 
+        let source = useSavedExample ? "save_examples" : "save";
+        
         var callback = () => {
             if (status.coordLoaded && status.matrixLoaded && status.attrLoaded && status.labelLoaded) {
                 func();
@@ -734,13 +732,18 @@ class NeuroMarvl {
                 $('#label-labels')
                     .text("Pre-uploaded data")
                     .css({ color: 'green' });
+
+                status.labelLoaded = true;
+
+                // change status
+                document.getElementById("button-select-labels-filename").innerHTML = saveObj.serverFileNameLabel;
+                this.changeFileStatus("labels-status", "uploaded");
+
+                callback();
             });
+        }
+        else {
             status.labelLoaded = true;
-
-            // change status
-            document.getElementById("button-select-labels-filename").innerHTML = saveObj.serverFileNameLabel;
-            this.changeFileStatus("labels-status", "uploaded");
-
             callback();
         }
         $('#load-example-data').button().prop("disabled", "disabled");
@@ -1455,7 +1458,7 @@ class NeuroMarvl {
         }
     }
     
-    applyModelToBrainView = (view: string, model: string, finalCallback?, brainSurfaceMode?) => {
+    applyModelToBrainView = (view: string, model: string, finalCallback?, useSavedExample?: boolean, brainSurfaceMode?) => {
         this.resetBrain3D();
 
         let file = (model === 'ch2') && 'BrainMesh_ch2.obj'
@@ -1493,26 +1496,19 @@ class NeuroMarvl {
             app.view = view;
 
             $('#button-save-app').button({ disabled: false });
-
-            if (this.saveObj) {
-                // Load dataset into the webapp
-                if (this.saveObj.loadExampleData) {
-                    this.loadExampleData(() => {
-                        makeBrain();
-                        CommonUtilities.launchAlertMessage(CommonUtilities.alertType.SUCCESS, "Default example dataset is loaded.");
-                    });
-                }
-                else if (this.saveObj.serverFileNameCoord && this.saveObj.serverFileNameMatrix && this.saveObj.serverFileNameAttr) {
-                    var source = (this.saveObj.loadExampleData ? "save_examples" : "save");
-                    this.loadUploadedData(this.saveObj, () => {
-                        makeBrain();
-                        CommonUtilities.launchAlertMessage(CommonUtilities.alertType.SUCCESS, "Uploaded dataset is loaded.");
-                    }, source);
-                }
-                else {
+            
+            // Load dataset into the webapp
+            if (this.saveObj.useExampleData()) {
+                this.loadExampleData(() => {
                     makeBrain();
-                    CommonUtilities.launchAlertMessage(CommonUtilities.alertType.SUCCESS, "No dataset loaded.");
-                }
+                    CommonUtilities.launchAlertMessage(CommonUtilities.alertType.SUCCESS, "Default example dataset is loaded.");
+                });
+            }
+            else {
+                this.loadUploadedData(this.saveObj, () => {
+                    makeBrain();
+                    CommonUtilities.launchAlertMessage(CommonUtilities.alertType.SUCCESS, "Uploaded dataset is loaded.");
+                }, useSavedExample);
             }
         });
     }

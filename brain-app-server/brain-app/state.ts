@@ -269,7 +269,6 @@ class DataSet {
 
 class SaveFile {
     // user-uploaded file names
-    loadExampleData: boolean;
     serverFileNameCoord: string;
     serverFileNameMatrix: string;
     serverFileNameAttr: string;
@@ -333,9 +332,7 @@ class SaveFile {
             .filter(d => !!d)       // Some save files have null instead of apps
             .map(d => new SaveApp(d))
             ;
-
-        this.loadExampleData = (sourceObject && sourceObject.loadExampleData) || false;
-
+        
         if (sourceObject) {
             if (sourceObject.serverFileNameCoord) this.serverFileNameCoord = sourceObject.serverFileNameCoord;
             if (sourceObject.serverFileNameMatrix) this.serverFileNameMatrix = sourceObject.serverFileNameMatrix;
@@ -346,11 +343,15 @@ class SaveFile {
         }
     }
 
+
+    // Use the hardcoded example data iff the minimal required source files aren't specified.
+    useExampleData = () => !this.serverFileNameCoord || !this.serverFileNameMatrix || !this.serverFileNameAttr;
+
+
     toYaml() {
 
         var yamlObj = {};
-
-        yamlObj["Example Data"] = (this.loadExampleData) ? "Yes" : "No";
+        
         yamlObj["Edge Settings"] = {
             "Color By": this.edgeSettings.colorBy,
             "Size": this.edgeSettings.size
@@ -395,8 +396,7 @@ class SaveFile {
 
     fromYaml(yaml) {
         var yamlObj = jsyaml.safeLoad(yaml);
-
-        this.loadExampleData = (yamlObj["example data"] === "yes");
+        
         this.edgeSettings.colorBy = yamlObj["edge settings"]["color by"];
         this.edgeSettings.size = yamlObj["edge settings"]["size"];
 
