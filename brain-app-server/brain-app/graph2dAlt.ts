@@ -160,15 +160,11 @@ class Graph2DAlt {
         var container = this.container;
         var offsetLeft = container.offsetWidth * 0.5;
         var offsetTop = container.offsetHeight * 0.1;
-
-        //var colorAttr = saveObj.nodeSettings.nodeColorAttribute;
-        //var attrArray = dataSet.attributes.get(colorAttr);
-        //var colorMode = saveObj.nodeSettings.nodeColorMode;     // discrete or continuous
         
         var nodes = this.nodes.map(d => ({
             data: {
                 id: "n_" + d.id,
-                color: d.color,         //TODO: Can retire this when multiple colors is working
+                color: d.color,         //TODO: Can retire this when multiple colors is working across all visualisations
                 colors: d.colors,
                 radius: d.radius * 10
             },
@@ -182,7 +178,8 @@ class Graph2DAlt {
                 id: "e_" + d.colaGraphEdgeListIndex,
                 source: "n_" + d.source.id,
                 target: "n_" + d.target.id,
-                color: d.source.color
+                color: d.source.color,
+                highlight: false
             }
         }));
         var elements = nodes.concat(<any>edges);
@@ -239,18 +236,16 @@ class Graph2DAlt {
         }
         
         var nodeStyle = {
-            'label': 'data(id)',
             "width": "data(radius)",
             "height": "data(radius)",
-            "background-color": "data(color)",
-
+            "background-color": "black",
             "pie-size": "100%"
         };
         let colorAttribute = this.saveObj.nodeSettings.nodeColorAttribute;
-        let nSlices = this.dataSet.attributes.info[colorAttribute].distinctValues.length;
+        let nSlices = this.dataSet.attributes.info[colorAttribute].numElements;
         for (let i = 0; i < nSlices; i++) {
-            nodeStyle[`pie-${i}-background-color`] = `data(colors[${i}])`;
-            nodeStyle[`pie-${i}-background-size`] = `${100 / nSlices}%`;
+            nodeStyle[`pie-${i + 1}-background-color`] = e => e.data("colors")[i].color;
+            nodeStyle[`pie-${i + 1}-background-size`] = e => e.data("colors")[i].portion * 100;
         }
         var edgeStyle = {
             'width': 3,
@@ -264,12 +259,19 @@ class Graph2DAlt {
             elements,
             style: [ // the stylesheet for the graph
                 {
-                    selector: 'node',
+                    selector: "node",
                     style: nodeStyle 
                 },
                 {
-                    selector: 'edge',
+                    selector: "edge",
                     style: edgeStyle
+                },
+                {
+                    selector: ".highlight",
+                    style: {
+                        "pie-size": "70%",
+                        'label': 'data(id)'     //TODO: use configured attribute
+                    }
                 }
             ],
             minZoom: 0.1,
@@ -279,6 +281,12 @@ class Graph2DAlt {
 
         this.cy.pan({ x: offsetLeft, y: offsetTop });
         this.cy.zoom(this.cy.zoom() * 0.8);
+        this.cy.on("mouseover", "node", function (e) {
+            this.addClass("highlight");
+        });
+        this.cy.on("mouseout", "node", function (e) {
+            this.removeClass("highlight");
+        });
     }
     
     setUserControl(isOn: boolean) {

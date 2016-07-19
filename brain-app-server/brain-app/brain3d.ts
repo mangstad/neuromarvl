@@ -234,35 +234,59 @@ class Brain3DApp implements Application, Loopable {
         }
     }
 
-    getNodeColors(): number[][] {
-        // Get the colour array, a mapping of the configured colour attribute to colour values
-        let colorAttribute = this.saveObj.nodeSettings.nodeColorAttribute;
+
+    getNodeColors(): { color: number, portion: number } [][] {
+        /* Get the colour array, a mapping of the configured colour attribute to colour values, e.g.
+            [
+                // Discrete
+                [
+	                {color: #ff0000, portion: 1.0},
+	                {color: #00ff00, portion: 0.0},
+	                {color: #0000ff, portion: 0.0}
+                ],
+                // Continuous
+                [
+	                {color: #fa36dd, portion: 0.33},
+	                {color: #006f34, portion: 0.33},
+	                {color: #228d00, portion: 0.33}
+                ]
+            ]
+        */
+        let nSettings = this.saveObj.nodeSettings;
+        let colorAttribute = nSettings.nodeColorAttribute;
+        let defaultColor = { color: 0xd3d3d3, portion: 1.0 };
+        let a = this.dataSet.attributes;
         
-        //if (colorAttribute === "none" || colorAttribute === "") {
-        if (!this.dataSet.attributes.info[colorAttribute]) {
-            return Array(this.dataSet.attributes.numRecords).map(d => [0xd3d3d3]);
+        if (!a.info[colorAttribute]) {
+            return Array(a.numRecords).map(d => [defaultColor]);
         }
 
-        let valueArray = this.dataSet.attributes.get(colorAttribute);
-        let colorMode = this.saveObj.nodeSettings.nodeColorMode;     // "discrete" or not
-        let colorMap;
+        let valueArray = a.get(colorAttribute);
 
-        if (colorMode == "discrete") {
-            colorMap = d3.scale
-                .ordinal()
-                .domain(this.dataSet.attributes.info[colorAttribute].distinctValues)
-                .range(this.saveObj.nodeSettings.nodeColorDiscrete)
-                ;
+        if (nSettings.nodeColorMode == "discrete") {
+            // Discrete has each colour from the mapping with its proportion of total value in that node
+            return valueArray.map(aArray => {
+                let singlePortion = (1 / aArray.reduce((weight, acc) => acc + weight, 0)) || 0;
+                return aArray.map((value, i) => ({
+                    color: nSettings.nodeColorDiscrete[i],
+                    portion: value * singlePortion
+                }))
+            }); 
         }
         else {
-            let i = this.dataSet.attributes.columnNames.indexOf(colorAttribute);
-            colorMap = d3.scale
+            // Continuous has each value mapped with equal proportion
+            let i = a.columnNames.indexOf(colorAttribute);
+            let singlePortion = (1 / a.info[colorAttribute].numElements) || 0;
+            let colorMap = d3.scale
                 .linear()
-                .domain([this.dataSet.attributes.getMin(i), this.dataSet.attributes.getMax(i)])
-                .range([this.saveObj.nodeSettings.nodeColorContinuousMin, this.saveObj.nodeSettings.nodeColorContinuousMax])
+                .domain([a.getMin(i), a.getMax(i)])
+                .range([nSettings.nodeColorContinuousMin, nSettings.nodeColorContinuousMax])
                 ;
+            return valueArray.map(aArray => aArray.map(value => ({
+                color: colorMap(value),
+                portion: singlePortion
+            })));
         }
-        return valueArray.map(a => a.map(value => colorMap(value)));
     }
 
     setupUserInteraction(jDiv) {
@@ -1763,10 +1787,6 @@ class Brain3DApp implements Application, Loopable {
     restart() {
         if (!this.dataSet || !this.dataSet.verify()) return;
         console.log("Restarted view: " + this.id);
-        //console.trace();///
-        //console.log(this.dataSet);///
-        //console.log(this.saveObj);///
-        //console.log(this.commonData);///
 
         // Create the dissimilarity matrix from the similarity matrix (we need dissimilarity for Cola)
         for (var i = 0; i < this.dataSet.simMatrix.length; ++i) {
@@ -1778,7 +1798,6 @@ class Brain3DApp implements Application, Loopable {
 
         // Set up the node colorings
         let nodeColors = this.getNodeColors();
-        //console.log(nodeColors);///
 
         // Set up loop
 
@@ -1799,7 +1818,6 @@ class Brain3DApp implements Application, Loopable {
 
         edgeMatrix = this.dataSet.adjMatrixFromEdgeCount(maxEdgesShowable);
         if (this.colaGraph) this.colaGraph.destroy();
-        //this.colaGraph = new Graph3D(this.colaObject, edgeMatrix, this.nodeColorings, this.dataSet.simMatrix, this.dataSet.brainLabels, this.commonData);
         this.colaGraph = new Graph3D(this.colaObject, edgeMatrix, nodeColors, this.dataSet.simMatrix, this.dataSet.brainLabels, this.commonData, this.saveObj);
         this.colaGraph.setVisible(false);
 
@@ -1819,8 +1837,7 @@ class Brain3DApp implements Application, Loopable {
         this.colaGraph.findNodeConnectivity(this.filteredAdjMatrix, this.dissimilarityMatrix, null);
         this.colaGraph.setEdgeVisibilities(this.filteredAdjMatrix);
         this.edgeCountSliderOnChange(Number(this.edgeCountSliderValue));
-
-        //console.log(this.filteredAdjMatrix);///
+        
         
         // Enable the slider
         $('#edge-count-slider-' + this.id).prop('disabled', false);

@@ -37,8 +37,7 @@ class Graph3D {
 
     allLabels: boolean = false;
     
-    //constructor(parentObject, adjMatrix: any[][], nodeColorings: number[], weightMatrix: any[][], labels: string[], commonData) {
-    constructor(parentObject, adjMatrix: any[][], nodeColorings: number[][], weightMatrix: any[][], labels: string[], commonData, saveObj) {
+    constructor(parentObject, adjMatrix: any[][], nodeColorings: { color: number, portion: number }[][], weightMatrix: any[][], labels: string[], commonData, saveObj) {
         this.parentObject = parentObject;
         this.rootObject = new THREE.Object3D();
         this.commonData = commonData;
@@ -53,15 +52,15 @@ class Graph3D {
                 isSelected: false
             };
         })
-
-        //this.nodeDefaultColor = nodeColorings.slice(0); // clone the array
-        //this.nodeCurrentColor = nodeColorings.slice(0); // clone the array
-        let averageColor = (colors: number[]) => {
+        
+        let averageColor = (colors: { color: number, portion: number }[]) => {
             //let bAvg = colors.reduce((acc, color) => acc + color % 0x100, 0) / colors.length;
             //let gAvg = colors.reduce((acc, color) => acc + Math.floor(color / 0x100) % 0x100, 0) / colors.length;
             //let rAvg = colors.reduce((acc, color) => acc + Math.floor(color / 0x10000) % 0x100, 0) / colors.length;
             //return rAvg * 0x10000 + gAvg * 0x100 + bAvg;
-            return colors.reduce((acc, color) => acc + color, 0) / colors.length;
+
+            //return colors.reduce((acc, color) => acc + color, 0) / colors.length;
+            return colors.reduce((acc, color) => acc + color.color, 0) / colors.length;
         }
         this.nodeDefaultColor = nodeColorings.map(a => averageColor(a)); // Use average colour
         this.nodeCurrentColor = this.nodeDefaultColor.slice(0); // clone the array
@@ -71,12 +70,10 @@ class Graph3D {
             var nodeObject = this.nodeMeshes[i] = new THREE.Mesh(
                 this._sphereGeometry,
                 new THREE.MeshLambertMaterial({
-                    //color: nodeColorings[i],
                     color: this.nodeDefaultColor[i],       // Average colour value needed for material
                     transparent: true       // Not actually transparent, but need this or three.js will render it before the brain surface
                 })
             );
-            //var nodeObject = this.nodeMeshes[i] = this.generateSprite(nodeColorings[i]);
             nodeObject.renderOrder = RENDER_ORDER_EDGE; // Draw at the same level as edges
             
             var label = (!!labels && labels[i]) || "";
@@ -110,11 +107,9 @@ class Graph3D {
                     }
 
                     if (weightMatrix[i][j] > weightMatrix[j][i]) {
-                        //this.edgeList.push(adjMatrix[i][j] = new Edge(this.rootObject, this.nodeMeshes[i], this.nodeMeshes[j], weightMatrix[i][j])); // assume symmetric matrix
                         this.edgeList.push(adjMatrix[i][j] = new Edge(this, this.nodeMeshes[i], this.nodeMeshes[j], weightMatrix[i][j])); // assume symmetric matrix
                         adjMatrix[j][i] = null;
                     } else {
-                        //this.edgeList.push(adjMatrix[j][i] = new Edge(this.rootObject, this.nodeMeshes[j], this.nodeMeshes[i], weightMatrix[j][i])); // assume symmetric matrix
                         this.edgeList.push(adjMatrix[j][i] = new Edge(this, this.nodeMeshes[j], this.nodeMeshes[i], weightMatrix[j][i])); // assume symmetric matrix
                         adjMatrix[i][j] = null;
                     }
@@ -520,7 +515,6 @@ class Graph3D {
 
         // reset node's hasVisibleEdges flag
         for (var i = 0; i < len - 1; ++i) {
-            //this.nodeMeshes[i].hasVisibleEdges = false;
             this.nodeMeshes[i].userData.hasVisibleEdges = false;
         }
         // reset Edges' Visibilities 
@@ -773,9 +767,7 @@ class Edge {
 
     fragmentShader;
 
-
-
-    //constructor(parentObject, sourceNode, targetNode, private weight) {
+    
     constructor(graph, sourceNode, targetNode, private weight) {
         this.timeTracker = new Date().getMilliseconds();
         this.parentObject = graph.rootObject;

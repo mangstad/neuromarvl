@@ -1869,14 +1869,10 @@ class NeuroMarvl {
     // new THREE.Mesh() objects by the application wishing to use the model.
     loadBrainModel = (file: string, callback) => {
         this.loader.load('examples/graphdata/' + file, object => {
-            //loader.setPath('examples/graphdata/');
-            //loader.load(file, function (object) {
             if (!object) {
                 CommonUtilities.launchAlertMessage(CommonUtilities.alertType.ERROR, "Failed to load brain surface.");
                 return;
             }
-
-            //var surfaceColor = parseInt(this.brainSurfaceColor);
 
             callback(object);
         });
