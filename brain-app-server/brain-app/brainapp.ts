@@ -168,35 +168,6 @@ class NeuroMarvl {
         this.input.setActiveTarget(0);
     }
 
-    start = () => {
-        this.initUI();
-
-        let commonInit = () => {
-            this.initDataDependantUI();
-            this.initListeners();
-        }
-
-        let callbackWithSave = (useSavedExample: boolean, data: string) => {
-            
-            // Ensure that data is not empty
-            if (!data || !data.length) return;
-
-            this.saveObj = new SaveFile(jQuery.parseJSON(data));
-            for (var app of this.saveObj.saveApps) {
-                if (app.surfaceModel && (app.surfaceModel.length > 0)) {
-                    this.applyModelToBrainView(app.view, app.surfaceModel, commonInit, useSavedExample, app.brainSurfaceMode);
-                }
-            }
-        };
-
-        let callbackNoSave = () => {
-            this.applyModelToBrainView(TL_VIEW, $('#select-brain3d-model').val(), commonInit);
-            this.toggleSplashPage();
-        };
-
-        this.initFromSaveFile(callbackWithSave, callbackNoSave);
-    }
-
 
     /*
         Functions to create a solid starting state and all UI elements available
@@ -338,8 +309,21 @@ class NeuroMarvl {
         (<any>$("#input-context-menu-node-color")).colorpicker();
     }
 
-    initFromSaveFile = (callbackWithSave: (useSavedExample: boolean, data: string) => void, callbackNoSave: () => void) => {
-        var query = window.location.search.substring(1);
+    start = () => {
+        this.initUI();
+
+        let query = window.location.search.substring(1);
+        
+        let commonInit = () => {
+            this.initDataDependantUI();
+            this.initListeners();
+        }
+
+        let callbackNoSave = () => {
+            this.applyModelToBrainView(TL_VIEW, $('#select-brain3d-model').val(), commonInit, "empty");
+            this.toggleSplashPage();
+        };
+
         if (query && query.length > 0) {
             this.showLoadingNotification();
 
@@ -348,16 +332,24 @@ class NeuroMarvl {
 
             var json;
             // Only let source be from "save_examples" (if specified by "example") or default to "save".
-            let useSavedExample = (p[0] == "example");
+            let source = p[0];      // "save" or "example"
             $.post("brain-app/getapp.aspx",
                 {
                     filename: p[1],
-                    useSavedExample
+                    source
                 },
                 (data, status) => {
                     console.log(`Data fetch from ${p[0]} location got configuration with length ${data.length} and "${status}" status`);
                     if (status.toLowerCase() == "success") {
-                        callbackWithSave(useSavedExample, data);
+                        // Ensure that data is not empty
+                        if (!data || !data.length) return;
+
+                        this.saveObj = new SaveFile(jQuery.parseJSON(data));
+                        for (var app of this.saveObj.saveApps) {
+                            if (app.surfaceModel && (app.surfaceModel.length > 0)) {
+                                this.applyModelToBrainView(app.view, app.surfaceModel, commonInit, source, app.brainSurfaceMode);
+                            }
+                        }
                     }
                     else {
                         alert("Loading is: " + status + "\nData: " + data);
@@ -667,7 +659,7 @@ class NeuroMarvl {
         $('#' + file).tooltip('fixTitle');
     }
     
-    loadUploadedData = (saveObj, func, useSavedExample?: boolean) => {
+    loadUploadedData = (saveObj, func, source?: string) => {
         var status = {
             coordLoaded: false,
             matrixLoaded: false,
@@ -675,7 +667,7 @@ class NeuroMarvl {
             labelLoaded: (saveObj.serverFileNameLabel) ? false : true
         };
 
-        let source = useSavedExample ? "save_examples" : "save";
+        let sourceLocation = (source === "example") ? "save_examples" : "save";
         
         var callback = () => {
             if (status.coordLoaded && status.matrixLoaded && status.attrLoaded && status.labelLoaded) {
@@ -683,7 +675,7 @@ class NeuroMarvl {
             }
         }
 
-        $.get('brain-app/' + source + '/' + saveObj.serverFileNameCoord, text => {
+        $.get('brain-app/' + sourceLocation + '/' + saveObj.serverFileNameCoord, text => {
             this.parseCoordinates(text);
             //$('#shared-coords').css({ color: 'green' });
             $('#label-coords')
@@ -696,7 +688,7 @@ class NeuroMarvl {
 
             callback();
         });
-        $.get('brain-app/' + source + '/' + saveObj.serverFileNameMatrix, text => {
+        $.get('brain-app/' + sourceLocation + '/' + saveObj.serverFileNameMatrix, text => {
             this.parseSimilarityMatrix(text, this.referenceDataSet);
             //$('#d1-mat').css({ color: 'green' });
             $('#label-similarity-matrix')
@@ -710,7 +702,7 @@ class NeuroMarvl {
 
             callback();
         });
-        $.get('brain-app/' + source + '/' + saveObj.serverFileNameAttr, text => {
+        $.get('brain-app/' + sourceLocation + '/' + saveObj.serverFileNameAttr, text => {
             this.parseAttributes(text, this.referenceDataSet);
             //$('#d1-att').css({ color: 'green' });
             $('#label-attributes')
@@ -726,7 +718,7 @@ class NeuroMarvl {
         });
         // Check if Label file is uploaded
         if (saveObj.serverFileNameLabel) {
-            $.get('brain-app/' + source + '/' + saveObj.serverFileNameLabel, text => {
+            $.get('brain-app/' + sourceLocation + '/' + saveObj.serverFileNameLabel, text => {
                 this.parseLabels(text);
                 //$('#shared-labels').css({ color: 'green' });
                 $('#label-labels')
@@ -1458,7 +1450,9 @@ class NeuroMarvl {
         }
     }
     
-    applyModelToBrainView = (view: string, model: string, finalCallback?, useSavedExample?: boolean, brainSurfaceMode?) => {
+    applyModelToBrainView = (view: string, model: string, finalCallback?, source?: string, brainSurfaceMode?) => {
+        // source is "example", "empty", or "save" (default)
+
         this.resetBrain3D();
 
         let file = (model === 'ch2') && 'BrainMesh_ch2.obj'
@@ -1498,7 +1492,11 @@ class NeuroMarvl {
             $('#button-save-app').button({ disabled: false });
             
             // Load dataset into the webapp
-            if (this.saveObj.useExampleData()) {
+            if (source === "empty") {
+                makeBrain();
+                CommonUtilities.launchAlertMessage(CommonUtilities.alertType.SUCCESS, "Empty dataset is loaded.");
+            }
+            else if (this.saveObj.useExampleData()) {
                 this.loadExampleData(() => {
                     makeBrain();
                     CommonUtilities.launchAlertMessage(CommonUtilities.alertType.SUCCESS, "Default example dataset is loaded.");
@@ -1508,7 +1506,7 @@ class NeuroMarvl {
                 this.loadUploadedData(this.saveObj, () => {
                     makeBrain();
                     CommonUtilities.launchAlertMessage(CommonUtilities.alertType.SUCCESS, "Uploaded dataset is loaded.");
-                }, useSavedExample);
+                }, source);
             }
         });
     }

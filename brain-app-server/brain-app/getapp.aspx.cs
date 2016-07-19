@@ -15,7 +15,7 @@ namespace brain_app_server.brain_app
 
             try
             {
-                if (Request.Form["useSavedExample"] == "true")
+                if (Request.Form["source"] == "example")
                 {
                     foreach (string file in Directory.GetFiles(examplePath, "*.txt"))
                     {
