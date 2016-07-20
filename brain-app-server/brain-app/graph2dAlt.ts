@@ -164,6 +164,7 @@ class Graph2DAlt {
         var nodes = this.nodes.map(d => ({
             data: {
                 id: "n_" + d.id,
+                sourceId: d.id,
                 color: d.color,         //TODO: Can retire this when multiple colors is working across all visualisations
                 colors: d.colors,
                 radius: d.radius * 10
@@ -270,10 +271,17 @@ class Graph2DAlt {
                     style: edgeStyle
                 },
                 {
-                    selector: ".highlight",
+                    selector: "node.highlight",
                     style: {
-                        'label': 'data(id)',     //TODO: use configured attribute
-                        "border-opacity": 0.7
+                        'label': 'data(sourceId)',     //TODO: use configured attribute
+                        "border-opacity": 0.5
+                    }
+                },
+                {
+                    selector: "node.select",
+                    style: {
+                        'label': 'data(sourceId)',     //TODO: use configured attribute
+                        "border-opacity": 1.0
                     }
                 }
             ],
@@ -282,13 +290,22 @@ class Graph2DAlt {
             layout
         });
 
-        this.cy.pan({ x: offsetLeft, y: offsetTop });
-        this.cy.zoom(this.cy.zoom() * 0.8);
-        this.cy.on("mouseover", "node", function (e) {
+        let commonData = this.commonData;
+        let cy = this.cy;
+        cy.pan({ x: offsetLeft, y: offsetTop });
+        cy.zoom(this.cy.zoom() * 0.8);
+        cy.on("mouseover", "node", function (e) {
             this.addClass("highlight");
+            commonData.nodeIDUnderPointer[4] = this.data("sourceId");
         });
-        this.cy.on("mouseout", "node", function (e) {
+        cy.on("mouseout", "node", function (e) {
             this.removeClass("highlight");
+            commonData.nodeIDUnderPointer[4] = -1;
+        });
+        cy.on("tap", "node", function (e) {
+            cy.elements("node").removeClass("select");
+            this.addClass("select");
+            commonData.selectedNode = this.data("sourceId");
         });
     }
     
