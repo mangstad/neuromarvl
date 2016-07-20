@@ -238,8 +238,11 @@ class Graph2DAlt {
         var nodeStyle = {
             "width": "data(radius)",
             "height": "data(radius)",
-            "background-color": "black",
-            "pie-size": "100%"
+            "background-opacity": 0,
+            "border-width": 3,
+            "border-color": "black",
+            "border-opacity": 0,
+            "pie-size": "100%"      // Oversized to deal with aliasing from background
         };
         let colorAttribute = this.saveObj.nodeSettings.nodeColorAttribute;
         let nSlices = this.dataSet.attributes.info[colorAttribute].numElements;
@@ -269,8 +272,8 @@ class Graph2DAlt {
                 {
                     selector: ".highlight",
                     style: {
-                        "pie-size": "70%",
-                        'label': 'data(id)'     //TODO: use configured attribute
+                        'label': 'data(id)',     //TODO: use configured attribute
+                        "border-opacity": 0.7
                     }
                 }
             ],

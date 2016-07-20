@@ -262,16 +262,30 @@ class Brain3DApp implements Application, Loopable {
         }
 
         let valueArray = a.get(colorAttribute);
-
-        if (nSettings.nodeColorMode == "discrete") {
-            // Discrete has each colour from the mapping with its proportion of total value in that node
-            return valueArray.map(aArray => {
-                let singlePortion = (1 / aArray.reduce((weight, acc) => acc + weight, 0)) || 0;
-                return aArray.map((value, i) => ({
-                    color: nSettings.nodeColorDiscrete[i],
-                    portion: value * singlePortion
-                }))
-            }); 
+        
+        if (a.info[colorAttribute].isDiscrete) {
+            if (a.info[colorAttribute].numElements > 1) {
+                // Discrete multi-value has each colour from the mapping with its proportion of total value in that node
+                return valueArray.map(aArray => {
+                    let singlePortion = (1 / aArray.reduce((weight, acc) => acc + weight, 0)) || 0;
+                    return aArray.map((value, i) => ({
+                        color: nSettings.nodeColorDiscrete[i],
+                        portion: value * singlePortion
+                    }))
+                });
+            }
+            else {
+                // Discrete single value is just an ordinal mapping
+                let colorMap = d3.scale
+                    .ordinal()
+                    .domain(a.info[colorAttribute].distinctValues)
+                    .range(nSettings.nodeColorDiscrete)
+                    ;
+                return valueArray.map(aArray => aArray.map(value => ({
+                    color: colorMap(value),
+                    portion: 1.0
+                })));
+            }
         }
         else {
             // Continuous has each value mapped with equal proportion
