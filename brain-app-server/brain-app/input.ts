@@ -364,30 +364,34 @@ class InputTargetManager {
 
         }, false);
 
-        document.addEventListener('mousemove', (event) => {
-            
+        document.addEventListener('mousemove', (event) => {            
             this.currentPointer.ptr = this.mouse;
             this.pointerImage.hide();
 
             if (this.contextMenuColorChanged) return;
 
+            let x = event.clientX;
+            let y = event.clientY;
+            
             if (this.isMouseDown) {
-                this.isDragged = true;
-                var it = this.inputTargets[this.activeTarget];
-                if (it) {
-                    var dx = event.clientX - this.mouse.x;
-                    var dy = event.clientY - this.mouse.y;
-
-                    var callback = it.mouseDragCallback;
-                    if (callback) callback(dx, dy, this.mouseDownMode);
-
-                    if (this.yokingView) varYokingViewAcrossPanels();
-
+                let dxStart = x - this.onMouseDownPosition.x;
+                let dyStart = y - this.onMouseDownPosition.y;
+                const DRAG_THRESHOLD = 3;
+                if ((Math.abs(dxStart) > DRAG_THRESHOLD) || (Math.abs(dyStart) > DRAG_THRESHOLD)) {
+                    this.isDragged = true;
+                    var it = this.inputTargets[this.activeTarget];
+                    if (it) {
+                        var callback = it.mouseDragCallback;
+                        let dx = x - this.mouse.x;
+                        let dy = y - this.mouse.y;
+                        if (callback) callback(dx, dy, this.mouseDownMode);
+                        if (this.yokingView) varYokingViewAcrossPanels();
+                    }
                 }
             }
 
-            this.mouse.x = event.clientX;
-            this.mouse.y = event.clientY;
+            this.mouse.x = x;
+            this.mouse.y = y;
         }, false);
 
         // Keyboard input handling

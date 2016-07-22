@@ -592,6 +592,7 @@ class Brain3DApp implements Application, Loopable {
 
             }
         });
+
         this.input.regMouseLeftClickCallback((x: number, y: number) => {
             var oldSelectedNodeID = this.commonData.selectedNode;
             this.commonData.selectedNode = -1;
@@ -632,7 +633,7 @@ class Brain3DApp implements Application, Loopable {
 
             }
 
-            // If the pointer is poiting to any node in 2D or 3D graph
+            // If the pointer is pointing to any node in 2D or 3D graph
             if (node || (nodeIDUnderPointer != -1)) {
                 this.commonData.selectedNode = node ? node.userData.id : nodeIDUnderPointer;
 
@@ -643,8 +644,8 @@ class Brain3DApp implements Application, Loopable {
 
                 var varNodeID = this.commonData.selectedNode;
                 if (this.networkType == "circular") {
-                    var varMouseOveredCircularLayout = (d) => { this.circularGraph.mouseOveredCircularLayout(d); }
-                this.svgAllElements.selectAll(".nodeCircular")
+                    var varMouseOveredCircularLayout = (d) => { this.circularGraph.mouseOveredCircularLayout(d); };
+                    this.svgAllElements.selectAll(".nodeCircular")
                         .each(function (d) {
                             if (varNodeID == d.id) varMouseOveredCircularLayout(d);
                         });
@@ -655,7 +656,6 @@ class Brain3DApp implements Application, Loopable {
                 else if (this.networkType == "2D-alt") {
                     this.svgNeedsUpdate = true;
                 }
-
             }
         });
 
@@ -1966,7 +1966,7 @@ class Brain3DApp implements Application, Loopable {
                 }
             }
 
-            // If the pointer is poiting to any node in 2D or 3D graph
+            // If the pointer is pointing to any node in 2D or 3D graph
             if (this.selectedNodeID !== nodeIDUnderPointer){
                 if (nodeIDUnderPointer !== -1) {
                     // If we already have a node ID selected, deselect it
@@ -1989,8 +1989,8 @@ class Brain3DApp implements Application, Loopable {
 
                     var varNodeID = this.selectedNodeID;
                     if (this.networkType == "circular") {
-                        var varMouseOveredCircularLayout = (d) => { this.circularGraph.mouseOveredCircularLayout(d); }
-                    this.svgAllElements.selectAll(".nodeCircular")
+                        var varMouseOveredCircularLayout = (d) => { this.circularGraph.mouseOveredCircularLayout(d); };
+                        this.svgAllElements.selectAll(".nodeCircular")
                             .each(function (d) {
                                 if (varNodeID == d.id) varMouseOveredCircularLayout(d);
                             });
