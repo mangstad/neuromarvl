@@ -585,12 +585,12 @@ class Graph3D {
     //////////////////////////////////////////////
     /////// Label's Functions ////////////////////
     //////////////////////////////////////////////
-    showAllLabels(svgMode: boolean, bCola: boolean) {
+    showAllLabels(ignore3dControl: boolean, bCola: boolean) {
         this.hideAllLabels();
 
         for (var i = 0; i < this.nodeInfo.length; ++i) {
             if (this.nodeInfo[i]["label"]) {
-                if (!svgMode) {
+                if (!ignore3dControl) {
                     if (bCola) {
                         if (this.nodeHasNeighbors[i]) {
                             this.rootObject.add(this.nodeInfo[i]["label"]);
@@ -648,7 +648,7 @@ class Graph3D {
         this.nodeMeshes[id].material.color.setHex(color);
     }
 
-    selectNode(id: number, svgMode: boolean, bCola: boolean) {
+    selectNode(id: number, ignore3dControl: boolean, bCola: boolean) {
 
         if (!this.nodeInfo[id].isSelected) {
             this.nodeInfo[id].isSelected = true;
@@ -659,7 +659,7 @@ class Graph3D {
             this.nodeMeshes[id].scale.set(2 * x, 2 * y, 2 * z);
 
             if (this.allLabels == false) {
-                if (!svgMode) {
+                if (!ignore3dControl) {
                     if (bCola) {
                         if (this.nodeHasNeighbors[id]) {
                             this.rootObject.add(this.nodeInfo[id]["label"]);

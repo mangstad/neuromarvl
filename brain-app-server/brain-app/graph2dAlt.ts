@@ -26,20 +26,15 @@ class Graph2DAlt {
     commonData;
     config;
     saveObj;
-    //edgeMatrix;
 
     nodes: any[];
     links: any[];
-
-    //elements: any[];
 
     cy;
 
     constructor(id: number, jDiv, dataSet: DataSet, container, commonData, saveObj) {
         this.nodes = [];
         this.links = [];
-
-        //this.elements = [];
 
         this.container = container;
         this.id = id;
@@ -48,7 +43,6 @@ class Graph2DAlt {
         this.saveObj = saveObj;
         
         this.commonData = commonData;
-        //this.edgeMatrix = edgeMatrix;
     }
 
 
@@ -156,7 +150,6 @@ class Graph2DAlt {
 
     updateGraph() {
         // Use saveObj and this.layout to create the layout and style options, then create the cytoscape graph
-
         var container = this.container;
         var offsetLeft = container.offsetWidth * 0.5;
         var offsetTop = container.offsetHeight * 0.1;
@@ -167,7 +160,8 @@ class Graph2DAlt {
                 sourceId: d.id,
                 color: d.color,         //TODO: Can retire this when multiple colors is working across all visualisations
                 colors: d.colors,
-                radius: d.radius * 10
+                radius: d.radius * 10,
+                border: d.radius * 3
             },
             position: {
                 x: d.x,
@@ -240,7 +234,7 @@ class Graph2DAlt {
             "width": "data(radius)",
             "height": "data(radius)",
             "background-opacity": 0,
-            "border-width": 3,
+            "border-width": "data(border)",
             "border-color": "black",
             "border-opacity": 0,
             "pie-size": "100%"      // Oversized to deal with aliasing from background
@@ -307,6 +301,15 @@ class Graph2DAlt {
             this.addClass("select");
             commonData.selectedNode = this.data("sourceId");
         });
+    }
+
+    update() {
+        // Minor update, no layout recalculation but will have redraw, e.g. for selected node change
+        this.cy.elements("node.highlight").removeClass("highlight");
+        this.cy.elements("node.select").removeClass("select");
+        this.cy.elements(`node[sourceId=${this.commonData.nodeIDUnderPointer[0]}]`).addClass("highlight");
+        this.cy.elements(`node[sourceId=${this.commonData.nodeIDUnderPointer[4]}]`).addClass("highlight");
+        this.cy.elements(`node[sourceId=${this.commonData.selectedNode}]`).addClass("select");
     }
     
     setUserControl(isOn: boolean) {

@@ -82,7 +82,7 @@ class Brain3DApp implements Application, Loopable {
 
     svg;
     svgDefs;
-    svgMode;
+    ignore3dControl: boolean;
     svgAllElements;
     svgNodeBundleArray: any[];
     isControllingGraphOnly: boolean = false;
@@ -626,6 +626,9 @@ class Brain3DApp implements Application, Loopable {
                 else if (this.networkType == "2D") {
                     this.svgNeedsUpdate = true;
                 }
+                else if (this.networkType == "2D-alt") {
+                    this.svgNeedsUpdate = true;
+                }
 
             }
 
@@ -635,7 +638,7 @@ class Brain3DApp implements Application, Loopable {
 
                 // Select the new node
                 this.physioGraph.selectNode(this.commonData.selectedNode, false, false);
-                this.colaGraph.selectNode(this.commonData.selectedNode, this.svgMode, true);
+                this.colaGraph.selectNode(this.commonData.selectedNode, this.ignore3dControl, true);
 
 
                 var varNodeID = this.commonData.selectedNode;
@@ -647,6 +650,9 @@ class Brain3DApp implements Application, Loopable {
                         });
                 }
                 else if (this.networkType == "2D") {
+                    this.svgNeedsUpdate = true;
+                }
+                else if (this.networkType == "2D-alt") {
                     this.svgNeedsUpdate = true;
                 }
 
@@ -1231,7 +1237,7 @@ class Brain3DApp implements Application, Loopable {
         if (this.allLabels) {
             $('#all-labels-' + this.id).css('opacity', 1);
             this.physioGraph.showAllLabels(false, false);
-            this.colaGraph.showAllLabels(this.svgMode, true);
+            this.colaGraph.showAllLabels(this.ignore3dControl, true);
         }
         else {
             $('#all-labels-' + this.id).css('opacity', 0.2);
@@ -1262,7 +1268,7 @@ class Brain3DApp implements Application, Loopable {
             this.colaGraph.setNodeVisibilities(); // Hide the nodes without neighbours
             this.colaGraph.setEdgeVisibilities(this.filteredAdjMatrix); // Hide the edges that have not been selected
             if (this.allLabels) {
-                this.colaGraph.showAllLabels(this.svgMode, true);
+                this.colaGraph.showAllLabels(this.ignore3dControl, true);
             }
             //-------------------------------------------------------------------------------------------------------------
             // 3d cola graph
@@ -1314,7 +1320,7 @@ class Brain3DApp implements Application, Loopable {
             }
 
             // clear svg graphs
-            if (this.svgMode) {
+            if (this.ignore3dControl) {
 
                 // clear svg 
                 this.svgGraph.clear();
@@ -1322,7 +1328,7 @@ class Brain3DApp implements Application, Loopable {
                 // clear  circular
                 this.circularGraph.clear();
 
-                this.svgMode = false;
+                this.ignore3dControl = false;
             }
 
             //-------------------------------------------------------------------------------------------------------------
@@ -1347,11 +1353,11 @@ class Brain3DApp implements Application, Loopable {
                     this.colaGraph.setNodePositions(this.colaCoords);
                     this.colaGraph.setVisible(false);
                     this.svgGraph.initSVGGraphWithoutCola(this.colaGraph);
-                    this.svgMode = true;
+                    this.ignore3dControl = true;
                 }
             } else if (this.networkType == 'circular') { // There's no animation for this ... 
 
-                this.svgMode = true;
+                this.ignore3dControl = true;
                 this.svgNeedsUpdate = true;
                 this.colaGraph.setVisible(false); // turn off 3D and 2D graph
 
@@ -1366,7 +1372,7 @@ class Brain3DApp implements Application, Loopable {
                 this.circularGraph.create();
 
             } else if (this.networkType == '2D-alt') {
-                this.svgMode = true;    //TODO: toggles drag detection mode, maybe rename to ignore3dControl?
+                this.ignore3dControl = true;
                 this.canvasGraph.initGraph(this.physioGraph, this.camera);
                 this.colaGraph.setVisible(false);
             } else { // this.network === "3D"
@@ -1403,7 +1409,7 @@ class Brain3DApp implements Application, Loopable {
     threeToSVGAnimation(transitionFinish: boolean) {
         this.svgGraph.initSVGGraph(this.colaGraph, this.camera);
         this.colaGraph.setVisible(false);
-        this.svgMode = true;
+        this.ignore3dControl = true;
         this.svgNeedsUpdate = true;
         this.transitionInProgress = false;
 
@@ -1530,6 +1536,11 @@ class Brain3DApp implements Application, Loopable {
         if (this.networkType == '2D') {
             if (this.svgGraph) {
                 this.svgGraph.update(this.colaGraph, this.allLabels);
+            }
+        }
+        if (this.networkType == '2D-alt') {
+            if (this.canvasGraph) {
+                this.canvasGraph.update();
             }
         }
         else if (this.networkType == 'circular') {           
@@ -1973,7 +1984,7 @@ class Brain3DApp implements Application, Loopable {
 
                     // Select the new node ID
                     this.physioGraph.selectNode(this.selectedNodeID, false, false);
-                    this.colaGraph.selectNode(this.selectedNodeID, this.svgMode, true);
+                    this.colaGraph.selectNode(this.selectedNodeID, this.ignore3dControl, true);
 
 
                     var varNodeID = this.selectedNodeID;
@@ -1985,6 +1996,9 @@ class Brain3DApp implements Application, Loopable {
                             });
                     }
                     else if (this.networkType == "2D") {
+                        this.svgNeedsUpdate = true;
+                    }
+                    else if (this.networkType == "2D-alt") {
                         this.svgNeedsUpdate = true;
                     }
                 } else {
@@ -2001,6 +2015,9 @@ class Brain3DApp implements Application, Loopable {
                                 });
                         }
                         else if (this.networkType == "2D") {
+                            this.svgNeedsUpdate = true;
+                        }
+                        else if (this.networkType == "2D-alt") {
                             this.svgNeedsUpdate = true;
                         }
 
@@ -2024,7 +2041,7 @@ class Brain3DApp implements Application, Loopable {
             }
             this.scene.updateMatrixWorld();     //TODO: Confirm that this change has no side effects
 
-            if (this.svgMode && this.svgNeedsUpdate) {
+            if (this.ignore3dControl && this.svgNeedsUpdate) {
                 this.update2DGraph();
                 this.svgNeedsUpdate = false;
             }
