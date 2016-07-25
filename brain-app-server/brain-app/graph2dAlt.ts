@@ -297,9 +297,12 @@ class Graph2DAlt {
             commonData.nodeIDUnderPointer[4] = -1;
         });
         cy.on("tap", "node", function (e) {
-            cy.elements("node").removeClass("select");
+            let oldSelected = commonData.selectedNode;
+            if (oldSelected > -1) {
+                cy.elements("node").removeClass("select");
+            }
+            let newSelected = this.data("sourceId");
             this.addClass("select");
-            commonData.selectedNode = this.data("sourceId");
         });
     }
 
