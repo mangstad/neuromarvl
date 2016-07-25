@@ -150,25 +150,24 @@ class Graph2DAlt {
 
     updateGraph() {
         // Use saveObj and this.layout to create the layout and style options, then create the cytoscape graph
-        var container = this.container;
-        var offsetLeft = container.offsetWidth * 0.5;
-        var offsetTop = container.offsetHeight * 0.1;
+        let container = this.container;
         
-        var nodes = this.nodes.map(d => ({
+        let nodes = this.nodes.map(d => ({
             data: {
                 id: "n_" + d.id,
                 sourceId: d.id,
-                color: d.color,         //TODO: Can retire this when multiple colors is working across all visualisations
+                color: d.color || "gray",         //TODO: Can retire this when multiple colors is working across all visualisations
                 colors: d.colors,
-                radius: d.radius * 10,
-                border: d.radius * 3
+                radius: d.radius,
+                border: d.radius * 0.2,
+                label: this.dataSet.brainLabels[d.id] || d.id
             },
             position: {
                 x: d.x,
                 y: d.y
             }
         }));
-        var edges = this.links.map(d => ({
+        let edges = this.links.map(d => ({
             data: {
                 id: "e_" + d.colaGraphEdgeListIndex,
                 source: "n_" + d.source.id,
@@ -177,16 +176,23 @@ class Graph2DAlt {
                 highlight: false
             }
         }));
-        var elements = nodes.concat(<any>edges);
+        let elements = nodes.concat(<any>edges);
+        let boundingBox = {
+            x1: 0,
+            y1: 0,
+            w: container.offsetWidth * 0.3,
+            h: container.offsetHeight * 0.5
+        };
 
         // Default layout is simple and fast
-        var layout = <any>{
-            name: "cose",
-            animate: false
+        let layoutOptions = <any>{
+            name: this.layout,
+            animate: false,
+            boundingBox
         }
         switch (this.layout) {
             case "cola":
-                layout = <any>{
+                layoutOptions = <any>{
                     name: "cola",
                     animate: false,
 
@@ -196,7 +202,7 @@ class Graph2DAlt {
                     //refresh: 5,                     // Probably on works when animating
 
                     //fit: true,
-                    //boundingBox: { x1: offsetLeft, y1: offsetTop, w: width, h: height },      //TODO: seems to be doing nothing, would be nice
+                    //boundingBox,      //TODO: seems to be doing nothing, would be nice
                     //padding: 50,
 
                     edgeLength: this.edgeBaseLength * this.edgeLengthScale,
@@ -209,11 +215,11 @@ class Graph2DAlt {
                     allConstIter: 15,
 
                     flow: false
-                }
+                };
                 break;
             case "cola-flow":
                 // Mostly the same as cola
-                layout = <any>{
+                layoutOptions = <any>{
                     name: "cola",
                     animate: false,
                     ungrabifyWhileSimulating: true,
@@ -226,29 +232,32 @@ class Graph2DAlt {
                     allConstIter: 15,
 
                     flow: true
-                }
+                };
                 break;
         }
         
         var nodeStyle = {
             "width": "data(radius)",
             "height": "data(radius)",
+            "background-color": "data(color)",
             "background-opacity": 0,
             "border-width": "data(border)",
             "border-color": "black",
             "border-opacity": 0,
-            "pie-size": "100%"      // Oversized to deal with aliasing from background
         };
         let colorAttribute = this.saveObj.nodeSettings.nodeColorAttribute;
-        let nSlices = this.dataSet.attributes.info[colorAttribute].numElements;
-        for (let i = 0; i < nSlices; i++) {
-            nodeStyle[`pie-${i + 1}-background-color`] = e => e.data("colors")[i].color;
-            nodeStyle[`pie-${i + 1}-background-size`] = e => e.data("colors")[i].portion * 100;
+        if (colorAttribute) {
+            nodeStyle["pie-size"] = "100%";
+            let nSlices = this.dataSet.attributes.info[colorAttribute].numElements;
+            for (let i = 0; i < nSlices; i++) {
+                nodeStyle[`pie-${i + 1}-background-color`] = e => e.data("colors")[i].color;
+                nodeStyle[`pie-${i + 1}-background-size`] = e => e.data("colors")[i].portion * 100;
+            }
         }
         var edgeStyle = {
-            'width': 3,
+            'width': 1.5,
             'line-color': 'data(color)',
-            'target-arrow-color': '#ccc',
+            'target-arrow-color': 'data(color)',
             'target-arrow-shape': 'triangle'
         };
 
@@ -267,27 +276,26 @@ class Graph2DAlt {
                 {
                     selector: "node.highlight",
                     style: {
-                        'label': 'data(sourceId)',     //TODO: use configured attribute
+                        'label': 'data(label)',     //TODO: use configured attribute
                         "border-opacity": 0.5
                     }
                 },
                 {
                     selector: "node.select",
                     style: {
-                        'label': 'data(sourceId)',     //TODO: use configured attribute
+                        'label': 'data(label)',     //TODO: use configured attribute
                         "border-opacity": 1.0
                     }
                 }
             ],
             minZoom: 0.1,
             maxZoom: 10,
-            layout
+            wheelSensitivity: 0.2,
+            layout: layoutOptions
         });
 
         let commonData = this.commonData;
         let cy = this.cy;
-        cy.pan({ x: offsetLeft, y: offsetTop });
-        cy.zoom(this.cy.zoom() * 0.8);
         cy.on("mouseover", "node", function (e) {
             this.addClass("highlight");
             commonData.nodeIDUnderPointer[4] = this.data("sourceId");
@@ -304,6 +312,19 @@ class Graph2DAlt {
             let newSelected = this.data("sourceId");
             this.addClass("select");
         });
+        cy.on("layoutstop", function (e) {
+            // Some layouts need to pan/zoom after layout is done
+            cy.pan({
+                x: container.offsetWidth * 0.5,
+                y: container.offsetHeight * 0.2
+            });
+            cy.zoom(cy.zoom() * 0.6);
+        });
+        cy.pan({
+            x: container.offsetWidth * 0.5,
+            y: container.offsetHeight * 0.2
+        });
+        cy.zoom(cy.zoom() * 0.6);
     }
 
     update() {
@@ -349,8 +370,7 @@ class Graph2DAlt {
     menuButtonOnClick() {
         var l = $('#button-graph2dalt-option-menu-' + this.id).position().left + 5;
         var t = $('#button-graph2dalt-option-menu-' + this.id).position().top - $('#div-graph2dalt-layout-menu-' + this.id).height() - 15;
-
-
+        
         $('#div-graph2dalt-layout-menu-' + this.id).zIndex(1000);
         $('#div-graph2dalt-layout-menu-' + this.id).css({ left: l, top: t, height: 'auto' });
         $('#div-graph2dalt-layout-menu-' + this.id).fadeToggle('fast');
@@ -444,7 +464,7 @@ class Graph2DAlt {
 
         $('#select-graph2dalt-layout-' + this.id).empty();
 
-        for (var layout of ["cose", "cola", "cola-flow"]) {
+        for (var layout of ["cose", "cola", "cola-flow", "grid", "circle", "concentric", "breadthfirst", "random"]) {
             var option = document.createElement('option');
             option.text = layout;
             option.value = layout;
