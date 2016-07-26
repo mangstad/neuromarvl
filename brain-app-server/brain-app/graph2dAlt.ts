@@ -78,6 +78,7 @@ class Graph2DAlt {
             nodeObject["x"] = position.x;
             nodeObject["y"] = position.y;
 
+            /*
             // for every attributes
             for (var j = 0; j < this.dataSet.attributes.columnNames.length; j++) {
 
@@ -113,6 +114,7 @@ class Graph2DAlt {
                     nodeObject['bundle_group_' + colname] = bundleGroup;
                 }
             }
+            */
 
             this.nodes.push(nodeObject);
         }
@@ -151,22 +153,26 @@ class Graph2DAlt {
     updateGraph() {
         // Use saveObj and this.layout to create the layout and style options, then create the cytoscape graph
         let container = this.container;
+        let colorAttribute = this.saveObj.nodeSettings.nodeColorAttribute;
         
-        let nodes = this.nodes.map(d => ({
-            data: {
-                id: "n_" + d.id,
-                sourceId: d.id,
-                color: d.color || "gray",         //TODO: Can retire this when multiple colors is working across all visualisations
-                colors: d.colors,
-                radius: d.radius,
-                border: d.radius * 0.2,
-                label: this.dataSet.brainLabels[d.id] || d.id
-            },
-            position: {
-                x: d.x,
-                y: d.y
-            }
-        }));
+        let nodes = this.nodes.map(d => {
+            return {
+                data: {
+                    id: "n_" + d.id,
+                    //parent: "c_" + d.color.substring(1),
+                    sourceId: d.id,
+                    color: d.color || "gray",         //TODO: Can retire this when multiple colors is working across all visualisations
+                    colors: d.colors,
+                    radius: d.radius,
+                    border: d.radius * 0.2,
+                    label: this.dataSet.brainLabels[d.id] || d.id
+                },
+                position: {
+                    x: d.x,
+                    y: d.y
+                }
+            };
+        });
         let edges = this.links.map(d => ({
             data: {
                 id: "e_" + d.colaGraphEdgeListIndex,
@@ -176,6 +182,25 @@ class Graph2DAlt {
                 highlight: false
             }
         }));
+        // Compound nodes for grouping - TODO: not quite working as expected, not affecting layout
+        //let compounds = nodes
+        //    .reduce((acc, d) => {
+        //        let i = acc.length;
+        //        while (i--) if (acc[i] === d.data.color) return acc;
+        //        acc.push(d.data.color);
+        //        return acc;
+        //    }, [])
+        //    .map(d => ({
+        //        data: {
+        //            id: "c_" + d.substring(1),
+        //            radius: 10,
+        //            color: d,
+        //            border: 2
+        //        }
+        //    })) 
+        //    ;
+
+        //let elements = nodes.concat(<any>edges).concat(<any>compounds);
         let elements = nodes.concat(<any>edges);
         let boundingBox = {
             x1: 0,
@@ -245,7 +270,6 @@ class Graph2DAlt {
             "border-color": "black",
             "border-opacity": 0,
         };
-        let colorAttribute = this.saveObj.nodeSettings.nodeColorAttribute;
         if (colorAttribute) {
             nodeStyle["pie-size"] = "100%";
             let nSlices = this.dataSet.attributes.info[colorAttribute].numElements;
@@ -266,6 +290,7 @@ class Graph2DAlt {
             elements,
             style: [ // the stylesheet for the graph
                 {
+                    //selector: "node[parent]",       // Nodes with a parent are not compound control nodes
                     selector: "node",
                     style: nodeStyle 
                 },
