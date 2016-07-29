@@ -240,15 +240,15 @@ class Brain3DApp implements Application, Loopable {
             [
                 // Discrete
                 [
-	                {color: #ff0000, portion: 1.0},
-	                {color: #00ff00, portion: 0.0},
-	                {color: #0000ff, portion: 0.0}
+	                {color: 0xff0000, portion: 1.0},
+	                {color: 0x00ff00, portion: 0.0},
+	                {color: 0x0000ff, portion: 0.0}
                 ],
                 // Continuous
                 [
-	                {color: #fa36dd, portion: 0.33},
-	                {color: #006f34, portion: 0.33},
-	                {color: #228d00, portion: 0.33}
+	                {color: 0xfa36dd, portion: 0.33},
+	                {color: 0x006f34, portion: 0.33},
+	                {color: 0x228d00, portion: 0.33}
                 ]
             ]
         */
@@ -258,18 +258,19 @@ class Brain3DApp implements Application, Loopable {
         let a = this.dataSet.attributes;
         
         if (!a.info[colorAttribute]) {
-            return Array(a.numRecords).map(d => [defaultColor]);
+            return Array.apply(null, Array(a.numRecords)).map(d => [defaultColor]);
         }
 
         let valueArray = a.get(colorAttribute);
         
         if (a.info[colorAttribute].isDiscrete) {
+            let discreteColorValues = nSettings.nodeColorDiscrete.map(colorString => parseInt(colorString.substring(1), 16));
             if (a.info[colorAttribute].numElements > 1) {
                 // Discrete multi-value has each colour from the mapping with its proportion of total value in that node
                 return valueArray.map(aArray => {
                     let singlePortion = (1 / aArray.reduce((weight, acc) => acc + weight, 0)) || 0;
                     return aArray.map((value, i) => ({
-                        color: nSettings.nodeColorDiscrete[i],
+                        color: discreteColorValues[i],
                         portion: value * singlePortion
                     }))
                 });
@@ -279,7 +280,7 @@ class Brain3DApp implements Application, Loopable {
                 let colorMap = d3.scale
                     .ordinal()
                     .domain(a.info[colorAttribute].distinctValues)
-                    .range(nSettings.nodeColorDiscrete)
+                    .range(discreteColorValues)
                     ;
                 return valueArray.map(aArray => aArray.map(value => ({
                     color: colorMap(value),

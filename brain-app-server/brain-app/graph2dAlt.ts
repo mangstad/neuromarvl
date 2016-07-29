@@ -163,8 +163,8 @@ class Graph2DAlt {
                     sourceId: d.id,
                     color: d.color || "gray",         //TODO: Can retire this when multiple colors is working across all visualisations
                     colors: d.colors,
-                    radius: d.radius,
-                    border: d.radius * 0.2,
+                    radius: d.radius * 5,
+                    border: d.radius * 1,
                     label: this.dataSet.brainLabels[d.id] || d.id
                 },
                 position: {
@@ -202,6 +202,34 @@ class Graph2DAlt {
 
         //let elements = nodes.concat(<any>edges).concat(<any>compounds);
         let elements = nodes.concat(<any>edges);
+        
+        var nodeStyle = {
+            "width": "data(radius)",
+            "height": "data(radius)",
+            "background-color": "data(color)",
+            "background-opacity": 1,
+            "border-width": "data(border)",
+            "border-color": "black",
+            "border-opacity": 0,
+            "font-size": 18,
+            "font-weight": "bold"
+        };
+        if (this.dataSet.attributes.info[colorAttribute]) {
+            nodeStyle["pie-size"] = "100%";
+            nodeStyle["background-opacity"] = 0;
+            let nSlices = this.dataSet.attributes.info[colorAttribute].numElements;
+            for (let i = 0; i < nSlices; i++) {
+                nodeStyle[`pie-${i + 1}-background-color`] = e => "#" + e.data("colors")[i].color.toString(16);
+                nodeStyle[`pie-${i + 1}-background-size`] = e => e.data("colors")[i].portion * 100;
+            }
+        }
+        var edgeStyle = {
+            'width': 1.5,
+            'line-color': 'data(color)',
+            'target-arrow-color': 'data(color)',
+            'target-arrow-shape': 'triangle'
+        };
+
         let boundingBox = {
             x1: 0,
             y1: 0,
@@ -216,27 +244,35 @@ class Graph2DAlt {
             boundingBox
         }
         switch (this.layout) {
+            case "cose":
+                layoutOptions.idealEdgeLength = this.edgeBaseLength * this.edgeLengthScale;
+                //nodeStyle["pie-size"] = "50%";
+                //nodeStyle["border-width"] = "data(radius)";
+                break;
             case "cola":
                 layoutOptions = <any>{
                     name: "cola",
+
                     animate: false,
+                    fit: false,
+                    //animate: true,
+                    //fit: true,
 
                     // Options that may affect speed of layout
                     ungrabifyWhileSimulating: true,
-                    maxSimulationTime: 1000,        // Only starts counting after the layout startup, which can take some time by itself. 0 actually works well.
-                    //refresh: 5,                     // Probably on works when animating
-
-                    //fit: true,
+                    maxSimulationTime: 4000,        // Only starts counting after the layout startup, which can take some time by itself. 0 actually works well.
+                    
                     //boundingBox,      //TODO: seems to be doing nothing, would be nice
                     //padding: 50,
 
-                    edgeLength: this.edgeBaseLength * this.edgeLengthScale,
-                    //edgeSymDiffLength: 60
+                    //edgeLength: this.edgeBaseLength * this.edgeLengthScale * 0.001,      // Not much effect for any lengths?
+                    //edgeSymDiffLength: this.edgeBaseLength * this.edgeLengthScale * 0.01,
+                    //edgeJaccardLength: this.edgeBaseLength * this.edgeLengthScale * 0.01,
                     handleDisconnected: true,
                     avoidOverlap: true,
 
                     unconstrIter: 15,
-                    userConstIter: 0,
+                    userConstIter: 10,
                     allConstIter: 15,
 
                     flow: false
@@ -261,29 +297,6 @@ class Graph2DAlt {
                 break;
         }
         
-        var nodeStyle = {
-            "width": "data(radius)",
-            "height": "data(radius)",
-            "background-color": "data(color)",
-            "background-opacity": 0,
-            "border-width": "data(border)",
-            "border-color": "black",
-            "border-opacity": 0,
-        };
-        if (colorAttribute) {
-            nodeStyle["pie-size"] = "100%";
-            let nSlices = this.dataSet.attributes.info[colorAttribute].numElements;
-            for (let i = 0; i < nSlices; i++) {
-                nodeStyle[`pie-${i + 1}-background-color`] = e => e.data("colors")[i].color;
-                nodeStyle[`pie-${i + 1}-background-size`] = e => e.data("colors")[i].portion * 100;
-            }
-        }
-        var edgeStyle = {
-            'width': 1.5,
-            'line-color': 'data(color)',
-            'target-arrow-color': 'data(color)',
-            'target-arrow-shape': 'triangle'
-        };
 
         this.cy = cytoscape({
             container,
@@ -339,12 +352,14 @@ class Graph2DAlt {
         });
         cy.on("layoutstop", function (e) {
             // Some layouts need to pan/zoom after layout is done
+            cy.fit();
             cy.pan({
                 x: container.offsetWidth * 0.5,
                 y: container.offsetHeight * 0.2
             });
             cy.zoom(cy.zoom() * 0.6);
         });
+        cy.fit();
         cy.pan({
             x: container.offsetWidth * 0.5,
             y: container.offsetHeight * 0.2
