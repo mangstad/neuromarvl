@@ -159,7 +159,7 @@ class Graph2DAlt {
             return {
                 data: {
                     id: "n_" + d.id,
-                    //parent: "c_" + d.color.substring(1),
+                    parent: "c_" + d.color.substring(1),
                     sourceId: d.id,
                     color: d.color || "gray",         //TODO: Can retire this when multiple colors is working across all visualisations
                     colors: d.colors,
@@ -170,7 +170,8 @@ class Graph2DAlt {
                 position: {
                     x: d.x,
                     y: d.y
-                }
+                },
+                classes: "child"
             };
         });
         let edges = this.links.map(d => ({
@@ -183,25 +184,26 @@ class Graph2DAlt {
             }
         }));
         // Compound nodes for grouping - TODO: not quite working as expected, not affecting layout
-        //let compounds = nodes
-        //    .reduce((acc, d) => {
-        //        let i = acc.length;
-        //        while (i--) if (acc[i] === d.data.color) return acc;
-        //        acc.push(d.data.color);
-        //        return acc;
-        //    }, [])
-        //    .map(d => ({
-        //        data: {
-        //            id: "c_" + d.substring(1),
-        //            radius: 10,
-        //            color: d,
-        //            border: 2
-        //        }
-        //    })) 
-        //    ;
+        let compounds = nodes
+            .reduce((acc, d) => {
+                let i = acc.length;
+                while (i--) if (acc[i] === d.data.color) return acc;
+                acc.push(d.data.color);
+                return acc;
+            }, [])
+            .map(d => ({
+                data: {
+                    id: "c_" + d.substring(1),
+                    radius: 10,
+                    color: d,
+                    border: 2
+                },
+                classes: "cluster"
+            })) 
+            ;
 
-        //let elements = nodes.concat(<any>edges).concat(<any>compounds);
-        let elements = nodes.concat(<any>edges);
+        let elements = nodes.concat(<any>edges).concat(<any>compounds);
+        //let elements = nodes.concat(<any>edges);
         
         var nodeStyle = {
             "width": "data(radius)",
@@ -248,6 +250,10 @@ class Graph2DAlt {
                 layoutOptions.idealEdgeLength = this.edgeBaseLength * this.edgeLengthScale;
                 //nodeStyle["pie-size"] = "50%";
                 //nodeStyle["border-width"] = "data(radius)";
+                break;
+            case "cose-bilkent":
+                //layoutOptions.idealEdgeLength = this.edgeBaseLength * this.edgeLengthScale;
+                layoutOptions.numIter = 15;
                 break;
             case "cola":
                 layoutOptions = <any>{
@@ -304,8 +310,14 @@ class Graph2DAlt {
             style: [ // the stylesheet for the graph
                 {
                     //selector: "node[parent]",       // Nodes with a parent are not compound control nodes
-                    selector: "node",
+                    selector: "node.child",
                     style: nodeStyle 
+                },
+                {
+                    selector: "node.cluster",
+                    style: {
+                        "background-opacity": 0.1
+                    }
                 },
                 {
                     selector: "edge",
@@ -334,15 +346,15 @@ class Graph2DAlt {
 
         let commonData = this.commonData;
         let cy = this.cy;
-        cy.on("mouseover", "node", function (e) {
+        cy.on("mouseover", "node.child", function (e) {
             this.addClass("highlight");
             commonData.nodeIDUnderPointer[4] = this.data("sourceId");
         });
-        cy.on("mouseout", "node", function (e) {
+        cy.on("mouseout", "node.child", function (e) {
             this.removeClass("highlight");
             commonData.nodeIDUnderPointer[4] = -1;
         });
-        cy.on("tap", "node", function (e) {
+        cy.on("tap", "node.child", function (e) {
             let oldSelected = commonData.selectedNode;
             if (oldSelected > -1) {
                 cy.elements("node").removeClass("select");
@@ -504,7 +516,7 @@ class Graph2DAlt {
 
         $('#select-graph2dalt-layout-' + this.id).empty();
 
-        for (var layout of ["cose", "cola", "cola-flow", "grid", "circle", "concentric", "breadthfirst", "random"]) {
+        for (var layout of ["cose", "cose-bilkent", "cola", "cola-flow", "grid", "circle", "concentric", "breadthfirst", "random"]) {
             var option = document.createElement('option');
             option.text = layout;
             option.value = layout;
