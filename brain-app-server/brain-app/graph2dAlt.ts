@@ -226,7 +226,8 @@ class Graph2DAlt {
             }
         }
         var edgeStyle = {
-            'width': 1.5,
+            "width": 1.5,
+            "opacity": 0.5,
             'line-color': 'data(color)',
             'target-arrow-color': 'data(color)',
             'target-arrow-shape': 'triangle'
@@ -309,19 +310,33 @@ class Graph2DAlt {
             elements,
             style: [ // the stylesheet for the graph
                 {
-                    //selector: "node[parent]",       // Nodes with a parent are not compound control nodes
                     selector: "node.child",
                     style: nodeStyle 
                 },
                 {
                     selector: "node.cluster",
                     style: {
-                        "background-opacity": 0.1
+                        "background-opacity": 0.0,
+                        "border-width": 0
+                    }
+                },
+                {
+                    selector: "node.cluster.highlight",
+                    style: {
+                        "background-opacity": 0.5,
+                        "border-width": 1
                     }
                 },
                 {
                     selector: "edge",
                     style: edgeStyle
+                },
+                {
+                    selector: "edge.highlight",
+                    style: {
+                        width: 3,
+                        opacity: 1
+                    }
                 },
                 {
                     selector: "node.highlight",
@@ -346,12 +361,16 @@ class Graph2DAlt {
 
         let commonData = this.commonData;
         let cy = this.cy;
-        cy.on("mouseover", "node.child", function (e) {
+        cy.on("mouseover", "node.cluster", function (e) {
             this.addClass("highlight");
+        });
+        cy.on("mouseout", "node.cluster", function (e) {
+            this.removeClass("highlight");
+        });
+        cy.on("mouseover", "node.child", function (e) {
             commonData.nodeIDUnderPointer[4] = this.data("sourceId");
         });
         cy.on("mouseout", "node.child", function (e) {
-            this.removeClass("highlight");
             commonData.nodeIDUnderPointer[4] = -1;
         });
         cy.on("tap", "node.child", function (e) {
@@ -381,10 +400,19 @@ class Graph2DAlt {
 
     update() {
         // Minor update, no layout recalculation but will have redraw, e.g. for selected node change
-        this.cy.elements("node.highlight").removeClass("highlight");
+        this.cy.elements(".highlight").removeClass("highlight");
         this.cy.elements("node.select").removeClass("select");
-        this.cy.elements(`node[sourceId=${this.commonData.nodeIDUnderPointer[0]}]`).addClass("highlight");
-        this.cy.elements(`node[sourceId=${this.commonData.nodeIDUnderPointer[4]}]`).addClass("highlight");
+        this.cy.elements(`node[sourceId=${this.commonData.nodeIDUnderPointer[0]}]`)
+            .addClass("highlight")
+            .neighborhood()
+            .addClass("highlight")
+            ;
+        this.cy.elements(`node[sourceId=${this.commonData.nodeIDUnderPointer[4]}]`)
+            .addClass("highlight")
+            .neighborhood()
+            .addClass("highlight")
+            ;
+
         this.cy.elements(`node[sourceId=${this.commonData.selectedNode}]`).addClass("select");
     }
     
