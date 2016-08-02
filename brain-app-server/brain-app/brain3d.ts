@@ -724,11 +724,18 @@ class Brain3DApp implements Application, Loopable {
 
     }
 
+
+    setBrainModelObject(modelObject) {
+        this.brainModelOrigin = modelObject;
+        this.setBrainMode(this.brainSurfaceMode);
+    }
+
+
     setBrainMode(mode) {
         this.brainSurfaceMode = mode;
-        var model = this.brainModelOrigin;
+        let model = this.brainModelOrigin;
         this.surfaceUniformList = [];
-        var uniformList = this.surfaceUniformList;
+        let uniformList = this.surfaceUniformList;
         /*
         var normalShader = {
             vertexShader: [
@@ -784,137 +791,139 @@ class Brain3DApp implements Application, Loopable {
             depthTest: false,
             side: THREE.FrontSide
         });
+        
+        if (model) {
+            // Default mode: full brain model 
+            if (mode == 0) {
 
-        // Default mode: full brain model 
-        if (mode == 0) {
-            
-            // Clone the mesh - we can't share it between different canvases without cloning it
-            this.brainModelOrigin.traverse(function (child) {
-                if (child instanceof THREE.Mesh) {
-                    /*
-                    this.uniforms = {
-                        opacity: { type: "f", value: 0.5 },
-                        mode: { type: 'f', value: 0.0 }
-                    };
-                    uniformList.push(this.uniforms);
+                // Clone the mesh - we can't share it between different canvases without cloning it
+                model.traverse(function (child) {
+                    if (child instanceof THREE.Mesh) {
+                        /*
+                        this.uniforms = {
+                            opacity: { type: "f", value: 0.5 },
+                            mode: { type: 'f', value: 0.0 }
+                        };
+                        uniformList.push(this.uniforms);
+    
+                        clonedObject.add(new THREE.Mesh(child.geometry.clone(), new THREE.ShaderMaterial(<any>{
+                            uniforms: this.uniforms,
+                            vertexShader: normalShader.vertexShader,
+                            fragmentShader: normalShader.fragmentShader,
+                            transparent: true
+                        })));
+                        */
 
-                    clonedObject.add(new THREE.Mesh(child.geometry.clone(), new THREE.ShaderMaterial(<any>{
-                        uniforms: this.uniforms,
-                        vertexShader: normalShader.vertexShader,
-                        fragmentShader: normalShader.fragmentShader,
-                        transparent: true
-                    })));
-                    */
+                        clonedObject.add(new THREE.Mesh(child.geometry.clone(), surfaceMaterial));
 
-                    clonedObject.add(new THREE.Mesh(child.geometry.clone(), surfaceMaterial));
-
-                    child.geometry.computeBoundingSphere();
-                    var boundingSphere = child.geometry.boundingSphere;
-                    var sphereMaterial = child.material.clone();
-                    sphereMaterial.visible = false;
-                    var sphereGeometry = new THREE.SphereGeometry(boundingSphere.radius + 10, 10, 10);
-                    var sphereObject = new THREE.Mesh(sphereGeometry, sphereMaterial);
-                    sphereObject.position.copy(boundingSphere.center);
-                    boundingSphereObject.add(sphereObject);
-                }
-            });
-
-        // Medial View
-        } else if (mode === 1) {
-            // Clone the mesh - we can't share it between different canvases without cloning it
-            
-            this.brainModelOrigin.traverse(function (child) {
-                if (child instanceof THREE.Mesh) {
-                    /*
-                    this.leftUniforms = {
-                        opacity: { type: "f", value: 0.5 },
-                        mode: { type: 'f', value: -1.0 }
-                    };
-
-                    this.rightUniforms = {
-                        opacity: { type: "f", value: 0.5 },
-                        mode: { type: 'f', value: 1.0 }
-                    };
-
-                    uniformList.push(this.leftUniforms);
-                    uniformList.push(this.rightUniforms);
-
-                    // left brain
-                    var leftBrain = new THREE.Mesh(child.geometry.clone(), new THREE.ShaderMaterial(<any>{
-                        uniforms: this.leftUniforms,
-                        vertexShader: normalShader.vertexShader,
-                        fragmentShader: normalShader.fragmentShader,
-                        transparent: true
-                    }));
-                    leftBrain.renderDepth = 2;
-                    var rightBrain = new THREE.Mesh(child.geometry.clone(), new THREE.ShaderMaterial(<any>{
-                        uniforms: this.rightUniforms,
-                        vertexShader: normalShader.vertexShader,
-                        fragmentShader: normalShader.fragmentShader,
-                        transparent: true
-                    }));
-                    rightBrain.renderDepth = 2;
-                    */
-                    // Need to edit geometries to "slice" them in half
-                    // Each face is represented by a group 9 values (3 vertices * 3 dimensions). Move to other side if any face touches the right side (i.e. x > 0).
-                    var leftPositions = Array.prototype.slice.call(child.geometry.getAttribute("position").array);
-                    var rightPositions = [];
-                    const FACE_CHUNK = 9;
-                    const VERT_CHUNK = 3;
-                    let i = leftPositions.length - VERT_CHUNK;      // Start from last x position
-                    while (i -= VERT_CHUNK) {
-                        if (leftPositions[i] > 0) {
-                            // Move whole face to other geometry
-                            var faceStart = Math.floor(i / FACE_CHUNK) * FACE_CHUNK;
-                            rightPositions.push(...leftPositions.splice(faceStart, FACE_CHUNK));
-                            i = faceStart;
-                        }
+                        child.geometry.computeBoundingSphere();
+                        var boundingSphere = child.geometry.boundingSphere;
+                        var sphereMaterial = child.material.clone();
+                        sphereMaterial.visible = false;
+                        var sphereGeometry = new THREE.SphereGeometry(boundingSphere.radius + 10, 10, 10);
+                        var sphereObject = new THREE.Mesh(sphereGeometry, sphereMaterial);
+                        sphereObject.position.copy(boundingSphere.center);
+                        boundingSphereObject.add(sphereObject);
                     }
+                });
 
-                    var leftGeometry = new THREE.BufferGeometry;
-                    leftGeometry.addAttribute("position", new THREE.BufferAttribute(new Float32Array(leftPositions), VERT_CHUNK));
-                    leftGeometry.computeVertexNormals();
-                    leftGeometry.computeFaceNormals();
-                    var leftBrain = new THREE.Mesh(leftGeometry, surfaceMaterial);
+                // Medial View
+            } else if (mode === 1) {
+                // Clone the mesh - we can't share it between different canvases without cloning it
 
-                    var rightGeometry = new THREE.BufferGeometry;
-                    rightGeometry.addAttribute("position", new THREE.BufferAttribute(new Float32Array(rightPositions), VERT_CHUNK));
-                    rightGeometry.computeVertexNormals();
-                    rightGeometry.computeFaceNormals();
-                    var rightBrain = new THREE.Mesh(rightGeometry, surfaceMaterial);
+                model.traverse(function (child) {
+                    if (child instanceof THREE.Mesh) {
+                        /*
+                        this.leftUniforms = {
+                            opacity: { type: "f", value: 0.5 },
+                            mode: { type: 'f', value: -1.0 }
+                        };
+    
+                        this.rightUniforms = {
+                            opacity: { type: "f", value: 0.5 },
+                            mode: { type: 'f', value: 1.0 }
+                        };
+    
+                        uniformList.push(this.leftUniforms);
+                        uniformList.push(this.rightUniforms);
+    
+                        // left brain
+                        var leftBrain = new THREE.Mesh(child.geometry.clone(), new THREE.ShaderMaterial(<any>{
+                            uniforms: this.leftUniforms,
+                            vertexShader: normalShader.vertexShader,
+                            fragmentShader: normalShader.fragmentShader,
+                            transparent: true
+                        }));
+                        leftBrain.renderDepth = 2;
+                        var rightBrain = new THREE.Mesh(child.geometry.clone(), new THREE.ShaderMaterial(<any>{
+                            uniforms: this.rightUniforms,
+                            vertexShader: normalShader.vertexShader,
+                            fragmentShader: normalShader.fragmentShader,
+                            transparent: true
+                        }));
+                        rightBrain.renderDepth = 2;
+                        */
+                        // Need to edit geometries to "slice" them in half
+                        // Each face is represented by a group 9 values (3 vertices * 3 dimensions). Move to other side if any face touches the right side (i.e. x > 0).
+                        var leftPositions = Array.prototype.slice.call(child.geometry.getAttribute("position").array);
+                        var rightPositions = [];
+                        const FACE_CHUNK = 9;
+                        const VERT_CHUNK = 3;
+                        let i = leftPositions.length - VERT_CHUNK;      // Start from last x position
+                        while (i -= VERT_CHUNK) {
+                            if (leftPositions[i] > 0) {
+                                // Move whole face to other geometry
+                                var faceStart = Math.floor(i / FACE_CHUNK) * FACE_CHUNK;
+                                rightPositions.push(...leftPositions.splice(faceStart, FACE_CHUNK));
+                                i = faceStart;
+                            }
+                        }
 
-                    var box = new THREE.Box3()['setFromObject'](model);
-                    leftBrain.rotation.z = 3.14 / 2;
-                    rightBrain.rotation.z = -3.14 / 2;
+                        var leftGeometry = new THREE.BufferGeometry;
+                        leftGeometry.addAttribute("position", new THREE.BufferAttribute(new Float32Array(leftPositions), VERT_CHUNK));
+                        leftGeometry.computeVertexNormals();
+                        leftGeometry.computeFaceNormals();
+                        var leftBrain = new THREE.Mesh(leftGeometry, surfaceMaterial);
 
-                    // center the brain along y axis
-                    var mean = (box.max.z - box.min.z) / 2;
-                    var offsetToHead = box.max.z - mean;
-                    var offsetDistance = 10;
-                    leftBrain.translateY(offsetToHead);
-                    rightBrain.translateY(offsetToHead);
+                        var rightGeometry = new THREE.BufferGeometry;
+                        rightGeometry.addAttribute("position", new THREE.BufferAttribute(new Float32Array(rightPositions), VERT_CHUNK));
+                        rightGeometry.computeVertexNormals();
+                        rightGeometry.computeFaceNormals();
+                        var rightBrain = new THREE.Mesh(rightGeometry, surfaceMaterial);
 
-                    leftBrain.translateZ(-(box.max.z + offsetDistance));
-                    rightBrain.translateZ(Math.abs(box.min.z) + offsetDistance);
+                        var box = new THREE.Box3()['setFromObject'](model);
+                        leftBrain.rotation.z = 3.14 / 2;
+                        rightBrain.rotation.z = -3.14 / 2;
 
-                    clonedObject.add(leftBrain);
-                    clonedObject.add(rightBrain);
+                        // center the brain along y axis
+                        var mean = (box.max.z - box.min.z) / 2;
+                        var offsetToHead = box.max.z - mean;
+                        var offsetDistance = 10;
+                        leftBrain.translateY(offsetToHead);
+                        rightBrain.translateY(offsetToHead);
 
-                    child.geometry.computeBoundingSphere();
-                    var boundingSphere = child.geometry.boundingSphere;
-                    var material = child.material.clone();
-                    material.visible = false;
-                    var sphereGeometry = new THREE.SphereGeometry(boundingSphere.radius + 10, 10, 10);
-                    var sphereObject = new THREE.Mesh(sphereGeometry, material);
-                    sphereObject.position.copy(boundingSphere.center);
-                    
-                    boundingSphereObject.add(sphereObject);
-                }
-            });
+                        leftBrain.translateZ(-(box.max.z + offsetDistance));
+                        rightBrain.translateZ(Math.abs(box.min.z) + offsetDistance);
 
-        } else {
-            console.log("ERROR: Wrong Brain Surface Mode");
-            return;
+                        clonedObject.add(leftBrain);
+                        clonedObject.add(rightBrain);
+
+                        child.geometry.computeBoundingSphere();
+                        var boundingSphere = child.geometry.boundingSphere;
+                        var material = child.material.clone();
+                        material.visible = false;
+                        var sphereGeometry = new THREE.SphereGeometry(boundingSphere.radius + 10, 10, 10);
+                        var sphereObject = new THREE.Mesh(sphereGeometry, material);
+                        sphereObject.position.copy(boundingSphere.center);
+
+                        boundingSphereObject.add(sphereObject);
+                    }
+                });
+
+            } else {
+                console.log("ERROR: Wrong Brain Surface Mode");
+                return;
+            }
         }
 
         clonedObject.renderOrder = RENDER_ORDER_BRAIN;
@@ -1116,11 +1125,13 @@ class Brain3DApp implements Application, Loopable {
         this.edgeCountSliderValue = numEdges;
         if (!this.dataSet.sortedSimilarities) return;
 
-        var max = this.dataSet.sortedSimilarities.length;
+        let max = this.dataSet.sortedSimilarities.length;
         if (numEdges > max) numEdges = max;
-        $('#count-' + this.id).get(0).textContent = numEdges;
-        var percentile = numEdges * 100 / max;
-        $('#percentile-' + this.id).get(0).textContent = percentile.toFixed(2);
+        let $count = $('#count-' + this.id).get(0);
+        if ($count) $count.textContent = numEdges;
+        let percentile = numEdges * 100 / max;
+        let $percentile = $('#percentile-' + this.id).get(0);
+        if ($percentile) $percentile.textContent = percentile.toFixed(2);
         if (this.brainSurfaceMode === 0) {
             this.filteredAdjMatrix = this.dataSet.adjMatrixFromEdgeCount(numEdges);
         } else {
@@ -1876,7 +1887,13 @@ class Brain3DApp implements Application, Loopable {
     computeMedialViewCoords() {
         var newCoords = [[], [], []];
         var zAxis = new THREE.Vector3(0, 0, 1);
-        var box = new THREE.Box3()['setFromObject'](this.brainModelOrigin);
+        var box;
+        if (this.brainModelOrigin) {
+            box = new THREE.Box3()['setFromObject'](this.brainModelOrigin);
+        }
+        else {
+            box = new THREE.Box3(new THREE.Vector3(-70, -100, -50), new THREE.Vector3(70, 70, 100));
+        }
         var mean = (box.max.z - box.min.z) / 2;
         var offsetToHead = box.max.z - mean;
 

@@ -135,7 +135,7 @@ class NeuroMarvl {
     brainSurfaceColor: string;
     saveObj = new SaveFile({});
     loader;     // THREE.ObjLoader
-    apps: Application[];
+    apps: Brain3DApp[];
 
     pointerImage = new PointerImageImpl;
 
@@ -145,7 +145,6 @@ class NeuroMarvl {
     pinHeight = 0;
 
     // UI elements
-    visIcons;
     divLoadingNotification;
 
     input: InputTargetManager;
@@ -156,12 +155,9 @@ class NeuroMarvl {
 
         // Set up OBJ loading
         let manager = new THREE.LoadingManager();
-        //manager.onProgress = (item, loaded, total) => {
-        //    console.log(item, loaded, total);
-        //};
         this.loader = new (<any>THREE).OBJLoader(manager);
         
-        this.apps = Array<Application>();
+        this.apps = Array<Brain3DApp>();
 
         // Set up the class that will manage which view should be receiving input
         this.input = new InputTargetManager([TL_VIEW, TR_VIEW, BL_VIEW, BR_VIEW], this.pointerImage);
@@ -181,7 +177,6 @@ class NeuroMarvl {
         this.pinHeight = $('#pin').height();
 
         // Data set icons are visible when the page loads - reset them immediately
-        this.visIcons = [$('#brain3d-icon-front')];
         // Load notification
         this.divLoadingNotification = document.createElement('div');
         this.divLoadingNotification.id = 'div-loading-notification';
@@ -200,7 +195,6 @@ class NeuroMarvl {
         $('#select-coords').on('change', () => {
             // Change the button name according to the file name
             var file = (<any>$('#select-coords').get(0)).files[0];
-            //document.getElementById("button-select-coords").innerHTML = file.name;
             document.getElementById("button-select-coords-filename").innerHTML = file.name;
 
             this.changeFileStatus("coords-status", "changed");
@@ -320,7 +314,7 @@ class NeuroMarvl {
         }
 
         let callbackNoSave = () => {
-            this.applyModelToBrainView(TL_VIEW, $('#select-brain3d-model').val(), commonInit, "empty");
+            this.createBrainView(TL_VIEW, $('#select-brain3d-model').val(), commonInit, "empty");
             this.toggleSplashPage();
         };
 
@@ -347,7 +341,7 @@ class NeuroMarvl {
                         this.saveObj = new SaveFile(jQuery.parseJSON(data));
                         for (var app of this.saveObj.saveApps) {
                             if (app.surfaceModel && (app.surfaceModel.length > 0)) {
-                                this.applyModelToBrainView(app.view, app.surfaceModel, commonInit, source, app.brainSurfaceMode);
+                                this.createBrainView(app.view, app.surfaceModel, commonInit, source, app.brainSurfaceMode);
                             }
                         }
                     }
@@ -390,9 +384,7 @@ class NeuroMarvl {
 
     initDataDependantUI = () => {
         // Reset all (surface tab) icons
-        this.resetBrain3D();
         this.resetDataSetIcon();
-        this.showVisIcons();
 
         // init the node size and color given the current UI. The UI needs to be redesigned.
         if ((this.saveObj.nodeSettings.nodeSizeOrColor != null) && (this.saveObj.nodeSettings.nodeSizeOrColor.length > 0)) {
@@ -806,11 +798,11 @@ class NeuroMarvl {
         var range = this.apps[0].getCurrentEdgeWeightRange();
         var numCategory = Number($('#select-edge-color-number-discretized-category').val());
         var step = (range.max - range.min) / numCategory;
-        $('#input-edge-discretized-' + 0 + '-from').val(range.min);
-        $('#input-edge-discretized-' + (numCategory - 1) + '-to').val(range.max);
+        $('#input-edge-discretized-' + 0 + '-from').val(range.min.toString());
+        $('#input-edge-discretized-' + (numCategory - 1) + '-to').val(range.max.toString());
         for (var i = 0; i < numCategory - 1; i++) {
-            $('#input-edge-discretized-' + (i + 1) + '-from').val(range.min + step * (i + 1));
-            $('#input-edge-discretized-' + i + '-to').val(range.min + step * (i + 1));
+            $('#input-edge-discretized-' + (i + 1) + '-from').val((range.min + step * (i + 1)).toString());
+            $('#input-edge-discretized-' + i + '-to').val((range.min + step * (i + 1)).toString());
         }
     }
 
@@ -1449,22 +1441,22 @@ class NeuroMarvl {
             default: return -1;
         }
     }
+
+
+    setBrainModel = (view: string, model: string) => {
+        let id = this.viewToId(view);
+        this.loadBrainModel(model, object => {
+            this.apps[id].setBrainModelObject(object);
+        });
+    }
+
     
-    applyModelToBrainView = (view: string, model: string, finalCallback?, source?: string, brainSurfaceMode?) => {
+    createBrainView = (view: string, model: string, finalCallback?, source?: string, brainSurfaceMode?) => {
         // source is "example", "empty", or "save" (default)
-
-        this.resetBrain3D();
-
-        let file = (model === 'ch2') && 'BrainMesh_ch2.obj'
-            || (model === 'ch2_inflated') && 'BrainMesh_Ch2_Inflated.obj'
-            || (model === 'icbm') && 'BrainMesh_ICBM152.obj'
-            || (model === 'ch2_cerebellum') && 'BrainMesh_Ch2withCerebellum.obj'
-            || (model === 'upload') && (<any>$('#input-select-model').get(0)).files[0].name
-            || "none";
 
         let id = this.viewToId(view);
 
-        this.loadBrainModel(file, object => {
+        this.loadBrainModel(model, object => {
             $(view).empty();
             let makeBrain = () => {
                 this.apps[id] = new Brain3DApp(
@@ -1485,9 +1477,9 @@ class NeuroMarvl {
                 if (finalCallback) finalCallback();
             }
 
-            var app = this.saveObj.saveApps[id] = (this.saveObj && this.saveObj.saveApps[id]) || new SaveApp({}); // create a new instance (if an old instance exists)
-            app.surfaceModel = model;
-            app.view = view;
+            let save = this.saveObj.saveApps[id] = (this.saveObj && this.saveObj.saveApps[id]) || new SaveApp({}); // create a new instance (if an old instance exists)
+            save.surfaceModel = model;
+            save.view = view;
 
             $('#button-save-app').button({ disabled: false });
             
@@ -1616,25 +1608,12 @@ class NeuroMarvl {
         }
     }
 
-    // Move an icon back to its origin
-    resetBrain3D = () => {
-        let rect = $('#brain3d-icon-back').get(0).getBoundingClientRect();
-        $('#brain3d-icon-front').css({ left: rect.left, top: rect.top });
-    };
 
     resetDataSetIcon = () => {
         var rect = $('#dataset1-icon-back').get(0).getBoundingClientRect();
         $('#dataset1-icon-front').css({ left: rect.left, top: rect.top });
     };
 
-    // These functions show and hide the icons for all the visualisations - they're called when we change tabs
-    showVisIcons = () => {
-        this.visIcons.forEach(icon => icon.show());
-    }
-
-    hideVisIcons = () => {
-        this.visIcons.forEach(icon => icon.hide());
-    }
 
     setSurfaceOpacity = () => {
         var opacity = $("#div-surface-opacity-slider")['bootstrapSlider']().data('bootstrapSlider').getValue();
@@ -1867,7 +1846,17 @@ class NeuroMarvl {
     // Load the brain surface (hardcoded - it is not simple to load geometry from the local machine, but this has not been deeply explored yet).
     // NOTE: The loaded model cannot be used in more than one WebGL context (scene) at a time - the geometry and materials must be .cloned() into
     // new THREE.Mesh() objects by the application wishing to use the model.
-    loadBrainModel = (file: string, callback) => {
+    loadBrainModel = (model: string, callback) => {
+        let file = (model === 'ch2') && 'BrainMesh_ch2.obj'
+            || (model === 'ch2_inflated') && 'BrainMesh_Ch2_Inflated.obj'
+            || (model === 'icbm') && 'BrainMesh_ICBM152.obj'
+            || (model === 'ch2_cerebellum') && 'BrainMesh_Ch2withCerebellum.obj'
+            ;
+        if (!file) {
+            callback();
+            return;
+        }
+
         this.loader.load('examples/graphdata/' + file, object => {
             if (!object) {
                 CommonUtilities.launchAlertMessage(CommonUtilities.alertType.ERROR, "Failed to load brain surface.");
@@ -2141,48 +2130,25 @@ class NeuroMarvl {
         });
 
         $('#button-upload-model').button().click(() => {
+            CommonUtilities.launchAlertMessage(CommonUtilities.alertType.WARNING, "Uploading the brain model...");
             var file = (<any>$('#input-select-model').get(0)).files[0];
             if (file) {
-                // 1. upload the file to server
-                $("#brain3d-icon-front").html("Loading...");
-                $("#brain3d-icon-front").draggable("disable");
                 var reader = new FileReader();
                 reader.onload = () => {
-                    $.post("brain-app/upload.aspx",
-                        {
-                            fileText: reader.result,
-                            fileName: file.name,
-                            type: "brain-model"
-                        },
-                        (data, status) => {
-                            if (status.toLowerCase() == "success") {
-                                $("#brain3d-icon-front").html("3D Brain");
-                                $("#brain3d-icon-front").draggable("enable");
-                                $("#brain3d-icon-front").draggable({
-                                    zIndex: 100000
-                                });
-                                $('#label-model')
-                                    .text("uploaded")
-                                    .css({ color: 'green' });
-                            }
-                            else {
-                                alert("Loading Model is: " + status + "\nData: " + data);
-
-                                $('#label-model')
-                                    .text("Upload failed")
-                                    .css({ color: 'red' });
-
-                                $("#brain3d-icon-front").html("3D Brain");
-                                $("#brain3d-icon-front").draggable("enable");
-                            }
-                        });
-                }
+                    let brainModel = this.loader.parse(reader.result);
+                    this.apps[0].setBrainModelObject(brainModel);
+                    CommonUtilities.launchAlertMessage(CommonUtilities.alertType.SUCCESS, "New brain model uploaded");
+                };
+                reader.onerror = () => {
+                    let message = "Failed to upload model " + file;
+                    CommonUtilities.launchAlertMessage(CommonUtilities.alertType.ERROR, message);
+                    console.log(message);
+                };
 
                 reader.readAsText(file);
             }
         });
-
-        //$('#load-example-data').button().click(() => this.loadExampleData(0, view => { }));
+        
         $('#load-example-data').button().click(() => this.loadExampleData(() => { }));
 
         $('#button-apply-filter').button().click(this.applyFilterButtonOnClick);
@@ -2268,28 +2234,6 @@ class NeuroMarvl {
         $(TR_VIEW).click(() => this.selectView(TR_VIEW));
         $(BL_VIEW).click(() => this.selectView(BL_VIEW));
         $(BR_VIEW).click(() => this.selectView(BR_VIEW));
-
-        $('#brain3d-icon-front').draggable(
-            <any>{
-                containment: 'body',
-                stop: event => {
-                    var model = $('#select-brain3d-model').val();
-                    var view = this.getViewUnderMouse(event.pageX, event.pageY);
-                    //this.applyModelToBrainView(view, model);
-                    this.applyModelToBrainView(view, model);
-                }
-            }
-        );
-
-        $('#dataset1-icon-front').draggable(
-            <any>{
-                containment: 'body',
-                stop: event => {
-                    var view = this.getViewUnderMouse(event.pageX, event.pageY);
-                    this.setDataset(view);
-                }
-            }
-        );
         
         $('#checkbox_yoking_view').on('change', () => {
             if ($('#checkbox_yoking_view').is(":checked")) {
@@ -2356,7 +2300,7 @@ class NeuroMarvl {
         $('#select-edge-color').on('change', () => {
             this.setEdgeColor();
         });
-
+        
         $('#select-brain3d-model').on('change', () => {
             var model = $('#select-brain3d-model').val();
 
@@ -2364,10 +2308,10 @@ class NeuroMarvl {
                 $("#div-upload-brain-model").show();
             } else {
                 $("#div-upload-brain-model").hide();
+                
+                var model = $('#select-brain3d-model').val();
+                this.setBrainModel(TL_VIEW, model);
             }
-
-            this.resetBrain3D();
-
         });
 
         $('#select-edge-color-number-discretized-category').on('change', () => {
@@ -2455,16 +2399,6 @@ class NeuroMarvl {
     }
 
 }
-
-
-
-
-
-
-
-
-
-
 
 
 

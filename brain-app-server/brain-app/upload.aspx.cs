@@ -19,17 +19,8 @@ namespace brain_app_server.brain_app
             string type = Request.Form["type"];
                         
             string path;
-            if (type != null && type.Equals("brain-model"))
-            {
-                filename = Request.Form["fileName"];
-                path = Server.MapPath("../examples/graphdata") + "\\" + filename;
-            }
-            else
-            {
-                filename += ("_" + type + ".txt");
-                path = Server.MapPath("save") + "\\" + filename;
-            }
-            
+            filename += ("_" + type + ".txt");
+            path = Server.MapPath("save") + "\\" + filename;
 
             try
             {
