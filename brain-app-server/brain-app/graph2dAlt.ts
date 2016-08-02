@@ -550,6 +550,16 @@ class Graph2DAlt {
             option.value = layout;
             $('#select-graph2dalt-layout-' + this.id).append(option);
         }
+
+        let targetClass = this.graph2DAltClass;
+        if (!this.mouseDownEventListenerAdded) {
+            this.mouseDownEventListenerAdded = true;
+            document.addEventListener('mouseup', (event) => {
+                if ((!$(event.target).hasClass(targetClass))) {
+                    $('#div-graph2dalt-layout-menu-' + this.id).hide();
+                }
+            }, false);
+        }
                 
     }
 
