@@ -485,6 +485,7 @@ class NeuroMarvl {
             var reader = new FileReader();
             reader.onload = () => {
                 this.parseAttributes(reader.result, this.referenceDataSet);
+                this.referenceDataSet.notifyAttributes();
 
                 // 3. update file status
                 $('#attrs-status').removeClass('status-changed');
@@ -569,7 +570,9 @@ class NeuroMarvl {
         };
 
         var callback = () => {
-            if (status.coordLoaded && status.matrixLoaded && status.attrLoaded && status.labelLoaded) {
+            if (status.coordLoaded && status.matrixLoaded && status.attrLoaded) {
+                this.commonData.notifyCoords();
+                this.referenceDataSet.notifyAttributes();
                 func();
             }
         }
@@ -662,7 +665,9 @@ class NeuroMarvl {
         let sourceLocation = (source === "example") ? "save_examples" : "save";
         
         var callback = () => {
-            if (status.coordLoaded && status.matrixLoaded && status.attrLoaded && status.labelLoaded) {
+            if (status.coordLoaded && status.matrixLoaded && status.attrLoaded) {
+                this.commonData.notifyCoords();
+                this.referenceDataSet.notifyAttributes();
                 func();
             }
         }
@@ -1660,6 +1665,7 @@ class NeuroMarvl {
         var reader = new FileReader();
         reader.onload = () => {
             this.parseCoordinates(reader.result);
+            this.commonData.notifyCoords();
         }
         reader.readAsText(file);
     }
@@ -1692,7 +1698,7 @@ class NeuroMarvl {
             this.referenceDataSet.brainCoords[1][i] = parseFloat(words[1]);
             this.referenceDataSet.brainCoords[2][i] = parseFloat(words[2]);
         }
-        this.commonData.notifyCoords();
+        //this.commonData.notifyCoords();
     }
 
     // Load the labels
@@ -1900,7 +1906,10 @@ class NeuroMarvl {
     //TODO: Move into DataSet class
     loadAttributes = (file, dataSet: DataSet) => {
         var reader = new FileReader();
-        reader.onload = () => this.parseAttributes(reader.result, dataSet);
+        reader.onload = () => {
+            this.parseAttributes(reader.result, dataSet);
+            dataSet.notifyAttributes();
+        };
         reader.readAsText(file);
     }
 
@@ -1908,7 +1917,7 @@ class NeuroMarvl {
     //TODO: Move into DataSet class
         var newAttributes = new Attributes(text);
         dataSet.attributes = newAttributes;
-        dataSet.notifyAttributes();
+        //dataSet.notifyAttributes();
     }
 
     setupCrossFilter = (attrs: Attributes) => {

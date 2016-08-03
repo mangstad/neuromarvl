@@ -1078,7 +1078,7 @@ class Brain3DApp implements Application, Loopable {
         }
 
 
-        if (this.colaGraph.isVisible()) {
+        if (this.colaGraph && this.colaGraph.isVisible()) {
             this.showNetwork(true);
         }
         else {
@@ -1137,8 +1137,10 @@ class Brain3DApp implements Application, Loopable {
         } else {
             this.filteredAdjMatrix = this.dataSet.adjMatrixWithoutEdgesCrossHemisphere(numEdges);
         }
-        this.physioGraph.findNodeConnectivity(this.filteredAdjMatrix, this.dissimilarityMatrix, null);
-        this.physioGraph.setEdgeVisibilities(this.filteredAdjMatrix);
+        if (this.physioGraph) {
+            this.physioGraph.findNodeConnectivity(this.filteredAdjMatrix, this.dissimilarityMatrix, null);
+            this.physioGraph.setEdgeVisibilities(this.filteredAdjMatrix);
+        }
 
     }
 
@@ -1696,8 +1698,8 @@ class Brain3DApp implements Application, Loopable {
 
         if (!colorArrayNum) return;
 
-        this.physioGraph.setNodesColor(colorArrayNum);
-        this.colaGraph.setNodesColor(colorArrayNum);
+        if (this.physioGraph) this.physioGraph.setNodesColor(colorArrayNum);
+        if (this.colaGraph) this.colaGraph.setNodesColor(colorArrayNum);
         if (this.svgGraph) this.svgGraph.isEdgeColorChanged = true;
 
         this.svgNeedsUpdate = true ;
@@ -1812,11 +1814,11 @@ class Brain3DApp implements Application, Loopable {
         };
         dataSet.regNotifySim(sim);
         dataSet.regNotifyAttributes(att);
-        if (dataSet.simMatrix && dataSet.attributes) {
+        if (dataSet.simMatrix && dataSet.attributes && this.physioGraph) {
             this.restart();
             this.physioGraph.update();
         } else {
-            console.log("Warning: Similarity Matrix and Attributes not Available.");
+            console.log("Warning: attempted to set dataset before minimal data is available.");
         }
     }
 

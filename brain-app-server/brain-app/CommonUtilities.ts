@@ -81,10 +81,13 @@ class CommonUtilities {
             alertIcon = "glyphicon-ok-sign";
             alertTypeString = "Success!";
         } else if (alertType === this.alertType.WARNING) {
+            console.log("WARNING: " + alertMessage);
             alertTypeClass = "alert-warning";
             alertIcon = "glyphicon-info-sign";
             alertTypeString = "Warning!";
         } else if (alertType === this.alertType.ERROR) {
+            console.log("ERROR: " + alertMessage);
+            console.trace();
             alertTypeClass = "alert-danger";
             alertIcon = "glyphicon-remove-sign";
             alertTypeString = "Error!";

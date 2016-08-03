@@ -43,9 +43,10 @@ class CommonData {
 // Holds data for a specific dataset, and sends notifications when data changes
 class DataSet {
     public simMatrix: number[][] = [];
-    public brainCoords: number[][] = [];
+    public brainCoords: number[][] = [[]];
     public brainLabels: string[] = [];
-    public attributes: Attributes = null;
+    //public attributes: Attributes = null;
+    public attributes = new Attributes();
     public info;
     public sortedSimilarities;
     simCallbacks: Array<() => void> = new Array();
@@ -64,28 +65,34 @@ class DataSet {
     }
 
     verify() {
-        if (this.simMatrix.length === 0) {
-            CommonUtilities.launchAlertMessage(CommonUtilities.alertType.ERROR, "Similarity Matrix is not loaded!");
-            return false;
-        }
+        //if (this.simMatrix.length === 0) {
+        //    CommonUtilities.launchAlertMessage(CommonUtilities.alertType.ERROR, "Similarity Matrix is not loaded!");
+        //    return false;
+        //}
 
-        if (!this.attributes) {
-            CommonUtilities.launchAlertMessage(CommonUtilities.alertType.ERROR, "Attributes are not loaded!");
-            return false;
-        }
+        //if (!this.attributes) {
+        //    CommonUtilities.launchAlertMessage(CommonUtilities.alertType.ERROR, "Attributes are not loaded!");
+        //    return false;
+        //}
 
-        if (this.brainCoords.length === 0) {
-            CommonUtilities.launchAlertMessage(CommonUtilities.alertType.ERROR, "Node Coordinates is not loaded!");
-            return false;
-        }
+        //if (this.brainCoords.length === 0) {
+        //    CommonUtilities.launchAlertMessage(CommonUtilities.alertType.ERROR, "Node Coordinates is not loaded!");
+        //    return false;
+        //}
 
         if (this.brainCoords[0].length !== this.attributes.numRecords) {
-            CommonUtilities.launchAlertMessage(CommonUtilities.alertType.ERROR, "Attributes and Coordinates files do not match!");
+            CommonUtilities.launchAlertMessage(
+                CommonUtilities.alertType.ERROR,
+                `Attributes and Coordinates files do not match! (${this.attributes.numRecords} attributes for ${this.brainCoords[0].length} columns)`
+            );
             return false;
         }
 
         if (this.brainCoords[0].length !== this.simMatrix.length) {
-            CommonUtilities.launchAlertMessage(CommonUtilities.alertType.ERROR, "Similarity Matrix and Coordinates files do not match!");
+            CommonUtilities.launchAlertMessage(
+                CommonUtilities.alertType.ERROR,
+                `Similarity Matrix and Coordinates files do not match! (lengths ${this.brainCoords[0].length} and ${this.simMatrix.length})`
+            );
             return false;
         }
 
@@ -522,9 +529,9 @@ class SaveApp {
 // Parses, stores, and provides access to brain node attributes from a file
 class Attributes {
     attrValues: number[][][];
-    columnNames: string[];
-    numRecords: number;
-    info;
+    columnNames: string[] = [];
+    numRecords: number = 0;
+    info = {};
 
     filteredRecords: any[];
     filteredRecordsHighlightChanged: boolean = false;
@@ -557,8 +564,7 @@ class Attributes {
 
     constructor(text?: string) {
         if (!text) return;
-        this.info = {};
-        this.columnNames = [];
+
         var lines = text.replace(/\t|\,/g, ' ').trim().split(/\r\n|\r|\n/g).map(function (s) { return s.trim() });
         // check the last line:
         var lastline = lines[lines.length - 1].trim();
