@@ -14,8 +14,10 @@ class Graph2DAlt {
     graph2DAltClass: string;
 
     // Options menu
-    edgeLengthScale: number = 3;
-    edgeBaseLength: number = 7;
+    //edgeLengthScale: number = 3;
+    //edgeBaseLength: number = 7;
+    scale: number = 5;
+
     groupNodesBy = "none";
     colorMode: string;
     directionMode: string;
@@ -29,6 +31,12 @@ class Graph2DAlt {
 
     nodes: any[];
     links: any[];
+
+    // Style constants
+    BASE_RADIUS = 5;
+    BASE_EDGE_WEIGHT = 1.5;
+    BASE_BORDER_WIDTH = 1;
+    BASE_LABEL_SIZE = 4;
 
     cy;
 
@@ -53,8 +61,6 @@ class Graph2DAlt {
         var width = this.jDiv.width();
         var height = this.jDiv.height();
 
-        var unitRadius = 5;
-
         this.nodes.splice(0, this.nodes.length);
         this.links.splice(0, this.links.length);
 
@@ -69,7 +75,7 @@ class Graph2DAlt {
             var nodeObject = new Object();
             nodeObject["id"] = d.id;
             nodeObject["color"] = "#".concat(node.material.color.getHexString());
-            nodeObject["radius"] = node.scale.x * unitRadius;
+            nodeObject["radius"] = node.scale.x;
             nodeObject["colors"] = d.colors;
 
             // Use projection of colaGraph to screen space to initialise positions
@@ -163,8 +169,9 @@ class Graph2DAlt {
                     sourceId: d.id,
                     color: d.color || "gray",         //TODO: Can retire this when multiple colors is working across all visualisations
                     colors: d.colors,
-                    radius: d.radius * 5,
-                    border: d.radius * 1,
+                    radius: d.radius * this.scale * this.BASE_RADIUS,
+                    border: d.radius * this.scale * this.BASE_BORDER_WIDTH,
+                    labelSize: d.radius * this.scale * this.BASE_LABEL_SIZE,
                     label: this.dataSet.brainLabels[d.id] || d.id
                 },
                 position: {
@@ -180,7 +187,8 @@ class Graph2DAlt {
                 source: "n_" + d.source.id,
                 target: "n_" + d.target.id,
                 color: d.source.color,
-                highlight: false
+                highlight: false,
+                weight: this.scale * this.BASE_EDGE_WEIGHT
             }
         }));
         // Compound nodes for grouping - TODO: not quite working as expected, not affecting layout
@@ -213,8 +221,11 @@ class Graph2DAlt {
             "border-width": "data(border)",
             "border-color": "black",
             "border-opacity": 0,
-            "font-size": 18,
-            "font-weight": "bold"
+            "font-size": "data(labelSize)",
+            "font-weight": "bold",
+            "text-outline-color": "white",
+            "text-outline-opacity": 0.5,
+            "text-outline-width": "data(border)"
         };
         if (this.dataSet.attributes.info[colorAttribute]) {
             nodeStyle["pie-size"] = "100%";
@@ -226,11 +237,10 @@ class Graph2DAlt {
             }
         }
         var edgeStyle = {
-            "width": 1.5,
+            "width": "data(weight)",
             "opacity": 0.5,
             'line-color': 'data(color)',
-            'target-arrow-color': 'data(color)',
-            'target-arrow-shape': 'triangle'
+            'mid-target-arrow-color': 'data(color)',
         };
 
         let boundingBox = {
@@ -248,7 +258,8 @@ class Graph2DAlt {
         }
         switch (this.layout) {
             case "cose":
-                layoutOptions.idealEdgeLength = this.edgeBaseLength * this.edgeLengthScale;
+                //layoutOptions.idealEdgeLength = this.edgeBaseLength * this.edgeLengthScale;
+                layoutOptions.idealEdgeLength = 100;
                 //nodeStyle["pie-size"] = "50%";
                 //nodeStyle["border-width"] = "data(radius)";
                 break;
@@ -292,7 +303,7 @@ class Graph2DAlt {
                     animate: false,
                     ungrabifyWhileSimulating: true,
                     maxSimulationTime: 1000,
-                    edgeLength: this.edgeBaseLength * this.edgeLengthScale,
+                    //edgeLength: this.edgeBaseLength * this.edgeLengthScale,
                     handleDisconnected: true,
                     avoidOverlap: true,
                     unconstrIter: 15,
@@ -334,7 +345,8 @@ class Graph2DAlt {
                 {
                     selector: "edge.highlight",
                     style: {
-                        width: 3,
+                        //width: 3,
+                        "mid-target-arrow-shape": "triangle",
                         opacity: 1
                     }
                 },
@@ -398,22 +410,24 @@ class Graph2DAlt {
         cy.zoom(cy.zoom() * 0.6);
     }
 
-    update() {
+    updateInteractive() {
         // Minor update, no layout recalculation but will have redraw, e.g. for selected node change
-        this.cy.elements(".highlight").removeClass("highlight");
-        this.cy.elements("node.select").removeClass("select");
-        this.cy.elements(`node[sourceId=${this.commonData.nodeIDUnderPointer[0]}]`)
-            .addClass("highlight")
-            .neighborhood()
-            .addClass("highlight")
-            ;
-        this.cy.elements(`node[sourceId=${this.commonData.nodeIDUnderPointer[4]}]`)
-            .addClass("highlight")
-            .neighborhood()
-            .addClass("highlight")
-            ;
+        this.cy.batch(() => {
+            this.cy.elements(".highlight").removeClass("highlight");
+            this.cy.elements("node.select").removeClass("select");
+            this.cy.elements(`node[sourceId=${this.commonData.nodeIDUnderPointer[0]}]`)
+                .addClass("highlight")
+                .neighborhood()
+                .addClass("highlight")
+                ;
+            this.cy.elements(`node[sourceId=${this.commonData.nodeIDUnderPointer[4]}]`)
+                .addClass("highlight")
+                .neighborhood()
+                .addClass("highlight")
+                ;
 
-        this.cy.elements(`node[sourceId=${this.commonData.selectedNode}]`).addClass("select");
+            this.cy.elements(`node[sourceId=${this.commonData.selectedNode}]`).addClass("select");
+        });
     }
     
     setUserControl(isOn: boolean) {
@@ -430,21 +444,16 @@ class Graph2DAlt {
     */
 
     settingOnChange() {
-        var lengthScale = this.edgeLengthScale
-        var baseLength = this.edgeBaseLength;
-        var groupBy = this.groupNodesBy;
-
-        var width = this.jDiv.width();
-        var height = this.jDiv.height() - sliderSpace;
-        var widthHalf = width / 2;
-        var heightHalf = height / 2;
-        var screenCoords = new THREE.Vector3();
-        var unitRadius = 5;
-
-        var edgeColorMode = this.colorMode;
-        var edgeDirectionMode = this.directionMode;
-        
-        this.updateGraph();
+        this.cy.batch(() => {
+            this.cy.elements("node.child")
+                .data("radius", this.scale * this.BASE_RADIUS)
+                .data("border", this.scale * this.BASE_BORDER_WIDTH)
+                .data("labelSize", this.scale * this.BASE_LABEL_SIZE)
+                ;
+            this.cy.elements("edge")
+                .data("weight", this.scale * this.BASE_EDGE_WEIGHT)
+                ;
+        });
     }
 
     menuButtonOnClick() {
@@ -467,8 +476,7 @@ class Graph2DAlt {
 
         // Function variables response to changes in settings
         var varEdgeLengthOnChange = () => {
-            var edgeLengthScale = $("#div-edge-length-slider-alt-" + this.id)['bootstrapSlider']().data('bootstrapSlider').getValue();
-            this.edgeLengthScale = edgeLengthScale;
+            this.scale = $("#div-scale-slider-alt-" + this.id)['bootstrapSlider']().data('bootstrapSlider').getValue();
             this.settingOnChange();
         };
 
@@ -504,14 +512,14 @@ class Graph2DAlt {
             }));
 
         //------------------------------------------------------------------------
-        // menu - edge length
-        $('#div-graph2dalt-layout-menu-' + this.id).append('<div>Edge Length<div/>');
-        $('#div-graph2dalt-layout-menu-' + this.id).append($('<input id="div-edge-length-slider-alt-' + this.id + '" class=' + this.graph2DAltClass + 'data-slider-id="surface-opacity-slider" type="text"' +
-            'data-slider-min="3" data-slider-max="10" data-slider-step="0.5" data-slider-value="1" />')
+        // menu - scale
+        $('#div-graph2dalt-layout-menu-' + this.id).append('<div>Scale elements<div/>');
+        $('#div-graph2dalt-layout-menu-' + this.id).append($('<input id="div-scale-slider-alt-' + this.id + '" class=' + this.graph2DAltClass + 'data-slider-id="surface-opacity-slider" type="text"' +
+            'data-slider-min="1" data-slider-max="10" data-slider-step="0.5" data-slider-value="5" />')
             .css({ 'position': 'relative', 'width': '150px' }));
 
-        $("#div-edge-length-slider-alt-" + this.id)['bootstrapSlider']();
-        $("#div-edge-length-slider-alt-" + this.id)['bootstrapSlider']().on('change', varEdgeLengthOnChange);
+        $("#div-scale-slider-alt-" + this.id)['bootstrapSlider']();
+        $("#div-scale-slider-alt-" + this.id)['bootstrapSlider']().on('change', varEdgeLengthOnChange);
         
 
         // menu - group nodes

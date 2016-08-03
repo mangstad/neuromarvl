@@ -1552,7 +1552,7 @@ class Brain3DApp implements Application, Loopable {
         }
         if (this.networkType == '2D-alt') {
             if (this.canvasGraph) {
-                this.canvasGraph.update();
+                this.canvasGraph.updateInteractive();
             }
         }
         else if (this.networkType == 'circular') {           
