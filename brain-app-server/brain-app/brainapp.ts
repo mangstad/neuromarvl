@@ -374,6 +374,9 @@ class NeuroMarvl {
             this.applyFilterButtonOnClick();
         }
 
+        // make sure the app has required graphs created
+        this.apps[id].restart();
+
         // init show network
         if ((app.surfaceModel != null) && (app.surfaceModel.length > 0)) {
             this.apps[id].initShowNetwork(app);
@@ -569,10 +572,14 @@ class NeuroMarvl {
             labelLoaded: false
         };
 
+        CommonUtilities.launchAlertMessage(CommonUtilities.alertType.SUCCESS, "Loading default data...");
+
         var callback = () => {
-            if (status.coordLoaded && status.matrixLoaded && status.attrLoaded) {
+            if (status.coordLoaded && status.matrixLoaded && status.attrLoaded && status.labelLoaded) {
+                CommonUtilities.launchAlertMessage(CommonUtilities.alertType.SUCCESS, "Default data loaded");
                 this.commonData.notifyCoords();
                 this.referenceDataSet.notifyAttributes();
+                this.commonData.notifyLabels();
                 func();
             }
         }
@@ -665,9 +672,10 @@ class NeuroMarvl {
         let sourceLocation = (source === "example") ? "save_examples" : "save";
         
         var callback = () => {
-            if (status.coordLoaded && status.matrixLoaded && status.attrLoaded) {
+            if (status.coordLoaded && status.matrixLoaded && status.attrLoaded && status.labelLoaded) {
                 this.commonData.notifyCoords();
                 this.referenceDataSet.notifyAttributes();
+                this.commonData.notifyLabels();
                 func();
             }
         }
@@ -1706,13 +1714,14 @@ class NeuroMarvl {
         let reader = new FileReader();
         reader.onload = () => {
             this.parseLabels(reader.result);
+            this.commonData.notifyLabels();
         }
         reader.readAsText(file);
     }
 
     parseLabels = (text: string) => {
         this.referenceDataSet.brainLabels = text.replace(/\t|\n|\r/g, ' ').trim().split(' ').map(s => s.trim());
-        this.commonData.notifyLabels();
+        //this.commonData.notifyLabels();
     }
 
     initSurfaceSettings = () => {

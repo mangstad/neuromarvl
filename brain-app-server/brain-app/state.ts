@@ -48,14 +48,14 @@ class DataSet {
     //public attributes: Attributes = null;
     public attributes = new Attributes();
     public info;
-    public sortedSimilarities;
+    public sortedSimilarities = [];
     simCallbacks: Array<() => void> = new Array();
     attCallbacks: Array<() => void> = new Array();
 
     constructor() {
 
         this.info = {
-            nodeCount: undefined,
+            nodeCount: 0,
             edgeWeight: {
                 type: "",
                 distincts: []

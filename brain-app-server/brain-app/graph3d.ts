@@ -120,8 +120,8 @@ class Graph3D {
 
             }
         }
-
-        adjMatrix[len - 1][len - 1] = null;
+        
+        if (len > 0) adjMatrix[len - 1][len - 1] = null;
 
         this.edgeMatrix = adjMatrix;
     }
