@@ -572,7 +572,7 @@ class NeuroMarvl {
             labelLoaded: false
         };
 
-        CommonUtilities.launchAlertMessage(CommonUtilities.alertType.SUCCESS, "Loading default data...");
+        CommonUtilities.launchAlertMessage(CommonUtilities.alertType.INFO, "Loading default data...");
 
         var callback = () => {
             if (status.coordLoaded && status.matrixLoaded && status.attrLoaded && status.labelLoaded) {

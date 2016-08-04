@@ -3,31 +3,21 @@
 declare var cytoscape;
 
 class Graph2DAlt {
-    id: number;
-    jDiv;
-    dataSet: DataSet;
-
-    container;
-
     // UI
     graph2DAltDotClass: string;
     graph2DAltClass: string;
 
     // Options menu
-    //edgeLengthScale: number = 3;
-    //edgeBaseLength: number = 7;
     scale: number = 5;
 
     groupNodesBy = "none";
     colorMode: string;
     directionMode: string;
     mouseDownEventListenerAdded;
-    layout = "cose";
+    layout = "cola";
 
     // Data
-    commonData;
     config;
-    saveObj;
 
     nodes: any[];
     links: any[];
@@ -40,34 +30,40 @@ class Graph2DAlt {
 
     cy;
 
-    constructor(id: number, jDiv, dataSet: DataSet, container, commonData, saveObj) {
+    constructor(
+        private id: number,
+        private jDiv,
+        private dataSet: DataSet,
+        private container,
+        private commonData: CommonData,
+        private saveObj: SaveFile,
+        private graph3d: Graph3D,
+        private camera: THREE.Camera,
+        complexity: number
+    ) {
         this.nodes = [];
         this.links = [];
-
-        this.container = container;
-        this.id = id;
-        this.jDiv = jDiv;
-        this.dataSet = dataSet;
-        this.saveObj = saveObj;
-        
-        this.commonData = commonData;
+                
+        // Use nice layout by default, but switch to faster alternative if graph is too complex
+        if (complexity > 750) this.layout = "cose";
     }
+    
+    updateGraph() {
+        CommonUtilities.launchAlertMessage(CommonUtilities.alertType.INFO, `Generating a 2D ${this.layout} layout...`);
 
-
-    initGraph(colaGraph: Graph3D, camera) {
         // Use this.dataSet to build the elements for the cytoscape graph.
         // Include default values that are input to style fuctions.
-        
+
         var width = this.jDiv.width();
         var height = this.jDiv.height();
 
         this.nodes.splice(0, this.nodes.length);
         this.links.splice(0, this.links.length);
 
-        var children = colaGraph.nodeMeshes;
-        this.colorMode = colaGraph.colorMode;
-        this.directionMode = colaGraph.edgeDirectionMode;
-                
+        var children = this.graph3d.nodeMeshes;
+        this.colorMode = this.graph3d.colorMode;
+        this.directionMode = this.graph3d.edgeDirectionMode;
+
         for (var i = 0; i < children.length; i++) {
             var node = children[i];
             var d = node.userData;
@@ -80,7 +76,7 @@ class Graph2DAlt {
 
             // Use projection of colaGraph to screen space to initialise positions
             var position = (new THREE.Vector3()).setFromMatrixPosition(node.matrixWorld);
-            position.project(camera);
+            position.project(this.camera);
             nodeObject["x"] = position.x;
             nodeObject["y"] = position.y;
 
@@ -126,8 +122,8 @@ class Graph2DAlt {
         }
 
         // Add Edges to graph
-        for (var i = 0; i < colaGraph.edgeList.length; i++) {
-            var edge = colaGraph.edgeList[i];
+        for (var i = 0; i < this.graph3d.edgeList.length; i++) {
+            var edge = this.graph3d.edgeList[i];
             if (edge.visible) {
                 var linkObject = new Object();
                 linkObject["colaGraphEdgeListIndex"] = i;
@@ -152,11 +148,10 @@ class Graph2DAlt {
             }
         }
 
-        this.updateGraph();
-    }
+
+        // Old Init above, old update below     ///jm
 
 
-    updateGraph() {
         // Use saveObj and this.layout to create the layout and style options, then create the cytoscape graph
         let container = this.container;
         let colorAttribute = this.saveObj.nodeSettings.nodeColorAttribute;
@@ -408,6 +403,8 @@ class Graph2DAlt {
             y: container.offsetHeight * 0.2
         });
         cy.zoom(cy.zoom() * 0.6);
+
+        CommonUtilities.launchAlertMessage(CommonUtilities.alertType.SUCCESS, `New 2D ${this.layout} layout created`);
     }
 
     updateInteractive() {
@@ -552,12 +549,14 @@ class Graph2DAlt {
 
         $('#select-graph2dalt-layout-' + this.id).empty();
 
-        for (var layout of ["cose", "cose-bilkent", "cola", "cola-flow", "grid", "circle", "concentric", "breadthfirst", "random"]) {
+        // Full layout options: ["cose", "cose-bilkent", "cola", "cola-flow", "grid", "circle", "concentric", "breadthfirst", "random"]
+        for (let layout of ["cola", "cose", "cose-bilkent", "grid", "concentric"]) {
             var option = document.createElement('option');
             option.text = layout;
             option.value = layout;
             $('#select-graph2dalt-layout-' + this.id).append(option);
         }
+        (<any>document.getElementById("select-graph2dalt-layout-" + this.id)).value = this.layout;
 
         let targetClass = this.graph2DAltClass;
         if (!this.mouseDownEventListenerAdded) {

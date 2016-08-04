@@ -1387,7 +1387,8 @@ class Brain3DApp implements Application, Loopable {
 
             } else if (this.networkType == '2D-alt') {
                 this.ignore3dControl = true;
-                this.canvasGraph.initGraph(this.physioGraph, this.camera);
+                //this.canvasGraph.initGraph(this.physioGraph, this.camera);
+                this.canvasGraph.updateGraph();
                 this.colaGraph.setVisible(false);
             } else { // this.network === "3D"
                 // Set up a coroutine to do the animation
@@ -1863,7 +1864,7 @@ class Brain3DApp implements Application, Loopable {
         this.svgGraph = new Graph2D(this.id, this.jDiv, this.dataSet, this.svg, this.svgDefs, this.svgAllElements,
             this.d3Zoom, this.commonData, this.saveObj);
         
-        this.canvasGraph = new Graph2DAlt(this.id, this.jDiv, this.dataSet, this.graph2dContainer, this.commonData, this.saveObj);      //TODO: This is a test signature. Change it.
+        this.canvasGraph = new Graph2DAlt(this.id, this.jDiv, this.dataSet, this.graph2dContainer, this.commonData, this.saveObj, this.physioGraph, this.camera, this.edgeCountSliderValue);      //TODO: This is a test signature. Change it.
 
         // Initialize the filtering
         if (this.brainSurfaceMode === 0) {

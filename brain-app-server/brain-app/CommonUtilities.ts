@@ -5,7 +5,8 @@ class CommonUtilities {
     static alertType = {
         "ERROR": 2,
         "SUCCESS": 0,
-        "WARNING": 1
+        "WARNING": 1,
+        "INFO": -1
     };
     static alertNumber = 0;
     static isDiscreteValues(values: number[], threshold?) {
@@ -91,6 +92,10 @@ class CommonUtilities {
             alertTypeClass = "alert-danger";
             alertIcon = "glyphicon-remove-sign";
             alertTypeString = "Error!";
+        } else if (alertType === this.alertType.INFO) {
+            alertTypeClass = "alert-info";
+            alertIcon = "glyphicon-ok-sign";
+            alertTypeString = "Info";
         }
 
         var newAlert = $('<div id="' + alertID + '" class="alert ' + alertTypeClass + '" role="alert"></div>')
