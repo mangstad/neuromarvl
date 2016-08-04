@@ -166,6 +166,7 @@ class Graph2DAlt {
                     sourceId: d.id,
                     color: d.color || "gray",         //TODO: Can retire this when multiple colors is working across all visualisations
                     colors: d.colors,
+                    nodeRadius: d.radius,
                     radius: d.radius * this.scale * this.BASE_RADIUS,
                     border: d.radius * this.scale * this.BASE_BORDER_WIDTH,
                     labelSize: d.radius * this.scale * this.BASE_LABEL_SIZE,
@@ -185,30 +186,32 @@ class Graph2DAlt {
                 target: "n_" + d.target.id,
                 color: d.source.color,
                 highlight: false,
-                weight: this.scale * this.BASE_EDGE_WEIGHT
+                weight: this.scale * this.BASE_EDGE_WEIGHT      //TODO: get weight from original edge
             }
         }));
-        // Compound nodes for grouping - TODO: not quite working as expected, not affecting layout
-        let compounds = nodes
-            .reduce((acc, d) => {
-                let i = acc.length;
-                while (i--) if (acc[i] === d.data.color) return acc;
-                acc.push(d.data.color);
-                return acc;
-            }, [])
-            .map(d => ({
-                data: {
-                    id: "c_" + d.substring(1),
-                    radius: 10,
-                    color: d,
-                    border: 2
-                },
-                classes: "cluster"
-            })) 
-            ;
+        // Compound nodes for grouping - only for use with layouts that support it well
+        let compounds = [];
+        if ((this.layout === "cola") || (this.layout === "cose") || (this.layout === "cose-bilkent")) {
+            compounds = nodes
+                .reduce((acc, d) => {
+                    let i = acc.length;
+                    while (i--) if (acc[i] === d.data.color) return acc;
+                    acc.push(d.data.color);
+                    return acc;
+                }, [])
+                .map(d => ({
+                    data: {
+                        id: "c_" + d.substring(1),
+                        radius: 10,
+                        color: d,
+                        border: 2
+                    },
+                    classes: "cluster"
+                }))
+                ;
+        }
 
         let elements = nodes.concat(<any>edges).concat(<any>compounds);
-        //let elements = nodes.concat(<any>edges);
         
         var nodeStyle = {
             "width": "data(radius)",
@@ -445,9 +448,9 @@ class Graph2DAlt {
     settingOnChange() {
         this.cy.batch(() => {
             this.cy.elements("node.child")
-                .data("radius", this.scale * this.BASE_RADIUS)
                 .data("border", this.scale * this.BASE_BORDER_WIDTH)
                 .data("labelSize", this.scale * this.BASE_LABEL_SIZE)
+                .each((i, e) => e.data("radius", e.data("nodeRadius") * this.scale * this.BASE_RADIUS))
                 ;
             this.cy.elements("edge")
                 .data("weight", this.scale * this.BASE_EDGE_WEIGHT)
