@@ -157,6 +157,9 @@ class Graph2DAlt {
         // Use saveObj and this.layout to create the layout and style options, then create the cytoscape graph
         let container = this.container;
         let colorAttribute = this.saveObj.nodeSettings.nodeColorAttribute;
+
+        // Layouts are inconsistent with scaling. Adjust.
+        let scale = (this.layout === "cose") ? this.scale * 0.1 : this.scale;
         
         let nodes = this.nodes.map(d => {
             return {
@@ -167,9 +170,9 @@ class Graph2DAlt {
                     color: d.color || "gray",         //TODO: Can retire this when multiple colors is working across all visualisations
                     colors: d.colors,
                     nodeRadius: d.radius,
-                    radius: d.radius * this.scale * this.BASE_RADIUS,
-                    border: d.radius * this.scale * this.BASE_BORDER_WIDTH,
-                    labelSize: d.radius * this.scale * this.BASE_LABEL_SIZE,
+                    radius: d.radius * scale * this.BASE_RADIUS,
+                    border: d.radius * scale * this.BASE_BORDER_WIDTH,
+                    labelSize: d.radius * scale * this.BASE_LABEL_SIZE,
                     label: this.dataSet.brainLabels[d.id] || d.id
                 },
                 position: {
@@ -186,7 +189,7 @@ class Graph2DAlt {
                 target: "n_" + d.target.id,
                 color: d.source.color,
                 highlight: false,
-                weight: this.scale * this.BASE_EDGE_WEIGHT      //TODO: get weight from original edge
+                weight: scale * this.BASE_EDGE_WEIGHT      //TODO: get weight from original edge
             }
         }));
         // Compound nodes for grouping - only for use with layouts that support it well
@@ -393,7 +396,7 @@ class Graph2DAlt {
             let newSelected = this.data("sourceId");
             this.addClass("select");
         });
-        cy.on("layoutstop", function (e) {
+        cy.on("layoutstop", e => {
             // Some layouts need to pan/zoom after layout is done
             cy.fit();
             cy.pan({
@@ -401,6 +404,7 @@ class Graph2DAlt {
                 y: container.offsetHeight * 0.2
             });
             cy.zoom(cy.zoom() * 0.6);
+            CommonUtilities.launchAlertMessage(CommonUtilities.alertType.SUCCESS, `New 2D ${this.layout} layout created`);
         });
         cy.fit();
         cy.pan({
@@ -409,7 +413,6 @@ class Graph2DAlt {
         });
         cy.zoom(cy.zoom() * 0.6);
 
-        CommonUtilities.launchAlertMessage(CommonUtilities.alertType.SUCCESS, `New 2D ${this.layout} layout created`);
     }
 
     updateInteractive() {
@@ -446,14 +449,19 @@ class Graph2DAlt {
     */
 
     settingOnChange() {
+        // Styling changes not affecting layout
+
+        // Layouts are inconsistent with scaling. Adjust.
+        let scale = (this.layout === "cose") ? this.scale * 0.1 : this.scale;
+
         this.cy.batch(() => {
             this.cy.elements("node.child")
-                .data("border", this.scale * this.BASE_BORDER_WIDTH)
-                .data("labelSize", this.scale * this.BASE_LABEL_SIZE)
-                .each((i, e) => e.data("radius", e.data("nodeRadius") * this.scale * this.BASE_RADIUS))
+                .data("border", scale * this.BASE_BORDER_WIDTH)
+                .data("labelSize", scale * this.BASE_LABEL_SIZE)
+                .each((i, e) => e.data("radius", e.data("nodeRadius") * scale * this.BASE_RADIUS))
                 ;
             this.cy.elements("edge")
-                .data("weight", this.scale * this.BASE_EDGE_WEIGHT)
+                .data("weight", scale * this.BASE_EDGE_WEIGHT)
                 ;
         });
     }
