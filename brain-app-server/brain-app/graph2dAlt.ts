@@ -64,18 +64,20 @@ class Graph2DAlt {
         this.colorMode = this.graph3d.colorMode;
         this.directionMode = this.graph3d.edgeDirectionMode;
 
-        for (var i = 0; i < children.length; i++) {
-            var node = children[i];
-            var d = node.userData;
+        for (let i = 0; i < children.length; i++) {
+            let node = children[i];
+            let d = node.userData;
 
-            var nodeObject = new Object();
+            if (d.filtered) continue;
+
+            let nodeObject = new Object();
             nodeObject["id"] = d.id;
             nodeObject["color"] = "#".concat(node.material.color.getHexString());
             nodeObject["radius"] = node.scale.x;
             nodeObject["colors"] = d.colors;
 
             // Use projection of colaGraph to screen space to initialise positions
-            var position = (new THREE.Vector3()).setFromMatrixPosition(node.matrixWorld);
+            let position = (new THREE.Vector3()).setFromMatrixPosition(node.matrixWorld);
             position.project(this.camera);
             nodeObject["x"] = position.x;
             nodeObject["y"] = position.y;

@@ -83,6 +83,7 @@ class Graph3D {
             nodeObject.userData.hasVisibleEdges = true;
             nodeObject.userData.id = i;
             nodeObject.userData.colors = nodeColorings[i];
+            nodeObject.userData.filtered = false;
 
             this.rootObject.add(nodeObject);
         }
@@ -246,6 +247,7 @@ class Graph3D {
     applyNodeFiltering() {
         for (var i = 0; i < this.nodeMeshes.length; ++i) {
             this.rootObject.remove(this.nodeMeshes[i]);
+            this.nodeMeshes[i].userData.filtered = true;
         }
 
         if (this.filteredNodeIDs) {
@@ -253,6 +255,7 @@ class Graph3D {
                 var nodeID = this.filteredNodeIDs[j];
 
                 this.rootObject.add(this.nodeMeshes[nodeID]);
+                this.nodeMeshes[nodeID].userData.filtered = false;
             }
         }
     }
@@ -308,17 +311,21 @@ class Graph3D {
                 if (this.filteredNodeIDs) {
                     if (this.filteredNodeIDs.indexOf(i) != -1) {
                         this.rootObject.add(this.nodeMeshes[i]);
+                        this.nodeMeshes[i].userData.filtered = false;
                     }
                     else {
                         this.rootObject.remove(this.nodeMeshes[i]);
+                        this.nodeMeshes[i].userData.filtered = true;
                     }
                 }
                 else {
                     this.rootObject.add(this.nodeMeshes[i]);
+                    this.nodeMeshes[i].userData.filtered = false;
                 }
             }
             else {
                 this.rootObject.remove(this.nodeMeshes[i]);
+                this.nodeMeshes[i].userData.filtered = true;
             }
         }
     }
