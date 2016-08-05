@@ -185,8 +185,6 @@ class NeuroMarvl {
             Set up jQuery UI layout objects
         */
         $("[data-toggle='tooltip']").tooltip(<any>{ container: 'body' });
-
-        $("#tab2").click(() => setTimeout(this.resetDataSetIcon, 0));
         
         /*
             Upload files buttons
@@ -386,9 +384,6 @@ class NeuroMarvl {
     }
 
     initDataDependantUI = () => {
-        // Reset all (surface tab) icons
-        this.resetDataSetIcon();
-
         // init the node size and color given the current UI. The UI needs to be redesigned.
         if ((this.saveObj.nodeSettings.nodeSizeOrColor != null) && (this.saveObj.nodeSettings.nodeSizeOrColor.length > 0)) {
             if (this.saveObj.nodeSettings.nodeSizeOrColor == "node-size") {
@@ -1518,8 +1513,6 @@ class NeuroMarvl {
     
 
     setDataset = (view: string) => {
-        this.resetDataSetIcon();
-
         let id = this.viewToId(view);
         if (!this.referenceDataSet) {
             // Get a dataset from the default example
@@ -1620,13 +1613,6 @@ class NeuroMarvl {
             $("#div-edge-color-pickers").hide();
         }
     }
-
-
-    resetDataSetIcon = () => {
-        var rect = $('#dataset1-icon-back').get(0).getBoundingClientRect();
-        $('#dataset1-icon-front').css({ left: rect.left, top: rect.top });
-    };
-
 
     setSurfaceOpacity = () => {
         var opacity = $("#div-surface-opacity-slider")['bootstrapSlider']().data('bootstrapSlider').getValue();

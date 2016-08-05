@@ -262,62 +262,27 @@ class Graph2D {
         switch (this.layout) {
             case "cose":
                 //layoutOptions.idealEdgeLength = this.edgeBaseLength * this.edgeLengthScale;
-                layoutOptions.idealEdgeLength = 100;
-                //nodeStyle["pie-size"] = "50%";
-                //nodeStyle["border-width"] = "data(radius)";
+                //layoutOptions.idealEdgeLength = 100;
                 break;
             case "cose-bilkent":
                 //layoutOptions.idealEdgeLength = this.edgeBaseLength * this.edgeLengthScale;
                 layoutOptions.numIter = 15;
                 break;
             case "cola":
-                layoutOptions = <any>{
-                    name: "cola",
+                layoutOptions.fit = true;
 
-                    animate: false,
-                    fit: false,
-                    //animate: true,
-                    //fit: true,
+                // Options that may affect speed of layout
+                layoutOptions.ungrabifyWhileSimulating = true;
+                layoutOptions.maxSimulationTime = 4000;        // Only starts counting after the layout startup, which can take some time by itself. 0 actually works well.
+                layoutOptions.handleDisconnected = true;
+                layoutOptions.avoidOverlap = false;
+                
+                layoutOptions.unconstrIter = 15;
+                layoutOptions.userConstIter = 0;
+                layoutOptions.allConstIter = 5;
 
-                    // Options that may affect speed of layout
-                    ungrabifyWhileSimulating: true,
-                    maxSimulationTime: 4000,        // Only starts counting after the layout startup, which can take some time by itself. 0 actually works well.
-                    
-                    //boundingBox,      //TODO: seems to be doing nothing, would be nice
-                    //padding: 50,
+                layoutOptions.flow = false;
 
-                    //edgeLength: this.edgeBaseLength * this.edgeLengthScale * 0.001,      // Not much effect for any lengths?
-                    //edgeSymDiffLength: this.edgeBaseLength * this.edgeLengthScale * 0.01,
-                    //edgeJaccardLength: this.edgeBaseLength * this.edgeLengthScale * 0.01,
-                    handleDisconnected: true,
-                    //avoidOverlap: true,
-                    avoidOverlap: false,
-
-                    unconstrIter: 15,
-                    //userConstIter: 10,
-                    //allConstIter: 15,
-                    userConstIter: 0,
-                    allConstIter: 5,
-
-                    flow: false
-                };
-                break;
-            case "cola-flow":
-                // Mostly the same as cola
-                layoutOptions = <any>{
-                    name: "cola",
-                    animate: false,
-                    ungrabifyWhileSimulating: true,
-                    maxSimulationTime: 1000,
-                    //edgeLength: this.edgeBaseLength * this.edgeLengthScale,
-                    handleDisconnected: true,
-                    avoidOverlap: true,
-                    unconstrIter: 15,
-                    userConstIter: 0,
-                    allConstIter: 15,
-
-                    flow: true
-                };
                 break;
         }
         
