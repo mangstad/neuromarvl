@@ -53,18 +53,47 @@ class Graph2D {
 
         // Use this.dataSet to build the elements for the cytoscape graph.
         // Include default values that are input to style fuctions.
-
-        //let width = this.jDiv.width();
-        //let height = this.jDiv.height();
+        
         this.nodes = [];
         this.links = [];
-
-        //this.nodes.splice(0, this.nodes.length);
-        //this.links.splice(0, this.links.length);
 
         let children = this.graph3d.nodeMeshes;
         this.colorMode = this.graph3d.colorMode;
         this.directionMode = this.graph3d.edgeDirectionMode;
+
+
+
+        // Figure out the grouping calculation to use for the chosen grouping attribute
+        let getGroup;
+        if (this.groupNodesBy !== "none") {
+            let colname = this.groupNodesBy;
+
+            //  Get domain of the attributes (assume all positive numbers in the array)
+            var columnIndex = this.dataSet.attributes.columnNames.indexOf(colname);
+
+            if (this.dataSet.attributes.info[colname].isDiscrete) {
+                // If the attribute is discrete then grouping is clear for simple values, but for multivalue attributes we get the position of the largest value
+                getGroup = value => {
+                    if (value.length > 1) {
+                        return value.indexOf(Math.max(...value));
+                    }
+                    else {
+                        return value[0];
+                    }
+                };
+
+            } else {
+                // If the attribute is continuous, split into 10 bands - TODO: could use user specified ranges
+                let min = this.dataSet.attributes.getMin(columnIndex);
+                let max = this.dataSet.attributes.getMax(columnIndex);
+                let bundleGroupMap = d3.scale.linear().domain([min, max]).range([0, 9.99]); // use 9.99 instead of 10 to avoid a group of a single element (that has the max attribute value)
+                getGroup = value => {
+                    let bundleGroup = bundleGroupMap(Math.max.apply(Math, value));
+                    return Math.floor(bundleGroup);
+                };
+            }
+        }
+
 
         for (let i = 0; i < children.length; i++) {
             let node = children[i];
@@ -83,44 +112,12 @@ class Graph2D {
             position.project(this.camera);
             nodeObject["x"] = $.isNumeric(position.x) ? position.x : 0;
             nodeObject["y"] = $.isNumeric(position.y) ? position.y : 0;
-
-            /*
-            // for every attributes
-            for (var j = 0; j < this.dataSet.attributes.columnNames.length; j++) {
-
-                var colname = this.dataSet.attributes.columnNames[j];
-                var value = this.dataSet.attributes.get(colname)[d.id];
-                nodeObject[colname] = value;
-
-                // add a special property for module id
-                if (colname == 'module_id') {
-                    nodeObject['moduleID'] = this.dataSet.attributes.get(colname)[d.id];
-                }
-
-                //  Get domain of the attributes (assume all positive numbers in the array)
-                var columnIndex = this.dataSet.attributes.columnNames.indexOf(colname);
-                var min = this.dataSet.attributes.getMin(columnIndex);
-                var max = this.dataSet.attributes.getMax(columnIndex);
-
-                // Scale value to between 0.05 to 1 
-                var attrMap = d3.scale.linear().domain([min, max]).range([0.05, 1]);
-                var scalevalue = attrMap(Math.max.apply(Math, value));
-                nodeObject['scale_' + colname] = scalevalue;
-
-                if (this.dataSet.attributes.info[colname].isDiscrete) { // if the attribute is discrete
-                    // Scale to group attirbutes 
-                    var values = this.dataSet.attributes.info[colname].distinctValues;
-                    nodeObject['bundle_group_' + colname] = values.indexOf(value.indexOf(Math.max.apply(Math, value)));
-
-                } else { // if the attribute is continuous
-                    // Scale to group attirbutes 
-                    var bundleGroupMap = d3.scale.linear().domain([min, max]).range([0, 9.99]); // use 9.99 instead of 10 to avoid a group of a single element (that has the max attribute value)
-                    var bundleGroup = bundleGroupMap(Math.max.apply(Math, value)); // group
-                    bundleGroup = Math.floor(bundleGroup);
-                    nodeObject['bundle_group_' + colname] = bundleGroup;
-                }
+            
+            // Grouping
+            if (this.groupNodesBy !== "none") {
+                let value = this.dataSet.attributes.get(this.groupNodesBy)[d.id];
+                nodeObject['bundle'] = getGroup(value);
             }
-            */
 
             this.nodes.push(nodeObject);
         }
@@ -164,7 +161,8 @@ class Graph2D {
             return {
                 data: {
                     id: "n_" + d.id,
-                    parent: "c_" + d.color.substring(1),
+                    //parent: "c_" + d.color.substring(1),
+                    parent: "c_" + (d.bundle || ""),
                     sourceId: d.id,
                     color: d.color || "gray",         //TODO: Can retire this when multiple colors is working across all visualisations
                     colors: d.colors,
@@ -193,25 +191,27 @@ class Graph2D {
         }));
         // Compound nodes for grouping - only for use with layouts that support it well
         let compounds = [];
-        if ((this.layout === "cola") || (this.layout === "cose") || (this.layout === "cose-bilkent")) {
+        //if ((this.layout === "cola") || (this.layout === "cose") || (this.layout === "cose-bilkent")) {
+        if (this.groupNodesBy !== "none") {
             compounds = nodes
                 .reduce((acc, d) => {
                     let i = acc.length;
-                    while (i--) if (acc[i] === d.data.color) return acc;
-                    acc.push(d.data.color);
+                    while (i--) if (acc[i] === d.data.parent) return acc;
+                    acc.push(d.data.parent);
                     return acc;
                 }, [])
                 .map(d => ({
                     data: {
-                        id: "c_" + d.substring(1),
+                        id: d,
                         radius: 10,
-                        color: d,
+                        //color: d,
                         border: 2
                     },
                     classes: "cluster"
                 }))
                 ;
         }
+        
 
         let elements = nodes.concat(<any>edges).concat(<any>compounds);
                 
@@ -492,9 +492,10 @@ class Graph2D {
             this.settingOnChange();
         };
 
-        var varGroupNodesOnChange = (groupBy) => {
+        var varGroupNodesOnChange = groupBy => {
             this.groupNodesBy = groupBy;
-            this.settingOnChange();
+            //this.settingOnChange();
+            this.updateGraph();
         }
 
         var varMenuButtonOnClick = () => { this.menuButtonOnClick(); };
