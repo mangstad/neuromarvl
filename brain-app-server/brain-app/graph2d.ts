@@ -186,7 +186,8 @@ class Graph2D {
                 target: "n_" + d.target.id,
                 color: d.source.color,
                 highlight: false,
-                weight: scale * this.BASE_EDGE_WEIGHT      //TODO: get weight from original edge
+                edgeWeight: d.width,
+                weight: d.width * scale * this.BASE_EDGE_WEIGHT      //TODO: get weight from original edge
             }
         }));
         // Compound nodes for grouping - only for use with layouts that support it well
@@ -463,7 +464,7 @@ class Graph2D {
                 .each((i, e) => e.data("radius", e.data("nodeRadius") * scale * this.BASE_RADIUS))
                 ;
             this.cy.elements("edge")
-                .data("weight", scale * this.BASE_EDGE_WEIGHT)
+                .each((i, e) => e.data("weight", e.data("edgeWeight") * scale * this.BASE_EDGE_WEIGHT))
                 ;
         });
     }
