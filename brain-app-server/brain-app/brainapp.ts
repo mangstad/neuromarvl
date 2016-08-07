@@ -1007,6 +1007,7 @@ class NeuroMarvl {
         }
 
         this.saveObj.nodeSettings.nodeSizeOrColor = sizeOrColor;
+
     }
 
     unique = (sourceArray: any[]) => {

@@ -38,6 +38,7 @@ class Graph3D {
     allLabels: boolean = false;
     
     constructor(parentObject, adjMatrix: any[][], nodeColorings: { color: number, portion: number }[][], weightMatrix: any[][], labels: string[], commonData, saveObj) {
+        console.log("Graph3D");///jm
         this.parentObject = parentObject;
         this.rootObject = new THREE.Object3D();
         this.commonData = commonData;
@@ -53,16 +54,7 @@ class Graph3D {
             };
         })
         
-        let averageColor = (colors: { color: number, portion: number }[]) => {
-            //let bAvg = colors.reduce((acc, color) => acc + color % 0x100, 0) / colors.length;
-            //let gAvg = colors.reduce((acc, color) => acc + Math.floor(color / 0x100) % 0x100, 0) / colors.length;
-            //let rAvg = colors.reduce((acc, color) => acc + Math.floor(color / 0x10000) % 0x100, 0) / colors.length;
-            //return rAvg * 0x10000 + gAvg * 0x100 + bAvg;
-
-            //return colors.reduce((acc, color) => acc + color, 0) / colors.length;
-            return colors.reduce((acc, color) => acc + color.color, 0) / colors.length;
-        }
-        this.nodeDefaultColor = nodeColorings.map(a => averageColor(a)); // Use average colour
+        this.nodeDefaultColor = nodeColorings.map(a => this.averageColor(a)); // Use average colour
         this.nodeCurrentColor = this.nodeDefaultColor.slice(0); // clone the array
 
         for (var i = 0; i < adjMatrix.length; ++i) {
@@ -82,6 +74,7 @@ class Graph3D {
             // User data, which will be useful for other graphs using this graph as a basis
             nodeObject.userData.hasVisibleEdges = true;
             nodeObject.userData.id = i;
+            //console.log(nodeColorings[i]);///jm
             nodeObject.userData.colors = nodeColorings[i];
             nodeObject.userData.filtered = false;
 
@@ -125,6 +118,17 @@ class Graph3D {
         if (len > 0) adjMatrix[len - 1][len - 1] = null;
 
         this.edgeMatrix = adjMatrix;
+    }
+
+    
+    averageColor = (colors: { color: number, portion: number }[]) => {
+        //let bAvg = colors.reduce((acc, color) => acc + color % 0x100, 0) / colors.length;
+        //let gAvg = colors.reduce((acc, color) => acc + Math.floor(color / 0x100) % 0x100, 0) / colors.length;
+        //let rAvg = colors.reduce((acc, color) => acc + Math.floor(color / 0x10000) % 0x100, 0) / colors.length;
+        //return rAvg * 0x10000 + gAvg * 0x100 + bAvg;
+
+        //return colors.reduce((acc, color) => acc + color, 0) / colors.length;
+        return colors.reduce((acc, color) => acc + color.color, 0) / colors.length;
     }
 
 
@@ -348,6 +352,7 @@ class Graph3D {
     }
 
     setDefaultNodeColor() {
+        console.log("setDefaultNodeColor");///jm
         this.nodeCurrentColor = this.nodeDefaultColor.slice(0);
 
         for (var i = 0; i < this.nodeMeshes.length; ++i) {
@@ -626,15 +631,20 @@ class Graph3D {
         });
     }
 
-    setNodesColor(colorArray: number[]) {
+    setNodesColor(colorArray: { color: number, portion: number }[][]) {
+        console.log(colorArray);///jm
         if (!colorArray) return;
         if (colorArray.length != this.nodeMeshes.length) {
             throw "ERROR: ColorArray (" + colorArray.length + ") and NodeMeshes (" + this.nodeMeshes.length + ") do not match";
         }
-        this.nodeCurrentColor = colorArray.slice(0); // clone the array
-        for (var i = 0; i < this.nodeMeshes.length; ++i) {
-            this.nodeMeshes[i].material.color.setHex(colorArray[i]);
+        //this.nodeCurrentColor = colorArray.slice(0); // clone the array
+        this.nodeCurrentColor = colorArray.map(a => this.averageColor(a)); // Use average colour
 
+        for (var i = 0; i < this.nodeMeshes.length; ++i) {
+            //this.nodeMeshes[i].material.color.setHex(colorArray[i]);
+            this.nodeMeshes[i].material.color.set(this.nodeCurrentColor[i]);
+            //this.nodeMeshes[i].userData.colors = [{ color: colorArray[i], portion: 1 }];
+            this.nodeMeshes[i].userData.colors = colorArray[i];
         }
 
         // also reset edge color:
@@ -652,6 +662,7 @@ class Graph3D {
     }
 
     setNodeColor(id: number, color: number) {
+        console.log("setNodeColor");///jm
         this.nodeMeshes[id].material.color.setHex(color);
     }
 

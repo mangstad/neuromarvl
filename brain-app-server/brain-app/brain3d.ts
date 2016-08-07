@@ -231,16 +231,11 @@ class Brain3DApp implements Application, Loopable {
     }
 
 
-    getNodeColors(): { color: number, portion: number } [][] {
+    getNodeColors(colorAttribute: string, minColor: number, maxColor: number): { color: number, portion: number }[][] {
+        console.log(minColor, maxColor);///jm
         /* Get the colour array, a mapping of the configured colour attribute to colour values, e.g.
             [
-                // Discrete
-                [
-	                {color: 0xff0000, portion: 1.0},
-	                {color: 0x00ff00, portion: 0.0},
-	                {color: 0x0000ff, portion: 0.0}
-                ],
-                // Continuous
+                // Continuous values are evenly split
                 [
 	                {color: 0xfa36dd, portion: 0.33},
 	                {color: 0x006f34, portion: 0.33},
@@ -248,57 +243,87 @@ class Brain3DApp implements Application, Loopable {
                 ]
             ]
         */
-        let nSettings = this.saveObj.nodeSettings;
-        let colorAttribute = nSettings.nodeColorAttribute;
-        let defaultColor = { color: 0xd3d3d3, portion: 1.0 };
         let a = this.dataSet.attributes;
-        
+
         if (!a.info[colorAttribute]) {
-            return Array.apply(null, Array(a.numRecords)).map(d => [defaultColor]);
+            return this.getNodeColorsEmpty();
         }
 
         let valueArray = a.get(colorAttribute);
         
-        if (a.info[colorAttribute].isDiscrete) {
-            let discreteColorValues = nSettings.nodeColorDiscrete.map(colorString => parseInt(colorString.substring(1), 16));
-            if (a.info[colorAttribute].numElements > 1) {
-                // Discrete multi-value has each colour from the mapping with its proportion of total value in that node
-                return valueArray.map(aArray => {
-                    let singlePortion = (1 / aArray.reduce((weight, acc) => acc + weight, 0)) || 0;
-                    return aArray.map((value, i) => ({
-                        color: discreteColorValues[i],
-                        portion: value * singlePortion
-                    }))
-                });
-            }
-            else {
-                // Discrete single value is just an ordinal mapping
-                let colorMap = d3.scale
-                    .ordinal()
-                    .domain(a.info[colorAttribute].distinctValues)
-                    .range(discreteColorValues)
-                    ;
-                return valueArray.map(aArray => aArray.map(value => ({
-                    color: colorMap(value),
-                    portion: 1.0
-                })));
-            }
+        // Continuous has each value mapped with equal proportion
+        let i = a.columnNames.indexOf(colorAttribute);
+        let singlePortion = (1 / a.info[colorAttribute].numElements) || 0;
+        let colorMap = d3.scale
+            .linear()
+            .domain([a.getMin(i), a.getMax(i)])
+            .range([minColor, maxColor])
+            ;
+        return valueArray.map(aArray => aArray.map(value => ({
+            color: colorMap(value),
+            portion: singlePortion
+        })));
+    }
+
+
+    getNodeColorsDiscrete(colorAttribute: string, discreteValues: number[], discreteColors: number[]): { color: number, portion: number }[][] {
+        /* Get the colour array, a mapping of the configured colour attribute to colour values, e.g.
+            [
+                // Discrete values are weighted by proportion
+                [
+	                {color: 0xff0000, portion: 1.0},
+	                {color: 0x00ff00, portion: 0.0},
+	                {color: 0x0000ff, portion: 0.0}
+                ]
+            ]
+        */
+        let a = this.dataSet.attributes;
+
+        if (!a.info[colorAttribute]) {
+            return this.getNodeColorsEmpty();
+        }
+
+        let valueArray = a.get(colorAttribute);
+
+        
+        if (a.info[colorAttribute].numElements > 1) {
+            // Discrete multi-value has each colour from the mapping with its proportion of total value in that node
+            return valueArray.map(aArray => {
+                let singlePortion = (1 / aArray.reduce((weight, acc) => acc + weight, 0)) || 0;
+                return aArray.map((value, i) => ({
+                    color: discreteColors[i],
+                    portion: value * singlePortion
+                }))
+            });
         }
         else {
-            // Continuous has each value mapped with equal proportion
-            let i = a.columnNames.indexOf(colorAttribute);
-            let singlePortion = (1 / a.info[colorAttribute].numElements) || 0;
+            // Discrete single value is just an ordinal mapping
             let colorMap = d3.scale
-                .linear()
-                .domain([a.getMin(i), a.getMax(i)])
-                .range([nSettings.nodeColorContinuousMin, nSettings.nodeColorContinuousMax])
+                .ordinal()
+                .domain(discreteValues)
+                .range(discreteColors)
                 ;
             return valueArray.map(aArray => aArray.map(value => ({
                 color: colorMap(value),
-                portion: singlePortion
+                portion: 1.0
             })));
         }
     }
+
+
+    getNodeColorsEmpty(): { color: number, portion: number }[][] {
+        /* Get a minimal practical color array
+            [
+                // Empty values are a minimal set of grey
+                [
+	                {color: 0xd3d3d3, portion: 1.0}
+                ]
+            ]
+        */
+        let defaultColor = { color: 0xd3d3d3, portion: 1.0 };
+        return Array.apply(null, Array(this.dataSet.attributes.numRecords)).map(d => [defaultColor]);
+    }
+
 
     setupUserInteraction(jDiv) {
         var varShowNetwork = (b: boolean) => { this.showNetwork(b); };
@@ -1562,28 +1587,35 @@ class Brain3DApp implements Application, Loopable {
         if (!attrArray) {
             throw "Attribute " + attribute + " does not exist.";
         }
+
+        /*
         var columnIndex = this.dataSet.attributes.columnNames.indexOf(attribute);
 
         // assume all positive numbers in the array
         var min = this.dataSet.attributes.getMin(columnIndex);
         var max = this.dataSet.attributes.getMax(columnIndex);
         
-        var colorArray: number[];
+        let colorArray: number[][];
+        let colorMap;
         if (attrArray[0].length > 1) {
-            var colorMap = d3.scale.linear().domain([Math.log(min), Math.log(max)]).range([minColor, maxColor]);
-            colorArray = attrArray.map((value: number[]) => {
+            colorMap = d3.scale.linear().domain([Math.log(min), Math.log(max)]).range([minColor, maxColor]);
+            colorArray = attrArray.map((values: number[]) => {
                 var str = colorMap(value.indexOf(Math.max.apply(Math,value))).replace("#", "0x");
                 return parseInt(str);
             });
         }
         else {
-            var colorMap = d3.scale.linear().domain([min, max]).range([minColor, maxColor]);
-            colorArray = attrArray.map((value: number[]) => {
+            colorMap = d3.scale.linear().domain([min, max]).range([minColor, maxColor]);
+            colorArray = attrArray.map((values: number[]) => {
                 var str = colorMap(Math.max.apply(Math, value)).replace("#", "0x");
                 return parseInt(str);
             });
 
         }
+        */
+
+        let colorArray = this.getNodeColors(attribute, parseInt(minColor.replace("#", "0x")), parseInt(maxColor.replace("#", "0x")));
+
         if (!colorArray) {
             throw "Encountered error in generating color array.";
         }
@@ -1602,7 +1634,8 @@ class Brain3DApp implements Application, Loopable {
         var attrArray = this.dataSet.attributes.get(attribute);
         if (!attrArray) return;
 
-        var colorArrayNum: number[];
+        /*
+        var colorArrayNum: number[][];
         var colorMap = d3.scale.ordinal().domain(keyArray).range(colorArray);
 
         if (attrArray[0].length > 1) {
@@ -1623,6 +1656,9 @@ class Brain3DApp implements Application, Loopable {
                 return parseInt(str);
             });
         }
+        */
+        let discreteColorValues = colorArray.map(colorString => parseInt(colorString.substring(1), 16));
+        let colorArrayNum = this.getNodeColorsDiscrete(attribute, keyArray, discreteColorValues);
 
         if (!colorArrayNum) return;
 
@@ -1760,7 +1796,19 @@ class Brain3DApp implements Application, Loopable {
         }
 
         // Set up the node colorings
-        let nodeColors = this.getNodeColors();
+        let nSettings = this.saveObj.nodeSettings;
+        let colorAttribute = nSettings.nodeColorAttribute;
+        let nodeColors;
+        if (!this.dataSet.attributes.info[colorAttribute]) {
+            nodeColors = this.getNodeColorsEmpty();
+        }
+        else if (this.dataSet.attributes.info[colorAttribute].isDiscrete) {
+            let discreteColorValues = nSettings.nodeColorDiscrete.map(colorString => parseInt(colorString.substring(1), 16)); 
+            nodeColors = this.getNodeColorsDiscrete(colorAttribute, this.dataSet.attributes.info[colorAttribute].distinctValues, discreteColorValues);
+        }
+        else {      // continuous
+            nodeColors = this.getNodeColors(colorAttribute, nSettings.nodeColorContinuousMin, nSettings.nodeColorContinuousMax);
+        }
 
         // Set up loop
 
@@ -1977,7 +2025,7 @@ class Brain3DApp implements Application, Loopable {
             this.scene.updateMatrixWorld();     //TODO: Confirm that this change has no side effects
 
             if (this.ignore3dControl && this.svgNeedsUpdate) {
-                console.log("svgNeedsUpdate");///jm
+                //console.log("svgNeedsUpdate");///jm
 
                 if (this.networkType == '2D') {
                     if (this.canvasGraph) {

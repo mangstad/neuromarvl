@@ -171,6 +171,7 @@ class Graph2D {
         let scale = (this.layout === "cose") ? this.scale * 0.1 : this.scale;
         
         let nodes = this.nodes.map(d => {
+            //console.log(d.colors);///jm
             return {
                 data: {
                     id: "n_" + d.id,
@@ -460,7 +461,7 @@ class Graph2D {
                 e.data("radius", radius);
 
                 //Colour
-                console.log(this.graph3d.colorMode);///jm
+                //console.log(this.graph3d.colorMode);///jm
                 let d = node.userData;
                 e.data("color0", d.colors[0] ? "#" + d.colors[0].color.toString(16) : "black");
                 e.data("color1", d.colors[1] ? "#" + d.colors[1].color.toString(16) : "black");
