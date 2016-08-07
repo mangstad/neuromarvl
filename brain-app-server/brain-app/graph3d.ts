@@ -24,7 +24,7 @@ class Graph3D {
     edgeMatrix: any[][];
     edgeList: Edge[] = [];
     edgeThicknessByWeight: boolean = false;
-    colorMode: string = "none";
+    colorMode: string = "none";     // weight, node, none
     bundlingEdgeList: any[] = [];
     visible: boolean = true;
 
@@ -765,8 +765,8 @@ class Edge {
     // by weight
     colorMapFunction;
     // by node
-    sourceColor: string;
-    targetColor: string;
+    //sourceColor: string;
+    //targetColor: string;
 
     //Shaders
     uniforms;
@@ -782,6 +782,7 @@ class Edge {
         this.targetNode = targetNode;
         this.sourceNode = sourceNode;
         this.directionMode = "none";
+        this.colorMode = "node";
         this.color = "#cfcfcf";
         this.uniforms = {
             timeTracker: { type: "f", value: this.timeTracker / 1000 },

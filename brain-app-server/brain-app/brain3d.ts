@@ -1493,20 +1493,6 @@ class Brain3DApp implements Application, Loopable {
 
         this.svgDefs.appendChild(marker);
     }
-
-    update2DGraph() {
-        if (this.networkType == '2D') {
-            if (this.canvasGraph) {
-                this.canvasGraph.updateInteractive();
-            }
-        }
-        else if (this.networkType == 'circular') {           
-            if (this.circularGraph) {
-                this.circularGraph.setColaGraph(this.physioGraph);
-                this.circularGraph.update();
-            }
-        }
-    }
     
     isDeleted() {
         return this.deleted;
@@ -1798,7 +1784,7 @@ class Brain3DApp implements Application, Loopable {
         this.colaGraph = new Graph3D(this.colaObject, edgeMatrix, nodeColors, this.dataSet.simMatrix, this.dataSet.brainLabels, this.commonData, this.saveObj);
         this.colaGraph.setVisible(false);
         
-        this.canvasGraph = new Graph2D(this.id, this.jDiv, this.dataSet, this.graph2dContainer, this.commonData, this.saveObj, this.physioGraph, this.camera, this.edgeCountSliderValue);      //TODO: This is a test signature. Change it.
+        this.canvasGraph = new Graph2D(this.id, this.jDiv, this.dataSet, this.graph2dContainer, this.commonData, this.saveObj, this.physioGraph, this.camera, this.edgeCountSliderValue);
 
         // Initialize the filtering
         if (this.brainSurfaceMode === 0) {
@@ -1991,7 +1977,20 @@ class Brain3DApp implements Application, Loopable {
             this.scene.updateMatrixWorld();     //TODO: Confirm that this change has no side effects
 
             if (this.ignore3dControl && this.svgNeedsUpdate) {
-                this.update2DGraph();
+                console.log("svgNeedsUpdate");///jm
+
+                if (this.networkType == '2D') {
+                    if (this.canvasGraph) {
+                        this.canvasGraph.updateInteractive();
+                    }
+                }
+                else if (this.networkType == 'circular') {
+                    if (this.circularGraph) {
+                        this.circularGraph.setColaGraph(this.physioGraph);
+                        this.circularGraph.update();
+                    }
+                }
+
                 this.svgNeedsUpdate = false;
             }
         }
