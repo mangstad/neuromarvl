@@ -164,7 +164,7 @@ class Graph2D {
         let colorAttribute = this.saveObj.nodeSettings.nodeColorAttribute;
 
         // Layouts are inconsistent with scaling. Adjust.
-        let scale = (this.layout === "cose") ? this.scale * 0.1 : this.scale;
+        //let scale = (this.layout === "cose") ? this.scale * 0.1 : this.scale;
         
         let nodes = this.nodes.map(d => {
             return {
@@ -191,9 +191,9 @@ class Graph2D {
                     portion6: d.colors[6] ? d.colors[6].portion * 100 : 0,
                     portion7: d.colors[7] ? d.colors[7].portion * 100 : 0,
                     nodeRadius: d.radius,
-                    radius: d.radius * scale * this.BASE_RADIUS,
-                    border: d.radius * scale * this.BASE_BORDER_WIDTH,
-                    labelSize: d.radius * scale * this.BASE_LABEL_SIZE,
+                    radius: d.radius * this.scale * this.BASE_RADIUS,
+                    border: d.radius * this.scale * this.BASE_BORDER_WIDTH,
+                    labelSize: d.radius * this.scale * this.BASE_LABEL_SIZE,
                     label: this.dataSet.brainLabels[d.id] || d.id
                 },
                 position: {
@@ -213,7 +213,7 @@ class Graph2D {
                 highlight: false,
                 edgeWeight: d.width,
                 edgeListIndex: d.edgeListIndex,
-                weight: d.width * scale * this.BASE_EDGE_WEIGHT      //TODO: get weight from original edge
+                weight: d.width * this.scale * this.BASE_EDGE_WEIGHT      //TODO: get weight from original edge
             }
         }));
         // Compound nodes for grouping - only for use with layouts that support it well
@@ -255,11 +255,12 @@ class Graph2D {
         }
         switch (this.layout) {
             case "cose":
-                //layoutOptions.idealEdgeLength = this.edgeBaseLength * this.edgeLengthScale;
-                //layoutOptions.idealEdgeLength = 100;
+                // This layout gets something very wrong with the boundingBox, possibly ignoring node radii, so we need to compensate
+                layoutOptions.boundingBox.w *= this.BASE_RADIUS;
+                layoutOptions.boundingBox.h *= this.BASE_RADIUS;
+                layoutOptions.numIter = 100;
                 break;
             case "cose-bilkent":
-                //layoutOptions.idealEdgeLength = this.edgeBaseLength * this.edgeLengthScale;
                 layoutOptions.numIter = 15;
                 break;
             case "cola":
@@ -451,8 +452,8 @@ class Graph2D {
             this.cy.elements("node.child").each((i, e) => {
                 // Size
                 let node = nodes[e.data("sourceId")];
-                let scale = (this.layout === "cose") ? this.scale * 0.1 : this.scale;
-                let radius = node.scale.x * scale * this.BASE_RADIUS
+                //let scale = (this.layout === "cose") ? this.scale * 0.1 : this.scale;
+                let radius = node.scale.x * this.scale * this.BASE_RADIUS
                 e.data("radius", radius);
 
                 //Colour
@@ -494,16 +495,16 @@ class Graph2D {
         // Styling changes not affecting layout, triggered by 2d settings
 
         // Layouts are inconsistent with scaling. Adjust.
-        let scale = (this.layout === "cose") ? this.scale * 0.1 : this.scale;
+        //let scale = (this.layout === "cose") ? this.scale * 0.1 : this.scale;
 
         this.cy.batch(() => {
             this.cy.elements("node.child")
-                .data("border", scale * this.BASE_BORDER_WIDTH)
-                .data("labelSize", scale * this.BASE_LABEL_SIZE)
-                .each((i, e) => e.data("radius", e.data("nodeRadius") * scale * this.BASE_RADIUS))
+                .data("border", this.scale * this.BASE_BORDER_WIDTH)
+                .data("labelSize", this.scale * this.BASE_LABEL_SIZE)
+                .each((i, e) => e.data("radius", e.data("nodeRadius") * this.scale * this.BASE_RADIUS))
                 ;
             this.cy.elements("edge")
-                .each((i, e) => e.data("weight", e.data("edgeWeight") * scale * this.BASE_EDGE_WEIGHT))
+                .each((i, e) => e.data("weight", e.data("edgeWeight") * this.scale * this.BASE_EDGE_WEIGHT))
                 ;
         });
     }
