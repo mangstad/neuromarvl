@@ -460,13 +460,9 @@ class Brain3DApp implements Application, Loopable {
         // Graph canvas setup
         this.graph2dContainer = d3.select('#div-svg-' + this.id)
             .append("div")
-            //.attr("width", jDiv.width())
-            //.attr("height", jDiv.height() - sliderSpace)
             .style({
                 width: "100%",
                 height: "100%",
-                //position: "absolute",
-                //right: "0px"
             })
             .classed("graph2dContainer", true)
             .node();
@@ -1079,6 +1075,7 @@ class Brain3DApp implements Application, Loopable {
         } else {
             // hide options button
             $('#button-graph2d-option-menu-' + this.id).hide();
+            $(this.graph2dContainer).hide();
         }
 
 
