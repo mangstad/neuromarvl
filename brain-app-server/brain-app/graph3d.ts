@@ -38,7 +38,6 @@ class Graph3D {
     allLabels: boolean = false;
     
     constructor(parentObject, adjMatrix: any[][], nodeColorings: { color: number, portion: number }[][], weightMatrix: any[][], labels: string[], commonData, saveObj) {
-        console.log("Graph3D");///jm
         this.parentObject = parentObject;
         this.rootObject = new THREE.Object3D();
         this.commonData = commonData;
@@ -74,7 +73,6 @@ class Graph3D {
             // User data, which will be useful for other graphs using this graph as a basis
             nodeObject.userData.hasVisibleEdges = true;
             nodeObject.userData.id = i;
-            //console.log(nodeColorings[i]);///jm
             nodeObject.userData.colors = nodeColorings[i];
             nodeObject.userData.filtered = false;
 
@@ -126,9 +124,13 @@ class Graph3D {
         //let gAvg = colors.reduce((acc, color) => acc + Math.floor(color / 0x100) % 0x100, 0) / colors.length;
         //let rAvg = colors.reduce((acc, color) => acc + Math.floor(color / 0x10000) % 0x100, 0) / colors.length;
         //return rAvg * 0x10000 + gAvg * 0x100 + bAvg;
+        
+        //return colors.reduce((acc, color) => acc + color.color * color.portion, 0);
 
-        //return colors.reduce((acc, color) => acc + color, 0) / colors.length;
-        return colors.reduce((acc, color) => acc + color.color, 0) / colors.length;
+        return colors.reduce((acc, color) => {
+            let threeColor = new THREE.Color(color.color);
+            return acc.add(threeColor.multiplyScalar(color.portion));
+        }, new THREE.Color(0, 0, 0)).getHex();
     }
 
 
@@ -352,7 +354,6 @@ class Graph3D {
     }
 
     setDefaultNodeColor() {
-        console.log("setDefaultNodeColor");///jm
         this.nodeCurrentColor = this.nodeDefaultColor.slice(0);
 
         for (var i = 0; i < this.nodeMeshes.length; ++i) {
@@ -632,7 +633,6 @@ class Graph3D {
     }
 
     setNodesColor(colorArray: { color: number, portion: number }[][]) {
-        console.log(colorArray);///jm
         if (!colorArray) return;
         if (colorArray.length != this.nodeMeshes.length) {
             throw "ERROR: ColorArray (" + colorArray.length + ") and NodeMeshes (" + this.nodeMeshes.length + ") do not match";
@@ -662,7 +662,6 @@ class Graph3D {
     }
 
     setNodeColor(id: number, color: number) {
-        console.log("setNodeColor");///jm
         this.nodeMeshes[id].material.color.setHex(color);
     }
 

@@ -969,7 +969,8 @@ class NeuroMarvl {
                 var keySelection = <any>document.getElementById('select-node-key');
 
                 for (var i = 0; i < keySelection.length; i++) {
-                    var key = keySelection.options[i].value;
+                    //var key = keySelection.options[i].value;
+                    var key = parseInt(keySelection.options[i].value);
                     var color = keySelection.options[i].style.backgroundColor;
                     var hex: string = this.colorToHex(color);
                     keyArray.push(key);
@@ -998,6 +999,11 @@ class NeuroMarvl {
             }
 
             this.saveObj.nodeSettings.nodeColorAttribute = attribute;
+
+            // Edge will also need updating if they are set to "node"
+            if (this.commonData.edgeColorMode === "node") {
+                this.setEdgeColorByNode();
+            }
         }
         else if (sizeOrColor == "node-default") {
             if (this.apps[0]) this.apps[0].setNodeDefaultSizeColor();
@@ -1610,6 +1616,7 @@ class NeuroMarvl {
 
             this.setEdgeColorByWeight();
         } else if (value === "node") {
+            this.commonData.edgeColorMode = "node";
             this.setEdgeColorByNode();
             $("#div-edge-color-pickers").hide();
         }

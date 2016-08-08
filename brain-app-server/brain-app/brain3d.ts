@@ -232,7 +232,6 @@ class Brain3DApp implements Application, Loopable {
 
 
     getNodeColors(colorAttribute: string, minColor: number, maxColor: number): { color: number, portion: number }[][] {
-        console.log(minColor, maxColor);///jm
         /* Get the colour array, a mapping of the configured colour attribute to colour values, e.g.
             [
                 // Continuous values are evenly split
@@ -250,6 +249,10 @@ class Brain3DApp implements Application, Loopable {
         }
 
         let valueArray = a.get(colorAttribute);
+
+        // D3 can scale colours, but needs to use colour strings
+        let minString = "#" + minColor.toString(16);
+        let maxString = "#" + maxColor.toString(16);
         
         // Continuous has each value mapped with equal proportion
         let i = a.columnNames.indexOf(colorAttribute);
@@ -257,10 +260,10 @@ class Brain3DApp implements Application, Loopable {
         let colorMap = d3.scale
             .linear()
             .domain([a.getMin(i), a.getMax(i)])
-            .range([minColor, maxColor])
+            .range([minString, maxString])
             ;
         return valueArray.map(aArray => aArray.map(value => ({
-            color: colorMap(value),
+            color: parseInt(colorMap(value).substring(1), 16),
             portion: singlePortion
         })));
     }
@@ -1622,7 +1625,7 @@ class Brain3DApp implements Application, Loopable {
 
         // update graphs
         if (this.physioGraph) this.physioGraph.setNodesColor(colorArray);
-        if(this.colaGraph) this.colaGraph.setNodesColor(colorArray);
+        if (this.colaGraph) this.colaGraph.setNodesColor(colorArray);
 
         this.svgNeedsUpdate = true; // update to change node color
     }
@@ -2022,11 +2025,9 @@ class Brain3DApp implements Application, Loopable {
                 //  http://marvl.infotech.monash.edu/webcola/examples/3dlayout.js
                 this.descent.rungeKutta(); // Do an iteration of the solver
             }
-            this.scene.updateMatrixWorld();     //TODO: Confirm that this change has no side effects
+            this.scene.updateMatrixWorld();
 
             if (this.ignore3dControl && this.svgNeedsUpdate) {
-                //console.log("svgNeedsUpdate");///jm
-
                 if (this.networkType == '2D') {
                     if (this.canvasGraph) {
                         this.canvasGraph.updateInteractive();

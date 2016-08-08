@@ -49,8 +49,6 @@ class Graph2D {
     }
     
     updateGraph() {
-        console.log("updateGraph");///jm
-        console.trace();
         CommonUtilities.launchAlertMessage(CommonUtilities.alertType.INFO, `Generating a 2D ${this.layout} layout...`);
 
         // Use this.dataSet to build the elements for the cytoscape graph.
@@ -126,7 +124,6 @@ class Graph2D {
         // Add Edges to graph
         for (var i = 0; i < this.graph3d.edgeList.length; i++) {
             var edge = this.graph3d.edgeList[i];
-            //console.log(edge);///jm TODO: use edge.uniforms.(startColor/startOpacity/endColor/endOpacity) to get proper colour info 
             // To ensure consistency between graphs, edge colour info can be taken from the 3D object uniforms.
             // Uniform types are uniforms.(start/end)color: {type: "v4", value: THREE.Vector4 } and uniforms.(start/end)color: {type: "f", value: number}.
             if (edge.visible) {
@@ -160,7 +157,6 @@ class Graph2D {
                 this.links.push(linkObject);
             }
         }
-        //console.log(this.links);///jm 
         
 
         // Use saveObj and this.layout to create the layout and style options, then create the cytoscape graph
@@ -171,7 +167,6 @@ class Graph2D {
         let scale = (this.layout === "cose") ? this.scale * 0.1 : this.scale;
         
         let nodes = this.nodes.map(d => {
-            //console.log(d.colors);///jm
             return {
                 data: {
                     id: "n_" + d.id,
@@ -461,7 +456,6 @@ class Graph2D {
                 e.data("radius", radius);
 
                 //Colour
-                //console.log(this.graph3d.colorMode);///jm
                 let d = node.userData;
                 e.data("color0", d.colors[0] ? "#" + d.colors[0].color.toString(16) : "black");
                 e.data("color1", d.colors[1] ? "#" + d.colors[1].color.toString(16) : "black");
