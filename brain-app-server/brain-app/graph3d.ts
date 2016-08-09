@@ -116,19 +116,10 @@ class Graph3D {
         if (len > 0) adjMatrix[len - 1][len - 1] = null;
 
         this.edgeMatrix = adjMatrix;
-
-        console.log("Graph3D", this.parentObject.id, this);
     }
 
     
     averageColor = (colors: { color: number, portion: number }[]) => {
-        //let bAvg = colors.reduce((acc, color) => acc + color % 0x100, 0) / colors.length;
-        //let gAvg = colors.reduce((acc, color) => acc + Math.floor(color / 0x100) % 0x100, 0) / colors.length;
-        //let rAvg = colors.reduce((acc, color) => acc + Math.floor(color / 0x10000) % 0x100, 0) / colors.length;
-        //return rAvg * 0x10000 + gAvg * 0x100 + bAvg;
-        
-        //return colors.reduce((acc, color) => acc + color.color * color.portion, 0);
-
         return colors.reduce((acc, color) => {
             let threeColor = new THREE.Color(color.color);
             return acc.add(threeColor.multiplyScalar(color.portion));

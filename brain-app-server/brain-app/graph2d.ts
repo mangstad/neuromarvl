@@ -59,8 +59,7 @@ class Graph2D {
 
         let children = this.graph3d.nodeMeshes;
         this.colorMode = this.graph3d.colorMode;
-        this.directionMode = this.graph3d.edgeDirectionMode;
-        
+        this.directionMode = this.graph3d.edgeDirectionMode;        
 
         // Figure out the grouping calculation to use for the chosen grouping attribute
         let getGroup;
@@ -162,26 +161,23 @@ class Graph2D {
         // Use saveObj and this.layout to create the layout and style options, then create the cytoscape graph
         let container = this.container;
         let colorAttribute = this.saveObj.nodeSettings.nodeColorAttribute;
-
-        // Layouts are inconsistent with scaling. Adjust.
-        //let scale = (this.layout === "cose") ? this.scale * 0.1 : this.scale;
         
         let nodes = this.nodes.map(d => {
             return {
                 data: {
                     id: "n_" + d.id,
                     parent: "c_" + (d.bundle || ""),
+                    bundle: d.bundle,
                     sourceId: d.id,
-                    color: d.color || "gray",         //TODO: Can retire this when multiple colors is working across all visualisations
-                    //colors: d.colors,
-                    color0: d.colors[0] ? "#" + d.colors[0].color.toString(16) : "black",
-                    color1: d.colors[1] ? "#" + d.colors[1].color.toString(16) : "black",
-                    color2: d.colors[2] ? "#" + d.colors[2].color.toString(16) : "black",
-                    color3: d.colors[3] ? "#" + d.colors[3].color.toString(16) : "black",
-                    color4: d.colors[4] ? "#" + d.colors[4].color.toString(16) : "black",
-                    color5: d.colors[5] ? "#" + d.colors[5].color.toString(16) : "black",
-                    color6: d.colors[6] ? "#" + d.colors[6].color.toString(16) : "black",
-                    color7: d.colors[7] ? "#" + d.colors[7].color.toString(16) : "black",
+                    color: d.color || "#cfcfcf",
+                    color0: d.colors[0] ? "#" + d.colors[0].color.toString(16) : "#bbbbbb",
+                    color1: d.colors[1] ? "#" + d.colors[1].color.toString(16) : "#bbbbbb",
+                    color2: d.colors[2] ? "#" + d.colors[2].color.toString(16) : "#bbbbbb",
+                    color3: d.colors[3] ? "#" + d.colors[3].color.toString(16) : "#bbbbbb",
+                    color4: d.colors[4] ? "#" + d.colors[4].color.toString(16) : "#bbbbbb",
+                    color5: d.colors[5] ? "#" + d.colors[5].color.toString(16) : "#bbbbbb",
+                    color6: d.colors[6] ? "#" + d.colors[6].color.toString(16) : "#bbbbbb",
+                    color7: d.colors[7] ? "#" + d.colors[7].color.toString(16) : "#bbbbbb",
                     portion0: d.colors[0] ? d.colors[0].portion * 100 : 0,
                     portion1: d.colors[1] ? d.colors[1].portion * 100 : 0,
                     portion2: d.colors[2] ? d.colors[2].portion * 100 : 0,
@@ -208,17 +204,15 @@ class Graph2D {
                 id: "e_" + d.edgeListIndex,
                 source: "n_" + d.source.id,
                 target: "n_" + d.target.id,
-                //color: d.source.color,
                 color: d.color,
                 highlight: false,
                 edgeWeight: d.width,
                 edgeListIndex: d.edgeListIndex,
-                weight: d.width * this.scale * this.BASE_EDGE_WEIGHT      //TODO: get weight from original edge
+                weight: d.width * this.scale * this.BASE_EDGE_WEIGHT
             }
         }));
         // Compound nodes for grouping - only for use with layouts that support it well
         let compounds = [];
-        //if ((this.layout === "cola") || (this.layout === "cose") || (this.layout === "cose-bilkent")) {
         if (this.groupNodesBy !== "none") {
             compounds = nodes
                 .reduce((acc, d) => {
@@ -231,7 +225,6 @@ class Graph2D {
                     data: {
                         id: d,
                         radius: 10,
-                        //color: d,
                         border: 2
                     },
                     classes: "cluster"
@@ -278,6 +271,34 @@ class Graph2D {
 
                 layoutOptions.flow = false;
 
+                break;
+            case "grid":
+                // Looks pretty messy with no sorting at all, so use colours if bundling is not set
+                layoutOptions.sort = (a, b) => {
+                    let valueA = a.data("bundle") || parseInt(a.data("color").substring(1), 16);
+                    let valueB = b.data("bundle") || parseInt(b.data("color").substring(1), 16);
+                    return valueA - valueB;
+                };
+                break;
+            case "concentric":
+                // Groups into arbitrary rings with no grouping defined, so use colours if bundling is not set.
+                // May be too many distinct colour values, so pool into 10 groups.
+                if (this.groupNodesBy === "none") {
+                    let minColor = 0xffffff;
+                    let maxColor = 0x000000;
+                    for (let node of children) {
+                        let color = node.material.color.getHex();
+                        minColor = Math.min(minColor, color);
+                        maxColor = Math.max(maxColor, color);
+                    }
+                    let f = d3.scale.linear().domain([minColor, maxColor]).range([0, 9.99]);
+                    layoutOptions.concentric = node => Math.floor(f(parseInt(node.data("color").substring(1), 16)));
+                }
+                else {
+                    layoutOptions.concentric = node => node.data("bundle");
+                }
+                layoutOptions.fit = true;
+                layoutOptions.padding = 500;
                 break;
         }
         
@@ -404,11 +425,20 @@ class Graph2D {
             CommonUtilities.launchAlertMessage(CommonUtilities.alertType.SUCCESS, `New 2D ${this.layout} layout created`);
         });
         cy.fit();
-        cy.pan({
-            x: container.offsetWidth * 0.5,
-            y: container.offsetHeight * 0.2
-        });
-        cy.zoom(cy.zoom() * 0.6);
+        if (this.layout === "concentric") {
+            // This layout tends to centre near the upper-left corner
+            cy.pan({
+                x: container.offsetWidth * 0.6,
+                y: container.offsetHeight * 0.3
+            });
+        }
+        else {
+            cy.pan({
+                x: container.offsetWidth * 0.5,
+                y: container.offsetHeight * 0.2
+            });
+        }
+        cy.zoom(cy.zoom() * 0.7);
 
     }
 
@@ -452,7 +482,6 @@ class Graph2D {
             this.cy.elements("node.child").each((i, e) => {
                 // Size
                 let node = nodes[e.data("sourceId")];
-                //let scale = (this.layout === "cose") ? this.scale * 0.1 : this.scale;
                 let radius = node.scale.x * this.scale * this.BASE_RADIUS
                 e.data("radius", radius);
 
@@ -493,10 +522,6 @@ class Graph2D {
 
     settingOnChange() {
         // Styling changes not affecting layout, triggered by 2d settings
-
-        // Layouts are inconsistent with scaling. Adjust.
-        //let scale = (this.layout === "cose") ? this.scale * 0.1 : this.scale;
-
         this.cy.batch(() => {
             this.cy.elements("node.child")
                 .data("border", this.scale * this.BASE_BORDER_WIDTH)
@@ -535,7 +560,6 @@ class Graph2D {
 
         var varGroupNodesOnChange = groupBy => {
             this.groupNodesBy = groupBy;
-            //this.settingOnChange();
             this.updateGraph();
         }
 
