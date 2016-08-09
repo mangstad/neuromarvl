@@ -2160,8 +2160,8 @@ class NeuroMarvl {
                 reader.readAsText(file);
             }
         });
-        
-        $('#load-example-data').button().click(() => this.loadExampleData(() => { }));
+
+        $('#load-example-data').button().click(() => this.loadExampleData(() => this.apps.forEach(app => app.setDataSet(this.referenceDataSet))));
 
         $('#button-apply-filter').button().click(this.applyFilterButtonOnClick);
 
