@@ -110,6 +110,10 @@
     <TypeScriptCompile Include="brain-app\graph2d.ts" />
     <TypeScriptCompile Include="brain-app\graph3d.ts" />
     <TypeScriptCompile Include="brain-app\input.ts" />
+    <TypeScriptCompile Include="brain-app\state.ts" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="extern\" />
   </ItemGroup>
   <PropertyGroup>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>

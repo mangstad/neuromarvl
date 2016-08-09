@@ -5,6 +5,7 @@ class Graph3D {
     parentObject;
     rootObject;
     commonData;
+    saveObj;
 
     // Nodes
     nodeMeshes: any[];
@@ -23,7 +24,7 @@ class Graph3D {
     edgeMatrix: any[][];
     edgeList: Edge[] = [];
     edgeThicknessByWeight: boolean = false;
-    colorMode: string = "none";
+    colorMode: string = "none";     // weight, node, none
     bundlingEdgeList: any[] = [];
     visible: boolean = true;
 
@@ -35,11 +36,12 @@ class Graph3D {
     _sphereGeometry: THREE.SphereGeometry = new THREE.SphereGeometry(2, 10, 10);
 
     allLabels: boolean = false;
-
-    constructor(parentObject, adjMatrix: any[][], nodeColorings: number[], weightMatrix: any[][], labels: string[], commonData) {
+    
+    constructor(parentObject, adjMatrix: any[][], nodeColorings: { color: number, portion: number }[][], weightMatrix: any[][], labels: string[], commonData, saveObj) {
         this.parentObject = parentObject;
         this.rootObject = new THREE.Object3D();
         this.commonData = commonData;
+        this.saveObj = saveObj;
         this.edgeDirectionMode = "none";
         parentObject.add(this.rootObject);
 
@@ -50,23 +52,30 @@ class Graph3D {
                 isSelected: false
             };
         })
-        this.nodeDefaultColor = nodeColorings.slice(0); // clone the array
-        this.nodeCurrentColor = nodeColorings.slice(0); // clone the array
+        
+        this.nodeDefaultColor = nodeColorings.map(a => this.averageColor(a)); // Use average colour
+        this.nodeCurrentColor = this.nodeDefaultColor.slice(0); // clone the array
 
         for (var i = 0; i < adjMatrix.length; ++i) {
             //TODO: Originally using spheres, but can switch to sprites for pie chart representations
             var nodeObject = this.nodeMeshes[i] = new THREE.Mesh(
                 this._sphereGeometry,
-                new THREE.MeshLambertMaterial({ color: nodeColorings[i] })
+                new THREE.MeshLambertMaterial({
+                    color: this.nodeDefaultColor[i],       // Average colour value needed for material
+                    transparent: true       // Not actually transparent, but need this or three.js will render it before the brain surface
+                })
             );
-            //var nodeObject = this.nodeMeshes[i] = this.generateSprite(nodeColorings[i]);
+            nodeObject.renderOrder = RENDER_ORDER_EDGE; // Draw at the same level as edges
             
             var label = (!!labels && labels[i]) || "";
             this.nodeInfo[i]["label"] = this.createNodeLabel(label, 6);
 
-            // additional flag
+            // User data, which will be useful for other graphs using this graph as a basis
             nodeObject.userData.hasVisibleEdges = true;
             nodeObject.userData.id = i;
+            nodeObject.userData.colors = nodeColorings[i];
+            nodeObject.userData.filtered = false;
+
             this.rootObject.add(nodeObject);
         }
 
@@ -90,10 +99,10 @@ class Graph3D {
                     }
 
                     if (weightMatrix[i][j] > weightMatrix[j][i]) {
-                        this.edgeList.push(adjMatrix[i][j] = new Edge(this.rootObject, this.nodeMeshes[i], this.nodeMeshes[j], weightMatrix[i][j])); // assume symmetric matrix
+                        this.edgeList.push(adjMatrix[i][j] = new Edge(this, this.nodeMeshes[i], this.nodeMeshes[j], weightMatrix[i][j])); // assume symmetric matrix
                         adjMatrix[j][i] = null;
                     } else {
-                        this.edgeList.push(adjMatrix[j][i] = new Edge(this.rootObject, this.nodeMeshes[j], this.nodeMeshes[i], weightMatrix[j][i])); // assume symmetric matrix
+                        this.edgeList.push(adjMatrix[j][i] = new Edge(this, this.nodeMeshes[j], this.nodeMeshes[i], weightMatrix[j][i])); // assume symmetric matrix
                         adjMatrix[i][j] = null;
                     }
                 } else {
@@ -103,14 +112,23 @@ class Graph3D {
 
             }
         }
-
-        adjMatrix[len - 1][len - 1] = null;
+        
+        if (len > 0) adjMatrix[len - 1][len - 1] = null;
 
         this.edgeMatrix = adjMatrix;
     }
 
+    
+    averageColor = (colors: { color: number, portion: number }[]) => {
+        return colors.reduce((acc, color) => {
+            let threeColor = new THREE.Color(color.color);
+            return acc.add(threeColor.multiplyScalar(color.portion));
+        }, new THREE.Color(0, 0, 0)).getHex();
+    }
+
 
     generateSprite(nodeColouring: number) {
+        // TODO: This isn't currently being used, but could be useful if using sprites for nodes, so multimodule pies are possible
         var canvas = document.createElement('canvas');
         canvas.width = 64;
         canvas.height = 64;
@@ -229,6 +247,7 @@ class Graph3D {
     applyNodeFiltering() {
         for (var i = 0; i < this.nodeMeshes.length; ++i) {
             this.rootObject.remove(this.nodeMeshes[i]);
+            this.nodeMeshes[i].userData.filtered = true;
         }
 
         if (this.filteredNodeIDs) {
@@ -236,6 +255,7 @@ class Graph3D {
                 var nodeID = this.filteredNodeIDs[j];
 
                 this.rootObject.add(this.nodeMeshes[nodeID]);
+                this.nodeMeshes[nodeID].userData.filtered = false;
             }
         }
     }
@@ -291,17 +311,21 @@ class Graph3D {
                 if (this.filteredNodeIDs) {
                     if (this.filteredNodeIDs.indexOf(i) != -1) {
                         this.rootObject.add(this.nodeMeshes[i]);
+                        this.nodeMeshes[i].userData.filtered = false;
                     }
                     else {
                         this.rootObject.remove(this.nodeMeshes[i]);
+                        this.nodeMeshes[i].userData.filtered = true;
                     }
                 }
                 else {
                     this.rootObject.add(this.nodeMeshes[i]);
+                    this.nodeMeshes[i].userData.filtered = false;
                 }
             }
             else {
                 this.rootObject.remove(this.nodeMeshes[i]);
+                this.nodeMeshes[i].userData.filtered = true;
             }
         }
     }
@@ -410,8 +434,8 @@ class Graph3D {
     }
 
     setEdgeDirectionGradient() {
-        var startRGB = CommonUtilities.hexToRgb(saveObj.edgeSettings.directionStartColor, 1.0);
-        var endRGB = CommonUtilities.hexToRgb(saveObj.edgeSettings.directionEndColor, 1.0);
+        var startRGB = CommonUtilities.hexToRgb(this.saveObj.edgeSettings.directionStartColor, 1.0);
+        var endRGB = CommonUtilities.hexToRgb(this.saveObj.edgeSettings.directionEndColor, 1.0);
         for (var i = 0; i < this.edgeList.length; i++) {
             var edge = this.edgeList[i];
             edge.uniforms.startColor.value = new THREE.Vector4(startRGB.r / 255, startRGB.g / 255, startRGB.b / 255, 1.0);
@@ -471,22 +495,18 @@ class Graph3D {
 
             }
         } else if (colorMode === "node") {
-
             for (var i = 0; i < this.edgeList.length; i++) {
                 var edge = this.edgeList[i];
                 edge.colorMode = colorMode;
                 edge.isColorChanged = true;
             }
-        } else if (colorMode === "none") {
+        } else {        // (colorMode === "none")
             for (var i = 0; i < this.edgeList.length; i++) {
                 var edge = this.edgeList[i];
                 edge.colorMode = colorMode;
                 edge.isColorChanged = true;
             }
         }
-
-
-
     }
 
 
@@ -498,19 +518,16 @@ class Graph3D {
 
         // reset node's hasVisibleEdges flag
         for (var i = 0; i < len - 1; ++i) {
-            //this.nodeMeshes[i].hasVisibleEdges = false;
             this.nodeMeshes[i].userData.hasVisibleEdges = false;
         }
         // reset Edges' Visibilities 
         for (var i = 0; i < len - 1; ++i) {
-
             for (var j = i + 1; j < len; ++j) {
                 if (this.edgeMatrix[i][j] || this.edgeMatrix[j][i]) {
                     var edge = (this.edgeMatrix[i][j]) ? this.edgeMatrix[i][j] : this.edgeMatrix[j][i];
 
                     if (this.filteredNodeIDs && ((this.filteredNodeIDs.indexOf(i) == -1) || (this.filteredNodeIDs.indexOf(j) == -1))) {
                         edge.setVisible(false);
-
                     } else if (visMatrix[i][j] === 1 || visMatrix[j][i] === 1) {
                         this.nodeMeshes[i].userData.hasVisibleEdges = true;
                         this.nodeMeshes[j].userData.hasVisibleEdges = true;
@@ -533,10 +550,8 @@ class Graph3D {
         }
 
         if (this.colorMode === "weight") {
-
             // update edges' color map
             this.setEdgeColorConfig(this.colorMode, this.edgeColorConfig);
-
         } else {
             this.setEdgeColorConfig(this.colorMode);
         }
@@ -569,12 +584,12 @@ class Graph3D {
     //////////////////////////////////////////////
     /////// Label's Functions ////////////////////
     //////////////////////////////////////////////
-    showAllLabels(svgMode: boolean, bCola: boolean) {
+    showAllLabels(ignore3dControl: boolean, bCola: boolean) {
         this.hideAllLabels();
 
         for (var i = 0; i < this.nodeInfo.length; ++i) {
             if (this.nodeInfo[i]["label"]) {
-                if (!svgMode) {
+                if (!ignore3dControl) {
                     if (bCola) {
                         if (this.nodeHasNeighbors[i]) {
                             this.rootObject.add(this.nodeInfo[i]["label"]);
@@ -603,15 +618,16 @@ class Graph3D {
         });
     }
 
-    setNodesColor(colorArray: number[]) {
+    setNodesColor(colorArray: { color: number, portion: number }[][]) {
         if (!colorArray) return;
         if (colorArray.length != this.nodeMeshes.length) {
             throw "ERROR: ColorArray (" + colorArray.length + ") and NodeMeshes (" + this.nodeMeshes.length + ") do not match";
         }
-        this.nodeCurrentColor = colorArray.slice(0); // clone the array
-        for (var i = 0; i < this.nodeMeshes.length; ++i) {
-            this.nodeMeshes[i].material.color.setHex(colorArray[i]);
+        this.nodeCurrentColor = colorArray.map(a => this.averageColor(a)); // Use average colour
 
+        for (var i = 0; i < this.nodeMeshes.length; ++i) {
+            this.nodeMeshes[i].material.color.set(this.nodeCurrentColor[i]);
+            this.nodeMeshes[i].userData.colors = colorArray[i];
         }
 
         // also reset edge color:
@@ -632,7 +648,7 @@ class Graph3D {
         this.nodeMeshes[id].material.color.setHex(color);
     }
 
-    selectNode(id: number, svgMode: boolean, bCola: boolean) {
+    selectNode(id: number, ignore3dControl: boolean, bCola: boolean) {
 
         if (!this.nodeInfo[id].isSelected) {
             this.nodeInfo[id].isSelected = true;
@@ -643,7 +659,7 @@ class Graph3D {
             this.nodeMeshes[id].scale.set(2 * x, 2 * y, 2 * z);
 
             if (this.allLabels == false) {
-                if (!svgMode) {
+                if (!ignore3dControl) {
                     if (bCola) {
                         if (this.nodeHasNeighbors[id]) {
                             this.rootObject.add(this.nodeInfo[id]["label"]);
@@ -658,7 +674,7 @@ class Graph3D {
             for (var j = 0; j < this.edgeMatrix.length; ++j) {
                 var edge = (this.edgeMatrix[id][j]) ? this.edgeMatrix[id][j] : this.edgeMatrix[j][id];
                 if (edge) {
-                    if (edge.visible == true) {
+                    if (edge.visible) {
                         edge.multiplyScale(2);
                     }
                 }
@@ -683,7 +699,7 @@ class Graph3D {
             for (var j = 0; j < this.edgeMatrix.length; ++j) {
                 var edge = (this.edgeMatrix[id][j]) ? this.edgeMatrix[id][j] : this.edgeMatrix[j][id];
                 if (edge) {
-                    if (edge.visible == true) {
+                    if (edge.visible) {
                         edge.multiplyScale(0.5);
                     }
                 }
@@ -695,7 +711,7 @@ class Graph3D {
 
     update() {
         var weightEdges = this.edgeThicknessByWeight;
-        this.edgeList.forEach(function (edge) {
+        this.edgeList.forEach(edge => {
             edge.update(weightEdges);
         });
     }
@@ -716,6 +732,7 @@ class Edge {
     sourceNode;
     targetNode;
     parentObject;
+    saveObj;
 
     // Time control
     timeTracker;
@@ -741,8 +758,8 @@ class Edge {
     // by weight
     colorMapFunction;
     // by node
-    sourceColor: string;
-    targetColor: string;
+    //sourceColor: string;
+    //targetColor: string;
 
     //Shaders
     uniforms;
@@ -750,14 +767,15 @@ class Edge {
 
     fragmentShader;
 
-
-
-    constructor(parentObject, sourceNode, targetNode, private weight) {
+    
+    constructor(graph, sourceNode, targetNode, private weight) {
         this.timeTracker = new Date().getMilliseconds();
-        this.parentObject = parentObject;
+        this.parentObject = graph.rootObject;
+        this.saveObj = graph.saveObj;
         this.targetNode = targetNode;
         this.sourceNode = sourceNode;
         this.directionMode = "none";
+        this.colorMode = "node";
         this.color = "#cfcfcf";
         this.uniforms = {
             timeTracker: { type: "f", value: this.timeTracker / 1000 },
@@ -810,7 +828,7 @@ class Edge {
 
         this.initializeCylinder();
         (<any>this.shape).isEdge = true; // A flag to identify the edge
-        parentObject.add(this.shape);
+        this.parentObject.add(this.shape);
 
         var w = (Math.ceil(weight * 10) - 6) * 0.5; // the edge scale is not proportional to edge weight
         if (w < 0) w = 0;
@@ -826,8 +844,7 @@ class Edge {
     }
 
 
-    initializeCylinder() {
-
+    initializeCylinder() {        
         this.geometry = new THREE.CylinderGeometry(this.unitRadius, this.unitRadius, this.unitLength, 12);
         this.cone = new THREE.CylinderGeometry(this.unitRadius, this.unitRadius * 3, this.unitLength / 5, 12);
         // Material 
@@ -855,6 +872,7 @@ class Edge {
         this.shape.add(this.pointer);
 
     }
+
     initializeLine() {
         this.geometry = new THREE.Geometry();
         this.geometry.vertices.push(
@@ -887,6 +905,7 @@ class Edge {
         this.shape.add(this.pointer);
 
     }
+
     setOpacity(startOpacity, endOpacity) {
         this.uniforms.startOpacity.value = startOpacity;
         this.uniforms.endOpacity.value = endOpacity;
@@ -897,8 +916,8 @@ class Edge {
 
         // Overwriter current color setting if directionMode is gradient
         if (this.directionMode === "gradient") {
-            var startRGB = CommonUtilities.hexToRgb(saveObj.edgeSettings.directionStartColor, 1.0);
-            var endRGB = CommonUtilities.hexToRgb(saveObj.edgeSettings.directionEndColor, 1.0);
+            var startRGB = CommonUtilities.hexToRgb(this.saveObj.edgeSettings.directionStartColor, 1.0);
+            var endRGB = CommonUtilities.hexToRgb(this.saveObj.edgeSettings.directionEndColor, 1.0);
             this.uniforms.startColor.value = new THREE.Vector4(
                 startRGB.r / 255,
                 startRGB.g / 255,
@@ -968,7 +987,7 @@ class Edge {
         var scale = 1;
 
         /* update width of the edge */
-        if (weightEdges == true) {
+        if (weightEdges) {
             scale = this.scaleWeight;
         } else {
             scale = this.scaleNoWeight;
@@ -986,10 +1005,10 @@ class Edge {
      
         var length = targetVec.length();
 
-        if (length === 0) {
-            this.parentObject.remove(this.shape);
-            return;
-        }
+        //if (length === 0) {
+        //    this.parentObject.remove(this.shape);
+        //    return;
+        //}
 
         this.shape.scale.set(scale, length / this.unitLength, scale);
         targetVec.normalize();

@@ -5,7 +5,8 @@ class CommonUtilities {
     static alertType = {
         "ERROR": 2,
         "SUCCESS": 0,
-        "WARNING": 1
+        "WARNING": 1,
+        "INFO": -1
     };
     static alertNumber = 0;
     static isDiscreteValues(values: number[], threshold?) {
@@ -23,7 +24,7 @@ class CommonUtilities {
         return true;
     }
 
-    static isSimatrical(matrix: number[][]) {
+    static isSymmetrical(matrix: number[][]) {
         if (matrix.length !== matrix[0].length) return false;
         for (var i = 0; i < matrix.length; i++) {
             for (var j = i + 1; j < matrix[0].length; j++) {
@@ -81,13 +82,20 @@ class CommonUtilities {
             alertIcon = "glyphicon-ok-sign";
             alertTypeString = "Success!";
         } else if (alertType === this.alertType.WARNING) {
+            console.log("WARNING: " + alertMessage);
             alertTypeClass = "alert-warning";
             alertIcon = "glyphicon-info-sign";
             alertTypeString = "Warning!";
         } else if (alertType === this.alertType.ERROR) {
+            console.log("ERROR: " + alertMessage);
+            console.trace();
             alertTypeClass = "alert-danger";
             alertIcon = "glyphicon-remove-sign";
             alertTypeString = "Error!";
+        } else if (alertType === this.alertType.INFO) {
+            alertTypeClass = "alert-info";
+            alertIcon = "glyphicon-ok-sign";
+            alertTypeString = "Info";
         }
 
         var newAlert = $('<div id="' + alertID + '" class="alert ' + alertTypeClass + '" role="alert"></div>')

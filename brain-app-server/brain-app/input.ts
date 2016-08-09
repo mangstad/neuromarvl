@@ -57,7 +57,8 @@ class InputTarget {
 
     // Accepts the CSS ID of the div that is to represent the input target, and the extra borders
     // which describe where in the div the region of interest is (and where the coordinates should be scaled around)
-    constructor(public targetCssId: string, public currentPointer: PointerIndirection, public leftBorder = 0, public rightBorder = 0, public topBorder = 0, public bottomBorder = 0) { }
+    constructor(public targetCssId: string, public currentPointer: PointerIndirection, public leftBorder = 0, public rightBorder = 0, public topBorder = 0, public bottomBorder = 0) {
+    }
 
     regKeyDownCallback(key: string, callback: (b: boolean) => void) {
         this.keyDownCallbacks[key] = callback;
@@ -165,10 +166,9 @@ class InputTargetManager {
     rightClickLabel;
     rightClickLabelAppended: boolean = false;
     selectedNodeID: number = -1;
-    divContextMenuColorPicker;
     contextMenuColorChanged: boolean = false;
 
-    regMouseLocationCallback(callback: (x:number, y:number) => number) {
+    regMouseLocationCallback(callback: (x: number, y: number) => number) {
         this.mouseLocationCallback = callback;
     }
 
@@ -195,7 +195,12 @@ class InputTargetManager {
             console.log("The Leap device has been disconnected.");
         });
 
-        this.leap.connect();
+        try {
+            this.leap.connect();
+        }
+        catch (e) {
+            console.log("Connection to Leap failed: " + e);
+        }
 
         // Initialize finger smoothing variables
         this.fingerPositions = new Array(this.fingerSmoothingLevel);
@@ -203,9 +208,8 @@ class InputTargetManager {
             this.fingerPositions[i] = [1, 1, 1];
 
         var varYokingViewAcrossPanels = () => { this.yokingViewAcrossPanels(); }
-
-        this.rightClickLabel = document.createElement('div');
-        this.rightClickLabel.id = 'right-click-label';
+        
+        this.rightClickLabel = document.getElementById("right-click-label");
 
         document.addEventListener('click', (event) => {
             if (this.isDragged) {
@@ -238,7 +242,9 @@ class InputTargetManager {
 
             // Remove label if exists
             if (this.rightClickLabelAppended) {
-                if (((<any>(event.target)).id != "input-context-menu-node-color") && (this.contextMenuColorChanged == false)) {
+                let isInLabel = $.contains(this.rightClickLabel, <Element>(event.target));
+                //TODO: Still need check on contextMenuColorChanged?
+                if (!isInLabel && !this.contextMenuColorChanged) {
                     document.body.removeChild(this.rightClickLabel);
                     this.selectedNodeID = -1;
                     this.rightClickLabelAppended = false;
@@ -252,7 +258,7 @@ class InputTargetManager {
 
             if (viewID == this.activeTarget) {
                 var it = this.inputTargets[this.activeTarget];
-                if (it && (it.sliderEvent == true)) return;
+                if (it && (it.sliderEvent)) return;
 
                 this.isMouseDown = true;
 
@@ -281,10 +287,12 @@ class InputTargetManager {
 
             if (record) {
                 $('#div-context-menu-color-picker').css({ visibility: 'visible' });
-                if ($('#div-context-menu-color-picker').length > 0) this.divContextMenuColorPicker = $('#div-context-menu-color-picker').detach();
 
                 document.body.appendChild(this.rightClickLabel);
-                $('#right-click-label').empty(); // empty this.rightClickLabel
+                let attributes = document.getElementById("context-menu-attributes");
+                while (attributes.hasChildNodes()) {
+                    attributes.removeChild(attributes.lastChild);
+                }
 
                 this.rightClickLabel.style.position = 'absolute';
                 this.rightClickLabel.style.left = x + 'px';
@@ -297,22 +305,20 @@ class InputTargetManager {
                 // the first attribute is node id
                 this.selectedNodeID = record.id;
 
-                // Populate tdhe right click label
+                // Populate the right click label
                 for (var attr in record) {
                     if (record.hasOwnProperty(attr)) {
                         var text = document.createElement('div');
                         text.innerHTML = attr + ": " + record[attr];
                         text.style.marginBottom = '5px';
-                        this.rightClickLabel.appendChild(text);
+                        attributes.appendChild(text);
                     }
                 }
-
-                $(this.divContextMenuColorPicker).appendTo('#right-click-label');
 
                 // the last attribute is color
                 var color = parseInt(record.color);
                 var hex = color.toString(16);
-                (<any>document.getElementById('input-context-menu-node-color')).color.fromString(hex);   
+                (<any>$("#input-context-menu-node-color")).colorpicker("setValue", "#" + hex);
 
                 this.rightClickLabelAppended = true;
             }
@@ -358,30 +364,34 @@ class InputTargetManager {
 
         }, false);
 
-        document.addEventListener('mousemove', (event) => {
-            
+        document.addEventListener('mousemove', (event) => {            
             this.currentPointer.ptr = this.mouse;
             this.pointerImage.hide();
 
             if (this.contextMenuColorChanged) return;
 
-            if (this.isMouseDown === true) {
-                this.isDragged = true;
-                var it = this.inputTargets[this.activeTarget];
-                if (it) {
-                    var dx = event.clientX - this.mouse.x;
-                    var dy = event.clientY - this.mouse.y;
-
-                    var callback = it.mouseDragCallback;
-                    if (callback) callback(dx, dy, this.mouseDownMode);
-
-                    if (this.yokingView) varYokingViewAcrossPanels();
-
+            let x = event.clientX;
+            let y = event.clientY;
+            
+            if (this.isMouseDown) {
+                let dxStart = x - this.onMouseDownPosition.x;
+                let dyStart = y - this.onMouseDownPosition.y;
+                const DRAG_THRESHOLD = 3;
+                if ((Math.abs(dxStart) > DRAG_THRESHOLD) || (Math.abs(dyStart) > DRAG_THRESHOLD)) {
+                    this.isDragged = true;
+                    var it = this.inputTargets[this.activeTarget];
+                    if (it) {
+                        var callback = it.mouseDragCallback;
+                        let dx = x - this.mouse.x;
+                        let dy = y - this.mouse.y;
+                        if (callback) callback(dx, dy, this.mouseDownMode);
+                        if (this.yokingView) varYokingViewAcrossPanels();
+                    }
                 }
             }
 
-            this.mouse.x = event.clientX;
-            this.mouse.y = event.clientY;
+            this.mouse.x = x;
+            this.mouse.y = y;
         }, false);
 
         // Keyboard input handling

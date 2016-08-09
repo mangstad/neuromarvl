@@ -12,11 +12,13 @@
     <link rel="stylesheet" href="extern/bootstrap-colorpicker/css/bootstrap-colorpicker.min.css" />
     <link rel="stylesheet" href="extern/bootstrap-slider/css/bootstrap-slider.min.css" />
     <link rel="stylesheet" href="extern/jquery-ui-1.10.4.custom/css/sunny/jquery-ui-1.10.4.custom.min.css" />
+
+    <link rel="stylesheet" type="text/css" href="style.css" />
 </head>
 <body onload="defaultFunction()">
     <div id="splashPage" class="overlay overlay-scale">
         <div id="content">
-            <button type="button" class="overlay-close" onclick="toggleSplashPage()">Close</button>
+            <button id="overlay-close" type="button" class="overlay-close">Close</button>
 
             <div id="title" align="center">
                 <span style="font-size:400%; color: #2c3e50;">NeuroMArVL</span>
@@ -66,7 +68,7 @@
                     <div style="background-color: #fff; padding: 3px; position: relative; height: 100%; overflow:hidden;">
                         <p style="font-size:120%"><strong>Sharing</strong></p>
 
-                        Allow neruoscientist to quickly share their visualisations on their own dataset with other scientists with just one click.
+                        Allow neuroscientist to quickly share their visualisations on their own dataset with other scientists with just one click.
                     </div>
                 </div>
                 <div class="thumbnail" style="height: 150px;">
@@ -98,7 +100,7 @@
     </div>
 
     <div id="control-panel-bottom">
-        <div class="btn btn-primary" style="height: 50%; width: 100%;" onclick="toggleSplashPage()" data-toggle="tooltip" data-placement="top" title="Show introduction with example links">Splash Page</div>
+        <div id ="control-panel-bottom-close" class="btn btn-primary" style="height: 50%; width: 100%;" data-toggle="tooltip" data-placement="top" title="Show introduction with example links">Splash Page</div>
         <div class="btn-group btn-group-justified bg-info" style="height: 50%; width: 100%;">
             <div id="button-export-svg" class="btn btn-primary" data-toggle="tooltip" data-placement="top" title="Download Visualisations">
                 <span class="glyphicon glyphicon-download-alt" aria-hidden="true"></span>
@@ -142,12 +144,10 @@
                 <br />
                 <label class="control-label" data-toggle="tooltip" data-placement="right" title="Open colour picker for the brain model">Color</label>
                 <p style="margin-bottom: 0;">
-                    <input id="input-surface-color"
-                           class="color {pickerFace:3,
-                                         pickerFaceColor:'#feeebd',
-                                         styleElement:'input-surface-color-style'} form-control input-sm"
-                           value="E3E3E3"
-                           onchange="setBrainSurfaceColor(this.color);">
+                    <div id="input-surface-color" class="input-group colorpicker-component">
+                        <input type="text" value="E3E3E3" class="form-control" />
+                        <span class="input-group-addon"><i></i></span>
+                    </div>
                 </p>
                 <br/>
                 <label class="control-label" data-toggle="tooltip" data-placement="right" title="Adjust brain model opacity">Opacity</label>
@@ -162,11 +162,6 @@
                     <button id="button-upload-model" style="font-size:10px;">Upload</button>
                     <br />
                 </div>
-
-                <br />
-                <div id="brain3d-icon-back" class="icon"></div>
-                <div id="brain3d-icon-front" class="icon icon-front"
-                     data-toggle="tooltip" data-placement="bottom" title="Drag this to one of the views">3D Brain</div>
 
                 <br />
                 <div style="margin-left: 0px; margin-bottom: 10px;">
@@ -198,7 +193,7 @@
                         <div class="input-group input-group-sm">
                             <div class="input-group-addon glyphicon glyphicon glyphicon-info-sign status-changed" id="coords-status"
                                  data-toggle="tooltip" data-placement="bottom" title="File is not uploaded"></div>
-                            <button id="button-select-coords" class="form-control btn-default">Coordinates File</button>
+                            <button id="button-select-coords" class="form-control btn-default"><span id="button-select-coords-filename">Coordinates File</span></button>
                         </div>
                         <br />
                         <br />
@@ -207,7 +202,7 @@
                         <div class="input-group input-group-sm">
                             <div class="input-group-addon glyphicon glyphicon glyphicon-info-sign status-changed" id="matrix-status"
                                  data-toggle="tooltip" data-placement="bottom" title="File is not uploaded"></div>
-                            <button id="button-select-matrix" class="form-control btn-default">Matrix File</button>
+                            <button id="button-select-matrix" class="form-control btn-default"><span id="button-select-matrix-filename">Matrix File</span></button>
                         </div>
                         <br />
                         <br />
@@ -216,7 +211,7 @@
                         <div class="input-group input-group-sm">
                             <div class="input-group-addon glyphicon glyphicon glyphicon-info-sign status-changed" id="attrs-status"
                                  data-toggle="tooltip" data-placement="bottom" title="File is not uploaded"></div>
-                            <button id="button-select-attrs" class="form-control btn-default">Attributes File</button>
+                            <button id="button-select-attrs" class="form-control btn-default"><span id="button-select-attrs-filename">Attributes File</span></button>
                         </div>
                         <br />
                         <br />
@@ -225,14 +220,9 @@
                         <div class="input-group input-group-sm">
                             <div class="input-group-addon glyphicon glyphicon glyphicon-info-sign status-changed" id="labels-status"
                                  data-toggle="tooltip" data-placement="bottom" title="File is not uploaded"></div>
-                            <button id="button-select-labels" class="form-control btn-default">Labels File</button>
+                            <button id="button-select-labels" class="form-control btn-default"><span id="button-select-labels-filename">Labels File</span></button>
                         </div>
                         <br />
-                        <br />
-                        <div id="dataset1-icon-back" class="icon"></div>
-                        <div id="dataset1-icon-front" class="icon icon-front"
-                             data-toggle="tooltip" data-placement="bottom" title="Drag this to one of the views">Show</div>
-
                     </div>
                     <div id="div-batching-tab" class="tab-pane">
                        
@@ -305,38 +295,27 @@
                             <p>
                                 <label class="control-label" style="display: inline-block;">Key</label>
                                 <select id="select-node-key" class="form-control input-sm" style="width: 80px; display: inline-block;"></select>
-                                <input id="input-node-color"
-                                       class="form-control input-sm color {pickerFace: 3,
-                                         pickerFaceColor: '#feeebd',
-                                         styleElement: 'input-node-color-style',
-                                         onImmediateChange: 'setSelectNodeKeyBackgroundColor(this); setNodeSizeOrColor();'}"
-                                       value="FFFF00"
-                                       onchange="setSelectNodeKeyBackgroundColor(this.color); setNodeSizeOrColor();">
+                                <div id="input-node-color" class="input-group colorpicker-component">
+                                    <input type="text" value="ffff00" class="form-control"/>
+                                    <span class="input-group-addon"><i></i></span>
+                                </div>
                             </p>
                         </div>
                         
                         <div id="div-node-color-pickers" style="display:none; margin-top: 20px; margin-left: 20px;">
                             <p style="margin-bottom: 0;">
                                 <label class="control-label" style="display: inline-block;">Min</label>
-                                <input id="input-min-color"
-                                       class="form-control input-sm color {pickerFace:3,
-                                         pickerFaceColor:'#feeebd',
-                                         styleElement:'input-min-color-style',
-                                         onImmediateChange: 'setNodeSizeOrColor();'}"
-                                       value="FFFF00"
-                                       style="display: inline-block; width: 100px;"
-                                       onchange="setNodeSizeOrColor();">
+                                <div id="input-min-color" class="input-group colorpicker-component">
+                                    <input type="text" value="ffff00" class="form-control" />
+                                    <span class="input-group-addon"><i></i></span>
+                                </div>
                             </p>
                             <p style="margin-top: 0;">
                                 <label class="control-label" style="display: inline-block;">Max</label>
-                                <input id="input-max-color"
-                                       class="form-control input-sm color {pickerFace:3,
-                                         pickerFaceColor:'#feeebd',
-                                         styleElement:'input-max-color-style',
-                                         onImmediateChange: 'setNodeSizeOrColor();'}"
-                                       value="FF0000"
-                                       style="display: inline-block; width: 100px;"
-                                       onchange="setNodeSizeOrColor();">
+                                <div id="input-max-color" class="input-group colorpicker-component">
+                                    <input type="text" value="FF0000" class="form-control" />
+                                    <span class="input-group-addon"><i></i></span>
+                                </div>
                             </p>
                         </div>
                         <div id="div-charts" class="dc-data-count" style="width: 95%">
@@ -368,25 +347,17 @@
                         <div id="div-edge-gradient-color-pickers" style="display:none; margin-top: 20px; margin-left: 20px;">
                             <p style="margin-bottom: 0;">
                                 <label class="control-label" style="display: inline-block;">Start</label>
-                                <input id="input-edge-start-color"
-                                       class="form-control input-sm color {pickerFace:3,
-                                         pickerFaceColor:'#feeebd',
-                                         styleElement:'input-start-color-style',
-                                         onImmediateChange: 'setEdgeDirectionGradient();'}"
-                                       value="FF00"
-                                       style="display: inline-block; width: 100px;"
-                                       onchange="setEdgeDirectionGradient();">
+                                <div id="input-edge-start-color" class="input-group colorpicker-component">
+                                    <input type="text" value="FF0000" class="form-control" />
+                                    <span class="input-group-addon"><i></i></span>
+                                </div>
                             </p>
                             <p style="margin-top: 0;">
                                 <label class="control-label" style="display: inline-block;">End</label>
-                                <input id="input-edge-end-color"
-                                       class="form-control input-sm color {pickerFace:3,
-                                         pickerFaceColor:'#feeebd',
-                                         styleElement:'input-end-color-style',
-                                         onImmediateChange: 'setEdgeDirectionGradient();'}"
-                                       value="0000FF"
-                                       style="display: inline-block; width: 100px;"
-                                       onchange="setEdgeDirectionGradient();">
+                                <div id="input-edge-end-color" class="input-group colorpicker-component">
+                                    <input type="text" value="0000FF" class="form-control" />
+                                    <span class="input-group-addon"><i></i></span>
+                                </div>
                             </p>
                         </div>
                         <div id="div-edge-color">
@@ -416,14 +387,10 @@
                                         <div id="div-edge-discretized-0">
                                             From:<input id="input-edge-discretized-0-from" type="text" />
                                             To:<input id="input-edge-discretized-0-to" type="text" />
-                                            <input id="input-edge-discretized-0-color"
-                                                   class="color {pickerFace: 3,
-                                                pickerFaceColor: '#2ecc71',
-                                                styleElement: 'input-node-color-style
-                                                onImmediateChange: 'setEdgeColorByWeight();'}"
-                                                   value="2ecc71"
-                                                   style="width: 80px; background-color: #feeebd; border: 1px solid grey"
-                                                   onchange="setEdgeColorByWeight();"> <!--setNodeSizeOrColor();">-->
+                                            <div id="input-edge-discretized-0-color" class="input-group colorpicker-component">
+                                                <input type="text" value="2ecc71" class="form-control" />
+                                                <span class="input-group-addon"><i></i></span>
+                                            </div>
 
                                             <br>
                                         </div>
@@ -431,56 +398,40 @@
                                         <div id="div-edge-discretized-1">
                                             From:<input id="input-edge-discretized-1-from" type="text" />
                                             To:<input id="input-edge-discretized-1-to" type="text" />
-                                            <input id="input-edge-discretized-1-color"
-                                                   class="color {pickerFace: 3,
-                                                pickerFaceColor: '#3498db',
-                                                styleElement: 'input-node-color-style
-                                                onImmediateChange: 'setEdgeColorByWeight();'}"
-                                                   value="3498db"
-                                                   style="width: 80px; background-color: #feeebd; border: 1px solid grey"
-                                                   onchange="setEdgeColorByWeight();"> <!--setNodeSizeOrColor();">-->
+                                            <div id="input-edge-discretized-1-color" class="input-group colorpicker-component">
+                                                <input type="text" value="3498db" class="form-control" />
+                                                <span class="input-group-addon"><i></i></span>
+                                            </div>
 
                                         </div>
 
                                         <div id="div-edge-discretized-2">
                                             From:<input id="input-edge-discretized-2-from" type="text" />
                                             To:<input id="input-edge-discretized-2-to" type="text" />
-                                            <input id="input-edge-discretized-2-color"
-                                                   class="color {pickerFace: 3,
-                                                pickerFaceColor: '#9b59b6',
-                                                styleElement: 'input-node-color-style
-                                                onImmediateChange: 'setEdgeColorByWeight();'}"
-                                                   value="9b59b6"
-                                                   style="width: 80px; background-color: #feeebd; border: 1px solid grey"
-                                                   onchange="setEdgeColorByWeight();"> <!--setNodeSizeOrColor();">-->
+                                            <div id="input-edge-discretized-2-color" class="input-group colorpicker-component">
+                                                <input type="text" value="9b59b6" class="form-control" />
+                                                <span class="input-group-addon"><i></i></span>
+                                            </div>
                                             <br>
                                         </div>
 
                                         <div id="div-edge-discretized-3">
                                             From:<input id="input-edge-discretized-3-from" type="text" />
                                             To:<input id="input-edge-discretized-3-to" type="text" />
-                                            <input id="input-edge-discretized-3-color"
-                                                   class="color {pickerFace: 3,
-                                                pickerFaceColor: '#f1c40f',
-                                                styleElement: 'input-node-color-style
-                                               onImmediateChange: 'setEdgeColorByWeight();'}"
-                                                   value="f1c40f"
-                                                   style="width: 80px; background-color: #feeebd; border: 1px solid grey"
-                                                   onchange="setEdgeColorByWeight();"> <!--setNodeSizeOrColor();">-->
+                                            <div id="input-edge-discretized-3-color" class="input-group colorpicker-component">
+                                                <input type="text" value="f1c40f" class="form-control" />
+                                                <span class="input-group-addon"><i></i></span>
+                                            </div>
 
                                         </div>
 
                                         <div id="div-edge-discretized-4">
                                             From:<input id="input-edge-discretized-4-from" type="text" />
                                             To:<input id="input-edge-discretized-4-to" type="text" />
-                                            <input id="input-edge-discretized-4-color"
-                                                   class="color {pickerFace: 3,
-                                                pickerFaceColor: '#e74c3c',
-                                                styleElement: 'input-node-color-style
-                                                onImmediateChange: 'setEdgeColorByWeight();'}"
-                                                   value="e74c3c"
-                                                   style="width: 80px; background-color: #feeebd; border: 1px solid grey"
-                                                   onchange="setEdgeColorByWeight();"> <!--setNodeSizeOrColor();">-->
+                                            <div id="input-edge-discretized-4-color" class="input-group colorpicker-component">
+                                                <input type="text" value="e74c3c" class="form-control" />
+                                                <span class="input-group-addon"><i></i></span>
+                                            </div>
                                             <br>
                                         </div>
 
@@ -488,27 +439,17 @@
                                     <div id="div-edge-color-continuous-normal">
                                         <p style="margin-bottom: 0;">
                                             min:
-                                            <input id="input-edge-min-color"
-                                                   class="color {pickerFace:3,
-                                         pickerFaceColor:'#feeebd',
-                                         styleElement:'input-edge-min-color-style',
-                                         onImmediateChange: 'setEdgeColorByWeight();'}"
-                                                   value="FFFF00"
-                                                   style="width: 80px; background-color: #feeebd; border: 1px solid grey"
-                                                   onchange="setEdgeColorByWeight();">
-                                            <input id="input-edge-min-color-style" style="width: 11px; height: 11px; border: 1px solid #000000" readonly>
+                                            <div id="input-edge-min-color" class="input-group colorpicker-component">
+                                                <input type="text" value="ffff00" class="form-control" />
+                                                <span class="input-group-addon"><i></i></span>
+                                            </div>
                                         </p>
                                         <p style="margin-top: 0;">
                                             max:
-                                            <input id="input-edge-max-color"
-                                                   class="color {pickerFace:3,
-                                         pickerFaceColor:'#feeebd',
-                                         styleElement:'input-edge-max-color-style',
-                                         onImmediateChange: 'setEdgeColorByWeight();'}"
-                                                   value="FF0000"
-                                                   style="width: 80px; background-color: #feeebd; border: 1px solid grey"
-                                                   onchange="setEdgeColorByWeight();">
-                                            <input id="input-edge-max-color-style" style="width: 11px; height: 11px; border: 1px solid #000000" readonly>
+                                            <div id="input-edge-max-color" class="input-group colorpicker-component">
+                                                <input type="text" value="ff0000" class="form-control" />
+                                                <span class="input-group-addon"><i></i></span>
+                                            </div>
                                             <br>
                                         </p>
                                     </div>
@@ -518,14 +459,10 @@
                                     <p>
                                         key:
                                         <select id="select-edge-key" style="background-color: #feeebd"></select>
-                                        <input id="input-edge-color"
-                                               class="color {pickerFace: 3,
-                                         pickerFaceColor: '#feeebd',
-                                         styleElement: 'input-edge-color',
-                                         onImmediateChange: 'setSelectEdgeKeyBackgroundColor(this.color); setEdgeColorByWeight();'}"
-                                               value="FFFF00"
-                                               style="width: 80px; background-color: #feeebd; border: 1px solid grey"
-                                               onchange="setSelectEdgeKeyBackgroundColor(this.color); setEdgeColorByWeight();">
+                                        <div id="input-edge-color" class="input-group colorpicker-component">
+                                            <input type="text" value="ffff00" class="form-control" />
+                                            <span class="input-group-addon"><i></i></span>
+                                        </div>
 
                                         <br>
                                     </p>
@@ -554,17 +491,18 @@
 
     <div id="leap-pointer"></div>
 
-    <div id="div-context-menu-color-picker" style="visibility:hidden;">
-        color:
-        <input id="input-context-menu-node-color"
-               class="color {pickerFace:3,
-                             pickerFaceColor:'#feeebd',
-                             styleElement:'input-context-menu-node-color-style',
-                             onImmediateChange: 'setNodeColorInContextMenu(this);'}"
-               value="FFFF00"
-               style="width: 80px; background-color: #feeebd; border: 1px solid grey"
-               onchange="setNodeColorInContextMenu(this.color);">
-        <input id="input-context-menu-node-color-style" style="width: 11px; height: 11px; border: 1px solid #000000" readonly>
+    <div id="right-click-label">
+        <div id="context-menu-attributes">
+        </div>
+        <div id="div-context-menu-color-picker" style="visibility:hidden;">
+            color:
+            <div id="input-context-menu-node-color" class="input-group colorpicker-component" 
+                 style="width: 12em; background-color: #feeebd; border: 1px solid grey; "
+            >
+                <input type="text" value="ffff00" class="form-control" />
+                <span class="input-group-addon"><i></i></span>
+            </div>
+        </div>
     </div>
 
 
@@ -648,21 +586,29 @@
     <script src="extern/yaml/js-yaml.min.js"></script>
 
     <script src="extern/bootstrap-slider/bootstrap-slider.min.js"></script>
-    <script src="extern/jscolor/jscolor.js"></script>
+    <script src="extern/bootstrap-colorpicker/js/bootstrap-colorpicker.min.js"></script>
+    <script src="extern/jquery.ui.touch-punch.min.js"></script>
 
     <script src="extern/numeric-1.2.6.js"></script>
     <script src="extern/packages.js"></script>
 
     <script src="extern/cola.v3.min.js"></script>
+    <!--<script src="extern/cola.v3.js"></script>-->
     <script src="extern/d3adaptor.js"></script>
+
+    <script src="extern/cytoscape.min.js"></script>
+    <script src="extern/cytoscape-cola.js"></script>
+    <script src="extern/cytoscape-cose-bilkent.js"></script>
+
 
     <!-- The main application script -->
     <script src="brain-app/input.js"></script> 
     <script src="brain-app/CommonUtilities.js"></script>
-    <script src="brain-app/graph2d.js"></script>
     <script src="brain-app/graph3d.js"></script>
     <script src="brain-app/circularGraph.js"></script>
+    <script src="brain-app/graph2d.js"></script>
     <script src="brain-app/brain3d.js"></script>
+    <script src="brain-app/state.js"></script> 
     <script src="brain-app/brainapp.js"></script>
 
     <script>

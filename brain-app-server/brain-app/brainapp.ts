@@ -11,649 +11,19 @@ declare var dc;
 declare var crossfilter;
 declare var jsyaml;
 declare var extra;
-// Holds data common to all datasets, and sends notifications when data changes
-class CommonData {
 
-    public selectedNode = -1;
-    public nodeIDUnderPointer: number[] = [-1, -1, -1, -1, -1]; // for yoked display; the last one is for svg graphs
-    public circularBar1ColorPicker;
-    public circularBar2ColorPicker;
 
-    public edgeColorMode = "none";
-    public edgeWeightColorMode = "";
-    public edgeForceContinuous = false;
+const TYPE_COORD = "coordinates";
+const TYPE_MATRIX = "matrix";
+const TYPE_ATTR = "attributes";
+const TYPE_LABEL = "labels";
 
-    coordCallbacks: Array<() => void> = new Array();
-    labelCallbacks: Array<() => void> = new Array();
-    surfaceCallbacks: Array<() => void> = new Array();
+// The names of the views are referenced quite often
+const TL_VIEW = '#view-top-left';
+const TR_VIEW = '#view-top-right';
+const BL_VIEW = '#view-bottom-left';
+const BR_VIEW = '#view-bottom-right';
 
-    regNotifyCoords(callback: () => void) {
-        this.coordCallbacks.push(callback);
-    }
-    regNotifyLabels(callback: () => void) {
-        this.labelCallbacks.push(callback);
-    }
-    regNotifySurface(callback: () => void) {
-        this.surfaceCallbacks.push(callback);
-    }
-    // TODO: add deregistration capability
-    notifyCoords() {
-        this.coordCallbacks.forEach(function (c) { c() });
-    }
-    notifyLabels() {
-        this.labelCallbacks.forEach(function (c) { c() });
-    }
-    notifySurface() {
-        this.surfaceCallbacks.forEach(function (c) { c() });
-    }
-}
-
-// Holds data for a specific dataset, and sends notifications when data changes
-class DataSet {
-    public simMatrix: number[][];
-    public brainCoords: number[][];
-    public brainLabels: string[];
-    public attributes: Attributes = null;
-    public info;
-    public sortedSimilarities;
-    simCallbacks: Array<() => void> = new Array();
-    attCallbacks: Array<() => void> = new Array();
-
-    constructor() {
-
-        this.info = {
-            nodeCount: undefined,
-            edgeWeight: {
-                type: "",
-                distincts: []
-            },
-            isSimatricalMatrix: true
-        };
-    }
-
-    verify() {
-        if (this.simMatrix.length === 0) {
-            CommonUtilities.launchAlertMessage(CommonUtilities.alertType.ERROR, "Similarity Matrix is not loaded!");
-            return false;
-        }
-
-        if (this.brainCoords.length === 0) {
-            CommonUtilities.launchAlertMessage(CommonUtilities.alertType.ERROR, "Node Coordinates is not loaded!");
-            return false;
-        }
-
-        if (!this.attributes) {
-            CommonUtilities.launchAlertMessage(CommonUtilities.alertType.ERROR, "Attributes are not loaded!");
-            return false;
-        }
-
-        if (this.brainCoords[0].length !== this.attributes.numRecords) {
-            CommonUtilities.launchAlertMessage(CommonUtilities.alertType.ERROR, "Attributes and Coordinates files do not match!");
-            return false;
-        }
-
-        if (this.brainCoords[0].length !== this.simMatrix.length) {
-            CommonUtilities.launchAlertMessage(CommonUtilities.alertType.ERROR, "Similarity Matrix and Coordinates files do not match!");
-            return false;
-        }
-
-        return true;
-    }
-
-    clone() {
-        var newDataset = new DataSet();
-
-        // clone simMatrix
-        var newSimMatrix = [];
-        for (var i = 0; i < this.simMatrix.length; i++) {
-            newSimMatrix.push(this.simMatrix[i].slice(0));
-        }
-
-        // clone brain coords
-        var newBrainCoords = []
-        for (var i = 0; i < this.brainCoords.length; i++) {
-            newBrainCoords.push(this.brainCoords[i].slice(0));
-        }
-
-        // clone brain lables
-        if (this.brainLabels) var newBrainLabels = this.brainLabels.slice(0);
-
-        // clone attribute
-        var newAttr = this.attributes.clone();
-
-        // clone sortedSimilarities
-        var newSorted = this.sortedSimilarities.slice(0);
-
-        // clone info object
-        var newInfo = jQuery.extend({}, this.info);
-
-        newDataset.simMatrix = newSimMatrix;
-        newDataset.brainCoords = newBrainCoords;
-        newDataset.brainLabels = newBrainLabels;
-        newDataset.attributes = newAttr;
-        newDataset.sortedSimilarities = newSorted;
-        newDataset.info = newInfo;
-
-        return newDataset;
-
-    }
-
-    //
-    adjMatrixWithoutEdgesCrossHemisphere(count: number) {
-        var max = this.info.nodeCount * (this.info.nodeCount - 1) / 2;
-        if (count > max) count = max;
-        if (count > this.sortedSimilarities.length) count = this.sortedSimilarities.length;
-        var threshold = this.sortedSimilarities[count - 1];
-        var adjMatrix: number[][] = Array<Array<number>>(this.info.nodeCount);
-
-        for (var i = 0; i < this.info.nodeCount; ++i) {
-            adjMatrix[i] = new Array<number>(this.info.nodeCount);
-        }
-
-        for (var i = 0; i < this.info.nodeCount - 1; ++i) {
-
-            for (var j = i + 1; j < this.info.nodeCount; ++j) {
-
-                var isSameSide = (this.brainCoords[0][i] * this.brainCoords[0][j] > 0);
-                var val = this.simMatrix[i][j];
-                if (val >= threshold && isSameSide) { // Accept an edge between nodes that are at least as similar as the threshold value
-                    adjMatrix[i][j] = 1;
-                }
-                else {
-                    adjMatrix[i][j] = 0;
-                }
-
-                val = this.simMatrix[j][i];
-                if (val >= threshold && isSameSide) { // Accept an edge between nodes that are at least as similar as the threshold value
-                    adjMatrix[j][i] = 1;
-                }
-                else {
-                    adjMatrix[j][i] = 0;
-                }
-            }
-        }
-        return adjMatrix;
-    }
-    // Create a matrix where a 1 in (i, j) means the edge between node i and node j is selected
-    adjMatrixFromEdgeCount(count: number) {
-        var max = this.info.nodeCount * (this.info.nodeCount - 1) / 2;
-        if (count > max) count = max;
-        if (count > this.sortedSimilarities.length) count = this.sortedSimilarities.length;
-        var threshold = this.sortedSimilarities[count - 1];
-        var adjMatrix: number[][] = Array<Array<number>>(this.info.nodeCount);
-
-        for (var i = 0; i < this.info.nodeCount; ++i) {
-            adjMatrix[i] = new Array<number>(this.info.nodeCount);
-        }
-
-
-        for (var i = 0; i < this.info.nodeCount - 1; ++i) {
-
-            for (var j = i + 1; j < this.info.nodeCount; ++j) {
-                var val = this.simMatrix[i][j];
-                if (val >= threshold) { // Accept an edge between nodes that are at least as similar as the threshold value
-                    adjMatrix[i][j] = 1;
-                }
-                else {
-                    adjMatrix[i][j] = 0;
-                }
-
-                val = this.simMatrix[j][i];
-                if (val >= threshold) { // Accept an edge between nodes that are at least as similar as the threshold value
-                    adjMatrix[j][i] = 1;
-                }
-                else {
-                    adjMatrix[j][i] = 0;
-                }
-            }
-        }
-        return adjMatrix;
-    }
-
-    getRecord(index: number) {
-        var record = {};
-        var columns = this.attributes.columnNames.length;
-
-        if (this.brainLabels) record["label"] = this.brainLabels[index];
-        record["id"] = index;
-
-        for (var i = 0; i < columns; ++i) {
-            var value = this.attributes.attrValues[i][index];
-            record[this.attributes.columnNames[i]] = value;
-        }
-
-        return record;
-    }
-
-    setSimMatrix(simMatrix) {
-        this.simMatrix = simMatrix;
-        this.info.isSimatricalMatrix = CommonUtilities.isSimatrical(this.simMatrix);
-
-        this.sortedSimilarities = [];
-
-        // Sort the similarities into a list so we can filter edges
-        for (var i = 0; i < this.simMatrix.length; ++i) {
-
-            for (var j = i + 1; j < this.simMatrix[i].length; ++j) {
-                var value = (this.simMatrix[i][j] > this.simMatrix[j][i]) ? this.simMatrix[i][j] : this.simMatrix[j][i];
-                this.sortedSimilarities.push(value);
-            }
-        }
-        this.sortedSimilarities.sort(function (a, b) { return b - a; });
-
-        // remove edges with weight === 0
-        var index = this.sortedSimilarities.indexOf(0);
-        this.sortedSimilarities.splice(index, this.sortedSimilarities.length - index);
-
-        //---------------------------------------------------------------------------------------------------------
-        // Inspect Dataset (for now only inspect edge weights values)
-        // inspect edge weights
-        var distincts;
-        if (CommonUtilities.isDiscreteValues(this.sortedSimilarities, 20)) {
-            this.info.edgeWeight.type = "discrete";
-            this.info.edgeWeight.distincts = CommonUtilities.getDistinctValues(this.sortedSimilarities);
-        } else {
-            this.info.edgeWeight.type = "continuous";
-        }
-
-        // Notify all registered 
-        this.notifySim();
-    }
-
-    regNotifySim(callback: () => void) {
-        this.simCallbacks.push(callback);
-    }
-    regNotifyAttributes(callback: () => void) {
-        this.attCallbacks.push(callback);
-    }
-    // TODO: add deregistration capability
-    notifySim() {
-        this.simCallbacks.forEach(function (c) { c() });
-    }
-    notifyAttributes() {
-        this.attCallbacks.forEach(function (c) { c() });
-    }
-}
-
-class SaveFile {
-    // user-uploaded file names
-    loadExampleData: boolean = false;
-    serverFileNameCoord: string;
-    serverFileNameMatrix: string;
-    serverFileNameAttr: string;
-    serverFileNameLabel: string;
-
-    // UI Settings
-    surfaceSettings;
-    edgeSettings;
-    nodeSettings;
-
-    // brain apps
-    saveApps: SaveApp[];
-
-    // cross filter
-    filteredRecords: any[];
-
-    constructor() {
-
-        this.edgeSettings = {
-            colorBy: "none", // node (default), none or weight 
-            size: 1, // default
-            directionMode: "none",
-            directionStartColor: "#FF0000",
-            directionEndColor: "#0000FF",
-            weight: {
-                type: "",
-                discretizedSetting: {
-                    numCategory: 1,
-                    domainArray: [],
-                    colorArray: []
-                },
-                continuousSetting: {
-                    maxColor: "",
-                    minColor: "",
-                },
-                discreteSetting: {
-                    colorArray: [],
-                    valueArray: []
-                }
-            }
-        };
-
-        this.nodeSettings = {
-            nodeSizeOrColor: '',
-            nodeSizeAttribute: '',
-            nodeSizeMin: 1,
-            nodeSizeMax: 1,
-
-            nodeColorAttribute: '',
-            nodeColorMode: '',
-            nodeColorDiscrete: [],
-            nodeColorContinuousMin: '',
-            nodeColorContinuousMax: ''
-        };
-
-        this.surfaceSettings = {
-            opacity: 0.5
-        };
-        this.saveApps = new Array(4);
-        for (var i = 0; i < 4; i++) {
-            this.saveApps[i] = null;
-        }
-    }
-
-    toYaml() {
-
-        var yamlObj = {};
-
-        yamlObj["Example Data"] = (this.loadExampleData) ? "Yes" : "No";
-        yamlObj["Edge Settings"] = {
-            "Color By": this.edgeSettings.colorBy,
-            "Size": this.edgeSettings.size
-        };
-
-        if (this.edgeSettings.colorBy === "weight") {
-            yamlObj["Edge Settings"]["Weight"] = {
-                "Type": this.edgeSettings.weight.type
-            }
-            if (this.edgeSettings.weight.type === "discrete") {
-                yamlObj["Edge Settings"]["Weight"]["Color List"] = this.edgeSettings.weight.discreteSetting.colorArray;
-                yamlObj["Edge Settings"]["Weight"]["Value List"] = this.edgeSettings.weight.discreteSetting.valueArray;
-            } else if (this.edgeSettings.weight.type === "continuous-discretized") {
-                yamlObj["Edge Settings"]["Weight"]["Number of Category"] = this.edgeSettings.weight.discretizedSetting.numCategory;
-                yamlObj["Edge Settings"]["Weight"]["Domain List"] = this.edgeSettings.weight.discretizedSetting.domainArray;
-                yamlObj["Edge Settings"]["Weight"]["Color List"] = this.edgeSettings.weight.discretizedSetting.colorArray;
-            } else if (this.edgeSettings.weight.type === "continuous-normal") {
-                yamlObj["Edge Settings"]["Weight"]["Max Value Color"] = this.edgeSettings.weight.continuousSetting.maxColor;
-                yamlObj["Edge Settings"]["Weight"]["Min Value Color"] = this.edgeSettings.weight.continuousSetting.minColor;
-            }
-        }
-
-        yamlObj["Node Settings"] = {
-            "Size Attribute": this.nodeSettings.nodeSizeAttribute,
-            "Max Size": this.nodeSettings.nodeSizeMin,
-            "Min Size": this.nodeSettings.nodeSizeMax,
-            "Color Attribute": this.nodeSettings.nodeColorAttribute,
-            "Discrete Color List": this.nodeSettings.nodeColorDiscrete,
-            "Continuous Color Min": this.nodeSettings.nodeColorContinuousMin,
-            "Continuous Color Max": this.nodeSettings.nodeColorContinuousMax
-        };
-        yamlObj["Brain Settings"] = {
-            "Transparency": this.surfaceSettings.opacity
-        };
-
-        for (var i = 0; i < 4; i++) {
-            if (this.saveApps[i]) {
-                yamlObj["viewport" + i] = this.saveApps[i].toYaml();
-            }
-        }
-
-        return jsyaml.safeDump(yamlObj);
-    }
-
-    fromYaml(yaml) {
-        var yamlObj = jsyaml.safeLoad(yaml);
-
-        this.loadExampleData = (yamlObj["example data"] === "yes");
-        this.edgeSettings.colorBy = yamlObj["edge settings"]["color by"];
-        this.edgeSettings.size = yamlObj["edge settings"]["size"];
-
-        if (this.edgeSettings.colorBy === "weight") {
-            this.edgeSettings.weight.type = yamlObj["edge settings"]["weight"]["type"];
-
-            if (this.edgeSettings.weight.type === "discrete") {
-                this.edgeSettings.weight.discreteSetting.colorArray = yamlObj["edge settings"]["weight"]["color list"];
-                this.edgeSettings.weight.discreteSetting.valueArray = yamlObj["edge settings"]["weight"]["value list"];
-            } else if (this.edgeSettings.weight.type === "continuous-discretized") {
-                this.edgeSettings.weight.discretizedSetting.numCategory = yamlObj["edge settings"]["weight"]["number of category"];
-                this.edgeSettings.weight.discretizedSetting.domainArray = yamlObj["edge settings"]["weight"]["domain list"];
-                this.edgeSettings.weight.discretizedSetting.colorArray = yamlObj["edge settings"]["weight"]["color list"];
-            } else if (this.edgeSettings.weight.type === "continuous-normal") {
-                this.edgeSettings.weight.continuousSetting.maxColor = yamlObj["edge settings"]["weight"]["max value color"];
-                this.edgeSettings.weight.continuousSetting.minColor = yamlObj["edge settings"]["weight"]["min value color"];
-            }
-        }
-
-        this.nodeSettings = {
-            nodeSizeOrColor: "node-color",
-            nodeSizeAttribute: yamlObj["node settings"]["size attribute"],
-            nodeSizeMin: yamlObj["node settings"]["max size"],
-            nodeSizeMax: yamlObj["node settings"]["min size"],
-
-            nodeColorAttribute: yamlObj["node settings"]["color attribute"],
-            nodeColorContinuousMin: yamlObj["node settings"]["continuous color min"],
-            nodeColorContinuousMax: yamlObj["node settings"]["continuous color max"],
-            nodeColorDiscrete: yamlObj["node settings"]["discrete color list"]
-        };
-
-        this.surfaceSettings.opacity = yamlObj["brain settings"]["transparency"];
-
-
-        for (var i = 0; i < 4; i++) {
-            if (yamlObj["viewport" + i]) {
-                this.saveApps[i] = new SaveApp();
-                this.saveApps[i].fromYaml(yamlObj["viewport" + i]);
-            }
-        }
-    }
-}
-class SaveApp {
-    //determine which brain surface model
-    surfaceModel: string;
-    brainSurfaceMode;
-    view: string;
-
-    dataSet: DataSet;
-
-    // determine which viewport
-    setDataSetView: string;
-
-    // determine edgeCount setting
-    edgeCount: number;
-
-    // which network is open
-    showingTopologyNetwork: boolean;
-    networkType: string;
-
-    // extra option for circular layout:
-    circularBundleAttribute: string;
-    circularSortAttribute: string;
-    circularLableAttribute: string;
-    circularEdgeGradient: boolean;
-    circularAttributeBars;
-
-    toYaml() {
-        var showGraph = (this.showingTopologyNetwork) ? "Yes" : "No";
-        var yamlObj = {
-            "Surface Model": this.surfaceModel,
-            "Number of Edges": this.edgeCount,
-            "Brain Surface Mode": this.brainSurfaceMode,
-            "Show Graph": showGraph,
-            "Network Type": this.networkType
-        }
-
-        if (this.networkType === "circular") {
-            yamlObj["circular settings"] = {
-                "Bundle Attribute": this.circularBundleAttribute,
-                "Sort Attribute": this.circularSortAttribute,
-                "Label Attribute": this.circularLableAttribute,
-                "Attribute Bars": this.circularAttributeBars
-            }
-        }
-
-        return yamlObj;
-    }
-
-    fromYaml(yamlObj) {
-        this.surfaceModel = yamlObj["surface model"];
-        this.edgeCount = yamlObj["number of edges"];
-        this.brainSurfaceMode = yamlObj["brain surface mode"];
-        this.showingTopologyNetwork = (yamlObj["show graph"] === "yes");
-        this.networkType = yamlObj["network type"];
-
-        if (this.networkType = "circular") {
-            this.circularBundleAttribute = yamlObj["circular settings"]["bundle attribute"];
-            this.circularSortAttribute = yamlObj["circular settings"]["sort attribute"];
-            this.circularLableAttribute = yamlObj["circular settings"]["label attribute"];
-            this.circularAttributeBars = yamlObj["circular settings"]["attribute bars"];
-        }
-    }
-}
-
-// Parses, stores, and provides access to brain node attributes from a file
-class Attributes {
-    attrValues: number[][][];
-    columnNames: string[];
-    numRecords: number;
-    info;
-
-    filteredRecords: any[];
-    filteredRecordsHighlightChanged: boolean = false;
-
-    clone() {
-        var newAttr = new Attributes();
-
-        // clone attrValues 
-        var newAttrValues = [];
-        for (var i = 0; i < this.attrValues.length; i++) {
-            newAttrValues.push(this.attrValues[i].slice());
-        }
-
-        // clone columnNames
-        var newColumnNames = this.columnNames;
-
-        // clone num records
-        var newNumRecords = this.numRecords;
-
-        var newInfo = jQuery.extend(true, {}, this.info);
-
-        newAttr.info = newInfo;
-        newAttr.attrValues = newAttrValues;
-        newAttr.columnNames = newColumnNames;
-        newAttr.numRecords = newNumRecords;
-
-        return newAttr;
-
-    }
-
-    constructor(text?: string) {
-        if (!text) return;
-        this.info = {};
-        this.columnNames = [];
-        var lines = text.replace(/\t|\,/g, ' ').trim().split(/\r\n|\r|\n/g).map(function (s) { return s.trim() });
-        // check the last line:
-        var lastline = lines[lines.length - 1].trim();
-        if (lastline.length == 0) {
-            lines.splice(lines.length - 1, 1);
-        }
-
-        // Check if first line contains labels
-        var firstWords = lines[0].split(' ');
-        for (var i = 0; i < firstWords.length && this.columnNames.length === 0; i++) {
-            var column = firstWords[i].replace(/,/g, '|').split("|");
-            for (var j = 0; j < column.length; j++) {
-
-                if (isNaN(Number(column[j]))) {
-                    this.columnNames = firstWords;
-                    lines.shift();// remove if the first line is just labels
-                    break;
-                }
-            }
-        }
-
-        // Give default names to attributes
-        if (this.columnNames.length === 0) {
-            this.columnNames = firstWords.map(function (val, i) {
-                return "Attribute" + i;
-            });
-        }
-
-        this.numRecords = lines.length;
-        var numAttributes = this.columnNames.length;
-
-        // Store the values of each attribute by index
-        var values = [];
-        for (var i = 0; i < numAttributes; ++i) {
-            values[i] = [];
-        }
-
-        // Add the attributes of each record to the right value list
-        var numAttrElements = [];
-        for (var i = 0; i < lines.length; ++i) {
-            var rec = lines[i].split(' ');
-            for (var j = 0; j < numAttributes; ++j) {
-                values[j][i] = rec[j].replace(/,/g, '|').split("|").map(function (val) { return parseFloat(val); });
-
-                // Record the nummber of element and compared it to the rest of the record
-                if (!numAttrElements[j]) {
-                    numAttrElements[j] = values[j][i].length;
-                } else {
-                    // The number of elements for each attribute has to be the same accross nodes
-                    if (numAttrElements[j] != values[j][i].length) {
-                        throw "Inconsistent number of element in attribute \"" + this.columnNames[j] + "\"";
-                    }   
-                }
-            }
-        }
-
-        // Check number type for each attributes (Discrete or Continuous)
-        for (var i = 0; i < this.columnNames.length; i++) {
-            if (numAttrElements[i] === 1) {
-                this.info[this.columnNames[i]] = {
-                    isDiscrete: CommonUtilities.isDiscreteValues(CommonUtilities.concatTwoDimensionalArray(values[i]), 20),
-                    numElements: 1
-                };
-            } else { // If there are more than one element than consider it as discrete (with the values are weights)
-                this.info[this.columnNames[i]] = {
-                    isDiscrete: true,
-                    numElements: numAttrElements[i]
-                };
-            }
-
-
-            if (this.info[this.columnNames[i]].isDiscrete && this.info[this.columnNames[i]].numElements === 1) {
-                this.info[this.columnNames[i]].distinctValues = CommonUtilities.getDistinctValues(CommonUtilities.concatTwoDimensionalArray(values[i])).sort(function (a, b) {
-                    return a - b;
-                });
-            } else { // If the attribute has multiple elements then distinctValues will be a discrete array
-                this.info[this.columnNames[i]].distinctValues = $.map($(Array(this.info[this.columnNames[i]].numElements)), function (val, i) { return i; });
-            }
-        }
-
-        this.attrValues = values;
-
-    }
-
-    getValue(columnIndex: number, index: number) {
-
-        return this.attrValues[columnIndex][index];
-    }
-
-    getMin(columnIndex: number) {
-        var array = CommonUtilities.concatTwoDimensionalArray(this.attrValues[columnIndex]);
-        array.sort(function (a, b) {
-            return a - b;
-        });
-
-        return array[0];
-    }
-
-    getMax(columnIndex: number) {
-        var array = CommonUtilities.concatTwoDimensionalArray(this.attrValues[columnIndex]);
-        array.sort(function (a, b) {
-            return b - a;
-        });
-
-        return array[0];
-    }
-
-    get(attribute: string) {
-        var columnIndex = this.columnNames.indexOf(attribute);
-        if (columnIndex != -1)
-            return this.attrValues[columnIndex];
-        return null;
-    }
-}
 
 // Sub-applications implement this interface so they can be notified when they are assigned a or when their view is resized
 interface Application {
@@ -669,6 +39,7 @@ interface Application {
     // Brain Surface
     setBrainMode(brainMode);
     setSurfaceOpacity(opacity);
+    setSurfaceColor(color: string);
 
     // Node Attributes
     setNodeDefaultSizeColor();
@@ -698,9 +69,11 @@ interface Application {
 }
 // The loop class can be used to run applications that aren't event-based
 
+
 interface Loopable {
     update(deltaTime: number): void;
 }
+
 
 class Loop {
     loopable;
@@ -717,12 +90,16 @@ class Loop {
             var deltaTime = (currentTime - this.timeOfLastFrame) / 1000;
             this.timeOfLastFrame = currentTime;
 
+            //TODO: This bit isn't useful now as there is no mechanism to clear apps. It also should be somewhere else.
+            // Kept for now, because app deletion will probably need to be implemented in the future.
+            /*
             for (var i = 0; i < 4; ++i) {
-                if (apps[i] && (apps[i].isDeleted() == true)) {
+                if (apps[i] && apps[i].isDeleted()) {
                     apps[i] = null;
                     saveObj.saveApps[i] = null; // create a new instance (if an old instance exists)
                 }
             }
+            */
 
             // Limit the maximum time step
             if (deltaTime > this.frameTimeLimit)
@@ -737,1265 +114,6 @@ class Loop {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////
-// Set up jQuery UI layout objects ////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////
-
-
-$("[data-toggle='tooltip']").tooltip(<any>{ container: 'body' });
-
-$("#tab2").click(function () {
-    setTimeout(function () {
-        resetDataSetIcon();
-    }, 0);
-
-});
-
-/////////////////////////////////////////////////
-//          Upload files buttons              //
-////////////////////////////////////////////////
-$('#button-select-coords').click(function () {
-    $("#select-coords").click();
-});
-$('#select-coords').on('change', function () {
-    // Change the button name according to the file name
-    var file = (<any>$('#select-coords').get(0)).files[0];
-    document.getElementById("button-select-coords").innerHTML = file.name;
-
-    changeFileStatus("coords-status", "changed");
-    
-    // parse and upload coordinate file
-    uploadCoords();
-
-});
-
-$('#button-select-matrices-batching').click(function () {
-    $("#select-matrices-batching").click();
-});
-$("#select-matrices-batching").on('change', function () {
-    var numFiles = (<any>$('#select-matrices-batching').get(0)).files.length;
-    document.getElementById("button-select-matrices-batching").innerHTML = numFiles + " files loaded";
-
-
-    changeFileStatus("matrices-batching-status", "uploaded");
-
-});
-$('#button-select-attrs-batching').click(function () {
-    $("#select-attrs-batching").click();
-});
-$("#select-attrs-batching").on('change', function () {
-    var numFiles = (<any>$('#select-attrs-batching').get(0)).files.length;
-    document.getElementById("button-select-attrs-batching").innerHTML = numFiles + " files loaded";
-
-    changeFileStatus("attrs-batching-status", "uploaded");
-
-});
-
-$('#btn-start-batching').click(function () {
-    var matrixFiles = (<any>$('#select-matrices-batching').get(0)).files;
-    var attrFiles = (<any>$('#select-attrs-batching').get(0)).files;
-
-    if (matrixFiles.length === attrFiles.length) {
-
-        // Showing modal 
-        $("#alertModal")["modal"]({
-            backdrop: "static"
-        });
-
-        // Reset modal content
-        document.getElementById("alertModalTitle").innerHTML = "Batching in progress";
-        document.getElementById("alertModalMessage").innerHTML = "Processing " + (i + 1) + " in " + numberOfFiles + " pairs.";
-
-        // Start batching
-        var status = 0.0;
-        var attributes = (<any>$('#select-attrs-batching').get(0)).files;
-        var matrices = (<any>$('#select-matrices-batching').get(0)).files;
-        var numberOfFiles = attributes.length;
-        var i = 0;
-
-        batchProcess(i, numberOfFiles, attributes, matrices);
-
-    } else {
-        CommonUtilities.launchAlertMessage(CommonUtilities.alertType.ERROR, "Number of Files do not match.");
-    }
-
-});
-
-function batchProcess(i, numberOfFiles, attributes, matrices) {
-    // Load pair of files into dataset
-    loadAttributes(attributes[i], dataSet);
-    loadSimilarityMatrix(matrices[i], dataSet);
-
-    // Load the new dataset to the app (always use the first viewport - top left);
-    setDataset(tl_view);
-
-    // refresh the visualisation with current settings and new data
-    apps[0].showNetwork(false);
-    setEdgeColor();
-    setNodeSizeOrColor();
-    apps[0].update(0);
-
-    // Capture and download the visualisation
-    exportSVG(0, "svg");
-
-    // update status
-    i++;
-    var percentage = (i / numberOfFiles) * 100;
-    $("#progressBar").css({
-        "width": percentage + "%"
-    });
-    document.getElementById("alertModalMessage").innerHTML = "Processing " + (i + 1) + " in " + numberOfFiles + " pairs.";
-
-    if (i < numberOfFiles) {
-        setTimeout(function () {
-            batchProcess(i, numberOfFiles, attributes, matrices)
-        }, 1000);
-    } else {
-        $("#alertModal")["modal"]('hide');
-    }
-}
-
-$('#button-select-matrix').click(function () {
-    $("#select-matrix").click();
-});
-$('#select-matrix').on('change', function () {
-    // Change the button name according to the file name
-    var file = (<any>$('#select-matrix').get(0)).files[0];
-    document.getElementById("button-select-matrix").innerHTML = file.name;
-
-    // update file status to changed
-    changeFileStatus("matrix-status", "changed");
-
-    // Parse and upload attribute file
-    uploadMatrix();
-
-});
-
-$('#button-select-attrs').click(function () {
-    $("#select-attrs").click();
-});
-$('#select-attrs').on('change', function () {
-    // Change the button name according to the file name
-    var file = (<any>$('#select-attrs').get(0)).files[0];
-    document.getElementById("button-select-attrs").innerHTML = file.name;
-    // update file status to changed
-    changeFileStatus("attrs-status", "changed");
-
-    // Parse and upload attribute file
-    uploadAttr();
-
-});
-
-$('#button-select-labels').click(function () {
-    $("#select-labels").click();
-});
-$('#select-labels').on('change', function () {
-    // Change the button name according to the file name
-    var file = (<any>$('#select-labels').get(0)).files[0];
-    document.getElementById("button-select-labels").innerHTML = file.name;
-
-    // update file status to changed
-    changeFileStatus("labels-status", "changed");
-
-    // Parse and upload labels
-    uploadLabels();
-});
-
-
-$('#button-load-settings').button().click(function () {
-    $("#input-select-load-file").click();
-});
-$('#input-select-load-file').on('change', loadSettings);
-
-$('#button-save-settings').button().click(function () {
-    saveSettings();
-});
-
-$('#button-export-svg').button().click(function () {
-    $("#exportModal")["modal"](
-        );
-});
-
-$('#button-export-submit').button().click(function () {
-    var viewport = $('#select-export-viewport').val();
-    var type = $('#select-export-type').val();
-
-    exportSVG(parseInt(viewport), type)
-});
-
-$('#button-save-app').button().click(function () {
-    //Save all the apps
-    for (var i = 0; i < 4; i++) {
-        var app = saveObj.saveApps[i];
-        if (apps[i]) apps[i].save(app);
-    }
-
-    var saveJson = JSON.stringify(saveObj);
-    $.post("brain-app/saveapp.aspx",
-        {
-            save: saveJson
-        },
-        function (data, status) {
-            if (status.toLowerCase() == "success") {
-                var url = document.URL.split('?')[0];
-                prompt("The project is saved. Use the following URL to restore the project:", url + "?save=" + data);
-            }
-            else {
-                alert("save: " + status);
-            }
-        });
-});
-
-//$('#accordion').accordion({ heightStyle: 'fill' });
-//$('#accordion').accordion({ heightStyle: 'content' });
-
-$('[data-toggle="btns"] .btn').on('click', function () {
-    var $this = $(this);
-    $this.parent().find('.active').removeClass('active');
-    $this.addClass('active');
-});
-
-var TYPE_COORD: string = "coordinates";
-var TYPE_MATRIX: string = "matrix";
-var TYPE_ATTR: string = "attributes";
-var TYPE_LABEL: string = "labels";
-
-$('#input-select-model').button();
-$('#button-upload-model').button().click(function () {
-    var file = (<any>$('#input-select-model').get(0)).files[0];
-    if (file) {
-        // 1. upload the file to server
-        $("#brain3d-icon-front").html("Loading...");
-        $("#brain3d-icon-front").draggable("disable");
-        var reader = new FileReader();
-        reader.onload = function () {
-            $.post("brain-app/upload.aspx",
-                {
-                    fileText: reader.result,
-                    fileName: file.name,
-                    type: "brain-model"
-                },
-                function (data, status) {
-                    if (status.toLowerCase() == "success") {
-                        $("#brain3d-icon-front").html("3D Brain");
-                        $("#brain3d-icon-front").draggable("enable");
-                        $("#brain3d-icon-front").draggable({
-                            zIndex: 100000
-                        });
-                        $('#label-model')
-                            .text("uploaded")
-                            .css({ color: 'green' });
-                    }
-                    else {
-                        alert("Loading Model is: " + status + "\nData: " + data);
-
-                        $('#label-model')
-                            .text("Upload failed")
-                            .css({ color: 'red' });
-
-                        $("#brain3d-icon-front").html("3D Brain");
-                        $("#brain3d-icon-front").draggable("enable");
-                    }
-                });
-        }
-
-        reader.readAsText(file);
-    }
-});
-
-$('#select-coords').button();
-function uploadCoords() {
-    var file = (<any>$('#select-coords').get(0)).files[0];
-    if (file) {
-        // 1. upload the file to server
-        uploadTextFile(file, TYPE_COORD);
-
-        // 2. also load data locally
-        loadCoordinates(file);
-
-        // 3. update file status
-        changeFileStatus("coords-status", "uploaded");
-        
-    }
-}
-
-$('#select-matrix').button();
-function uploadMatrix() {
-    var file = (<any>$('#select-matrix').get(0)).files[0];
-    if (file) {
-        // 1. upload the file to server
-        uploadTextFile(file, TYPE_MATRIX);
-
-        // 2. also load data locally
-        loadSimilarityMatrix(file, dataSet);
-
-        // 3. update file status
-        changeFileStatus("matrix-status", "uploaded");
-
-    }
-}
-
-$('#select-attrs').button();
-function uploadAttr() {
-    var file = (<any>$('#select-attrs').get(0)).files[0];
-    if (file) {
-        // 1. upload the file to server
-        uploadTextFile(file, TYPE_ATTR);
-
-        // 2. also load data locally
-        //loadAttributes(file, dataSet);
-        var reader = new FileReader();
-        reader.onload = function () {
-            parseAttributes(reader.result, dataSet);
-
-            // 3. update file status
-            $('#attrs-status').removeClass('status-changed');
-            $('#attrs-status').removeClass('glyphicon-info-sign');
-            $('#attrs-status').addClass('status-updated');
-            $('#attrs-status').addClass('glyphicon-ok-sign');
-            document.getElementById("attrs-status").title = "Uploaded Succesfully";
-            $("#attrs-status").tooltip('fixTitle');
-            setupAttributeTab();
-        }
-        reader.readAsText(file);
-    }
-}
-
-$('#select-labels').button();
-function uploadLabels() {
-    var file = (<any>$('#select-labels').get(0)).files[0];
-    if (file) {
-        // 1. upload the file to server
-        uploadTextFile(file, TYPE_LABEL);
-
-        // 2. also load data locally
-        loadLabels(file);
-
-        // 3. update file status
-        changeFileStatus("labels-status", "uploaded");
-        
-    }
-}
-
-$(document).keyup(function (e) {
-    if (e.keyCode == 27) toggleSplashPage();   // esc
-});
-
-function toggleSplashPage() {
-    var splashPage = $('#splashPage');
-
-    if (splashPage.hasClass("open")) {
-        splashPage.removeClass("open");
-        splashPage.addClass("close");
-
-        setTimeout(function () {
-            splashPage.removeClass("close");
-        }, 500)
-    } else {
-        splashPage.addClass("open");
-    }
-
-}
-
-function uploadTextFile(file, fileType: string) {
-    var reader = new FileReader();
-
-    reader.onload = function () {
-        $.post("brain-app/upload.aspx",
-            {
-                fileText: reader.result,
-                fileName: file.name,
-                type: fileType
-            },
-            function (data, status) {
-                if (status.toLowerCase() == "success") {
-                    if (fileType == TYPE_COORD) {
-                        saveObj.serverFileNameCoord = data;
-                    }
-                    else if (fileType == TYPE_MATRIX) {
-                        saveObj.serverFileNameMatrix = data;
-                    }
-                    else if (fileType == TYPE_ATTR) {
-                        saveObj.serverFileNameAttr = data;
-                    }
-                    else if (fileType == TYPE_LABEL) {
-                        saveObj.serverFileNameLabel = data;
-                    }
-                }
-                else {
-                    //alert("Loading is: " + status + "\nData: " + data);
-                }
-            });
-    }
-    reader.readAsText(file);
-}
-
-
-$('#load-example-data').button().click(function () {
-    loadExampleData(0, function (view) { });
-});
-
-function loadExampleData(view, func) {
-    var status = {
-        coordLoaded: false,
-        matrixLoaded: false,
-        attrLoaded: false,
-        labelLoaded: false
-    };
-
-    var callback = function () {
-        if (status.coordLoaded && status.matrixLoaded && status.attrLoaded && status.labelLoaded) {
-            func(view);
-        }
-    }
-    $.get('brain-app/data/coords.txt', function (text) {
-        parseCoordinates(text);
-        //$('#shared-coords').css({ color: 'green' });
-        $('#label-coords')
-            .text("default data")
-            .css({ color: 'green' });
-        status.coordLoaded = true;
-         // change status
-        document.getElementById("button-select-coords").innerHTML = "coords.txt";
-        changeFileStatus("coords-status", "uploaded");
-
-        callback();
-    });
-    $.get('brain-app/data/mat1.txt', function (text) {
-        parseSimilarityMatrix(text, dataSet);
-        //$('#d1-mat').css({ color: 'green' });
-        $('#label-similarity-matrix')
-            .text("default data")
-            .css({ color: 'green' });
-        status.matrixLoaded = true;
-
-        // change status
-        document.getElementById("button-select-matrix").innerHTML = "mat1.txt";
-        changeFileStatus("matrix-status", "uploaded");
-
-        callback();
-    });
-    $.get('brain-app/data/attributes1.txt', function (text) {
-        parseAttributes(text, dataSet);
-        //$('#d1-att').css({ color: 'green' });
-        $('#label-attributes')
-            .text("default data")
-            .css({ color: 'green' });
-
-        setupAttributeTab();
-        status.attrLoaded = true;
-        // change status
-        document.getElementById("button-select-attrs").innerHTML = "attributes1.txt";
-        changeFileStatus("attrs-status", "uploaded");
-
-        callback();
-    });
-    $.get('brain-app/data/labels.txt', function (text) {
-        parseLabels(text);
-        //$('#shared-labels').css({ color: 'green' });
-        $('#label-labels')
-            .text("default data")
-            .css({ color: 'green' });
-        status.labelLoaded = true;
-
-        // change status
-        document.getElementById("button-select-labels").innerHTML = "labels.txt";
-        changeFileStatus("labels-status", "uploaded");
-
-        callback();
-    });
-
-    saveObj.loadExampleData = true;
-}
-function changeFileStatus(file, status) {
-    $('#' + file).removeClass('status-changed');
-    $('#' + file).removeClass('glyphicon-info-sign');
-    $('#' + file).removeClass('status-updated');
-    $('#' + file).removeClass('glyphicon-ok-sign');
- 
-    if (status === "changed") {
-        $('#' + file).addClass('status-changed');
-        $('#' + file).addClass('glyphicon-info-sign');
-        document.getElementById(file).title = "File is not uploaded";
-
-    } else {
-        $('#' + file).addClass('status-updated');
-        $('#' + file).addClass('glyphicon-ok-sign');
-        document.getElementById(file).title = "Uploaded Succesfully";
-
-    }
-    $('#' + file).tooltip('fixTitle');
-
-}
-function loadUploadedData(loadObj, view, func, source = "save") {
-    saveObj.loadExampleData = false;
-    var status = {
-        coordLoaded: false,
-        matrixLoaded: false,
-        attrLoaded: false,
-        labelLoaded: (loadObj.serverFileNameLabel) ? false : true
-    };
-
-    var callback = function () {
-        if (status.coordLoaded && status.matrixLoaded && status.attrLoaded && status.labelLoaded) {
-            func(view);
-        }
-    }
-
-    $.get('brain-app/' + source + '/' + loadObj.serverFileNameCoord, function (text) {
-        parseCoordinates(text);
-        //$('#shared-coords').css({ color: 'green' });
-        $('#label-coords')
-            .text("Pre-uploaded data")
-            .css({ color: 'green' });
-        status.coordLoaded = true;
-        callback();
-    });
-    $.get('brain-app/' + source + '/' + loadObj.serverFileNameMatrix, function (text) {
-        parseSimilarityMatrix(text, dataSet);
-        //$('#d1-mat').css({ color: 'green' });
-        $('#label-similarity-matrix')
-            .text("Pre-uploaded data")
-            .css({ color: 'green' });
-        status.matrixLoaded = true;
-        callback();
-    });
-    $.get('brain-app/' + source + '/' + loadObj.serverFileNameAttr, function (text) {
-        parseAttributes(text, dataSet);
-        //$('#d1-att').css({ color: 'green' });
-        $('#label-attributes')
-            .text("Pre-uploaded data")
-            .css({ color: 'green' });
-        setupAttributeTab();
-        status.attrLoaded = true;
-        callback()
-    });
-    // Check if Label file is uploaded
-    if (loadObj.serverFileNameLabel) {
-        $.get('brain-app/' + source + '/' + loadObj.serverFileNameLabel, function (text) {
-            parseLabels(text);
-            //$('#shared-labels').css({ color: 'green' });
-            $('#label-labels')
-                .text("Pre-uploaded data")
-                .css({ color: 'green' });
-        });
-        status.labelLoaded = true;
-        callback();
-    }
-    $('#load-example-data').button().prop("disabled", "disabled");
-
-}
-
-$('#button-apply-filter').button().click(applyFilterButtonOnClick);
-$('#button-apply-filter').button("disable");
-
-
-
-function setupAttributeTab() {
-    if (dataSet.attributes) {
-        $('#select-attribute').empty();
-        for (var i = 0; i < dataSet.attributes.columnNames.length; ++i) {
-            var columnName = dataSet.attributes.columnNames[i];
-            $('#select-attribute').append('<option value = "' + columnName + '">' + columnName + '</option>');
-        }
-
-        $('#div-set-node-scale').show();
-
-        $('#div-node-size').hide();
-        $('#div-node-color-pickers').hide();
-        $('#div-node-color-pickers-discrete').hide();
-
-        $('#select-node-size-color').val('node-default');
-        $('#select-attribute').prop("disabled", "disabled");
-
-        setupCrossFilter(dataSet.attributes);
-    }
-}
-
-function applyFilterButtonOnClick() {
-    if (!dataSet.attributes.filteredRecords) {
-        $('#button-apply-filter').button("disable");
-        return;
-    }
-
-    var fRecords = dataSet.attributes.filteredRecords;
-    var idArray = new Array();
-
-    for (var i = 0; i < fRecords.length; ++i) {
-        var id = fRecords[i]["index"];
-        idArray.push(id);
-    }
-
-    if (apps[0]) apps[0].applyFilter(idArray);
-    if (apps[1]) apps[1].applyFilter(idArray);
-    if (apps[2]) apps[2].applyFilter(idArray);
-    if (apps[3]) apps[3].applyFilter(idArray);
-
-    saveObj.filteredRecords = dataSet.attributes.filteredRecords;
-}
-
-$('#button-set-node-size-color').button().click(function () {
-    setNodeSizeOrColor();
-});
-
-function setSelectEdgeKeyBackgroundColor(color: string) {
-    var keySelection = <any>document.getElementById('select-edge-key');
-    keySelection.options[keySelection.selectedIndex].style.backgroundColor = '#' + color;
-}
-
-function setSelectNodeKeyBackgroundColor(color: string) {
-    var keySelection = <any>document.getElementById('select-node-key');
-    keySelection.options[keySelection.selectedIndex].style.backgroundColor = '#' + color;
-}
-
-function setDefaultEdgeDiscretizedValues() {
-    //Assume data is shared across app
-    var range = apps[0].getCurrentEdgeWeightRange();
-    var numCategory = Number($('#select-edge-color-number-discretized-category').val());
-    var step = (range.max - range.min) / numCategory;
-    $('#input-edge-discretized-' + 0 + '-from').val(range.min);
-    $('#input-edge-discretized-' + (numCategory - 1) + '-to').val(range.max);
-    for (var i = 0; i < numCategory - 1; i++) {
-        $('#input-edge-discretized-' + (i + 1) + '-from').val(range.min + step * (i + 1));
-        $('#input-edge-discretized-' + i + '-to').val(range.min + step * (i + 1));
-    }
-
-}
-
-function setEdgeDirectionGradient() {
-    saveObj.edgeSettings.directionStartColor = $('#input-edge-start-color').val();
-    saveObj.edgeSettings.directionEndColor = $('#input-edge-end-color').val();
-
-    if (apps[0]) apps[0].setEdgeDirectionGradient();
-    if (apps[1]) apps[1].setEdgeDirectionGradient();
-    if (apps[2]) apps[2].setEdgeDirectionGradient();
-    if (apps[3]) apps[3].setEdgeDirectionGradient();
-}
-
-function setEdgeColorByWeight() {
-
-    var config = {};
-
-    if (commonData.edgeWeightColorMode === "continuous-discretized") {
-        var numCategory = Number($('#select-edge-color-number-discretized-category').val());
-
-        var domainArray = [];
-        var colorArray = [];
-        var from = Number($('#input-edge-discretized-' + 0 + '-from').val());
-        domainArray[domainArray.length] = from;
-        for (var i = 0; i < numCategory; i++) {
-            var to = Number($('#input-edge-discretized-' + i + '-to').val());
-            domainArray[domainArray.length] = to;
-            colorArray[colorArray.length] = "#" + $('#input-edge-discretized-' + i + '-color').val();
-        }
-
-        // save updated settings 
-        saveObj.edgeSettings.colorBy = "weight";
-        saveObj.edgeSettings.weight.type = "continuous-discretized";
-        saveObj.edgeSettings.weight.discretizedSetting.numCategory = numCategory;
-        saveObj.edgeSettings.weight.discretizedSetting.domainArray = domainArray;
-        saveObj.edgeSettings.weight.discretizedSetting.colorArray = colorArray;
-
-        // set config
-        config["type"] = "continuous-discretized";
-        config["domainArray"] = domainArray;
-        config["colorArray"] = colorArray;
-
-    } else if (commonData.edgeWeightColorMode === "continuous-normal") {
-        var minColor = $('#input-edge-min-color').val();
-        var maxColor = $('#input-edge-max-color').val();
-        minColor = '#' + minColor;
-        maxColor = '#' + maxColor;
-
-        // save updated settings
-        saveObj.edgeSettings.colorBy = "weight";
-        saveObj.edgeSettings.weight.type = "continuous-normal";
-        saveObj.edgeSettings.weight.continuousSetting.minColor = minColor;
-        saveObj.edgeSettings.weight.continuousSetting.maxColor = maxColor;
-
-        // set config
-        config["type"] = "continuous-normal";
-        config["minColor"] = minColor;
-        config["maxColor"] = maxColor;
-
-    } else if (commonData.edgeWeightColorMode === "discrete") {
-        var valueArray = [];
-        var colorArray = [];
-
-        var keySelection = <any>document.getElementById('select-edge-key');
-
-        for (var i = 0; i < keySelection.length; i++) {
-            var key = keySelection.options[i].value;
-            var color = keySelection.options[i].style.backgroundColor;
-            var hex: string = colorToHex(color);
-            valueArray.push(key);
-            colorArray.push(hex);
-        }
-
-        // save updated settings
-        saveObj.edgeSettings.colorBy = "weight";
-        saveObj.edgeSettings.weight.type = "discrete";
-        saveObj.edgeSettings.weight.discretizedSetting.domainArray = domainArray;
-        saveObj.edgeSettings.weight.discretizedSetting.colorArray = colorArray;
-
-        // set config
-        config["type"] = "discrete";
-        config["valueArray"] = valueArray;
-        config["colorArray"] = colorArray;
-
-    } else {
-        console.log("Nothing is visible");
-    }
-
-    if (apps[0]) apps[0].setEdgeColorByWeight(config);
-    if (apps[1]) apps[1].setEdgeColorByWeight(config);
-    if (apps[2]) apps[2].setEdgeColorByWeight(config);
-    if (apps[3]) apps[3].setEdgeColorByWeight(config);
-
-}
-
-function setEdgeColorByNode() {
-    // save edge color setting
-    saveObj.edgeSettings.colorBy = "node";
-
-    if (apps[0]) apps[0].setEdgeColorByNode();
-    if (apps[1]) apps[1].setEdgeColorByNode();
-    if (apps[2]) apps[2].setEdgeColorByNode();
-    if (apps[3]) apps[3].setEdgeColorByNode();
-}
-
-function setEdgeNoColor() {
-    // save edge color setting 
-    saveObj.edgeSettings.colorBy = "none";
-
-    if (apps[0]) apps[0].setEdgeNoColor();
-    if (apps[1]) apps[1].setEdgeNoColor();
-    if (apps[2]) apps[2].setEdgeNoColor();
-    if (apps[3]) apps[3].setEdgeNoColor();
-}
-
-function setNodeSizeOrColor() {
-    var sizeOrColor = $('#select-node-size-color').val();
-    var attribute = $('#select-attribute').val();
-   
-
-    if (!sizeOrColor || !attribute) return;
-
-    if (sizeOrColor == "node-size") {
-        var scaleArray = getNodeScaleArray(attribute);
-        if (!scaleArray) return;
-
-        var minScale = Math.min.apply(Math, scaleArray);
-        var maxScale = Math.max.apply(Math, scaleArray);
-
-        // Rescale the node based on the the size bar max and min values
-        var values = $("#div-node-size-slider")['bootstrapSlider']().data('bootstrapSlider').getValue();
-        var scaleMap = d3.scale.linear().domain([minScale, maxScale]).range([values[0], values[1]]);
-        var newScaleArray = scaleArray.map((value: number) => { return scaleMap(value); });
-
-        if (apps[0]) apps[0].setNodeSize(newScaleArray);
-        if (apps[1]) apps[1].setNodeSize(newScaleArray);
-        if (apps[2]) apps[2].setNodeSize(newScaleArray);
-        if (apps[3]) apps[3].setNodeSize(newScaleArray);
-
-        saveObj.nodeSettings.nodeSizeMin = values[0];
-        saveObj.nodeSettings.nodeSizeMax = values[1];
-        saveObj.nodeSettings.nodeSizeAttribute = attribute;
-    }
-    else if (sizeOrColor == "node-color") {
-        var nodeColorMode = $('#checkbox-node-color-continuous').is(":checked");
-        if (dataSet.attributes.info[attribute].isDiscrete  && !nodeColorMode) {
-            var keyArray: number[] = [];
-            var colorArray: string[] = [];
-
-            var keySelection = <any>document.getElementById('select-node-key');
-
-            for (var i = 0; i < keySelection.length; i++) {
-                var key = keySelection.options[i].value;
-                var color = keySelection.options[i].style.backgroundColor;
-                var hex: string = colorToHex(color);
-                keyArray.push(key);
-                colorArray.push(hex);
-            }
-            saveObj.nodeSettings.nodeColorMode = "discrete";
-            saveObj.nodeSettings.nodeColorDiscrete = colorArray.slice(0);
-
-
-            if (apps[0]) apps[0].setNodeColorDiscrete(attribute, keyArray, colorArray);
-            if (apps[1]) apps[1].setNodeColorDiscrete(attribute, keyArray, colorArray);
-            if (apps[2]) apps[2].setNodeColorDiscrete(attribute, keyArray, colorArray);
-            if (apps[3]) apps[3].setNodeColorDiscrete(attribute, keyArray, colorArray);
-            
-        }
-        else {
-            var minColor = $('#input-min-color').val();
-            var maxColor = $('#input-max-color').val();
-
-            minColor = '#' + minColor;
-            maxColor = '#' + maxColor;
-
-            if (apps[0]) apps[0].setNodeColor(attribute, minColor, maxColor);
-            if (apps[1]) apps[1].setNodeColor(attribute, minColor, maxColor);
-            if (apps[2]) apps[2].setNodeColor(attribute, minColor, maxColor);
-            if (apps[3]) apps[3].setNodeColor(attribute, minColor, maxColor);
-            
-            saveObj.nodeSettings.nodeColorMode = "continuous";
-            saveObj.nodeSettings.nodeColorContinuousMin = minColor;
-            saveObj.nodeSettings.nodeColorContinuousMax = maxColor;
-        }
-        
-        saveObj.nodeSettings.nodeColorAttribute = attribute;
-    }
-    else if (sizeOrColor == "node-default") {
-        if (apps[0]) apps[0].setNodeDefaultSizeColor();
-        if (apps[1]) apps[1].setNodeDefaultSizeColor();
-        if (apps[2]) apps[2].setNodeDefaultSizeColor();
-        if (apps[3]) apps[3].setNodeDefaultSizeColor();
-    }
-
-    saveObj.nodeSettings.nodeSizeOrColor = sizeOrColor;
-}
-
-function unique(sourceArray: any[]) {
-    var arr = [];
-    for (var i = 0; i < sourceArray.length; i++) {
-        if (arr.indexOf(sourceArray[i]) == -1) {
-            arr.push(sourceArray[i]);
-        }
-    }
-    return arr;
-}
-
-$('#select-node-size-color').on('change', function () {
-    selectNodeSizeColorOnChange();
-});
-
-function selectNodeSizeColorOnChange() {
-    var value = $('#select-node-size-color').val();
-    var attribute = $('#select-attribute').val();
-
-    if (value == "node-default") {
-        $('#select-attribute').prop("disabled", "disabled");
-
-        $('#div-node-size').hide();
-        $('#div-node-color-pickers').hide();
-        $('#div-node-color-pickers-discrete').hide();
-    }
-    else if (value == "node-size") {
-        $('#select-attribute').prop('disabled', false);
-        $('#div-node-color-mode').hide();            
-
-        setupNodeSizeRangeSlider(attribute);
-    }
-    else if (value == "node-color") {
-        $('#select-attribute').prop('disabled', false);
-
-        if (dataSet.attributes.info[attribute].isDiscrete) {
-            $('#div-node-color-mode').show();
-            setupColorPickerDiscrete(attribute);
-        } else {
-            $('#div-node-color-mode').hide();
-            setupColorPicker();
-        }
-    }
-
-    setNodeSizeOrColor();
-}
-$("#checkbox-node-color-continuous").on("change", function () {
-    var attribute = $('#select-attribute').val();
-    var nodeColorMode = $('#checkbox-node-color-continuous').is(":checked");
-    if (!nodeColorMode && dataSet.attributes.info[attribute].isDiscrete) {
-        setupColorPickerDiscrete(attribute);
-    }
-    else {
-        setupColorPicker();
-    }
-
-    setNodeSizeOrColor();
-});
-$('#select-attribute').on('change', function () {
-    var sizeOrColor = $('#select-node-size-color').val();
-    var attribute = $('#select-attribute').val();
-    
-    if (sizeOrColor == "node-size") {
-        setupNodeSizeRangeSlider(attribute);
-    }
-    if (sizeOrColor == "node-color") {
-        if (dataSet.attributes.info[attribute].isDiscrete) {
-            $('#div-node-color-mode').show();
-            $('#checkbox-node-color-continuous').prop('checked', false);
-            setupColorPickerDiscrete(attribute);
-        }
-        else {
-            $('#div-node-color-mode').hide();
-            setupColorPicker();
-        }
-    }
-
-    setNodeSizeOrColor();
-});
-
-$('#select-node-key').on('change', function () {
-    var key = $('#select-node-key').val();
-
-    var keySelection = <any>document.getElementById('select-node-key');
-
-    for (var i = 0; i < keySelection.length; i++) {
-        if (keySelection.options[i].value == key) {
-            var color = keySelection.options[i].style.backgroundColor;
-            var hex = colorToHex(color);
-            (<any>document.getElementById('input-node-color')).color.fromString(hex.substring(1));
-            break;
-        }
-    }
-});
-
-$('#select-edge-key').on('change', function () {
-    var key = $('#select-edge-key').val();
-
-    var keySelection = <any>document.getElementById('select-edge-key');
-
-    // find the coressponding key and retrieve color data
-    for (var i = 0; i < keySelection.length; i++) {
-        if (keySelection.options[i].value == key) {
-            var color = keySelection.options[i].style.backgroundColor;
-            var hex = colorToHex(color);
-            (<any>document.getElementById('input-edge-color')).color.fromString(hex.substring(1));
-            break;
-        }
-    }
-});
-
-///////////////////////////////////////////////////////////////////////////////////
-//////////////// Function /////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////////
-function loadSettings() {
-    if (!(dataSet && dataSet.attributes && dataSet.brainCoords && dataSet.simMatrix)) {
-        CommonUtilities.launchAlertMessage(CommonUtilities.alertType.ERROR, "Dataset is required!");
-        return;
-    }
-
-    var file = (<any>$('#input-select-load-file').get(0)).files[0];
-    var reader = new FileReader();
-    reader.onload = function () {
-        loadObj = new SaveFile();
-        loadObj.fromYaml(reader.result.toLowerCase());
-
-        for (var i = 0; i < 4; i++) {
-            if (!jQuery.isEmptyObject(loadObj.saveApps[i])) {
-                initApp(i);
-            }
-        }
-    }
-    reader.readAsText(file);
-}
-
-function saveSettings() {
-    var filename = "brain-model.cfg";
-    var body = document.body;
-
-    //Save all the apps
-    for (var i = 0; i < 4; i++) {
-        var app = saveObj.saveApps[i];
-        if (apps[i]) apps[i].save(app);
-    }
-
-    var configText = saveObj.toYaml();
-
-    var url = window["URL"].createObjectURL(new Blob([configText], { "type": "text\/xml" }));
-
-    var a = document.createElement("a");
-    body.appendChild(a);
-    a.setAttribute("download", filename);
-    a.setAttribute("href", url);
-    a.style["display"] = "none";
-    a.click();
-
-    setTimeout(function () {
-        window["URL"].revokeObjectURL(url);
-    }, 10);
-}
-
-
-function exportSVG(viewport, type) {
-    var documents = [window.document],
-        SVGSources = [];
-
-    // loop through all active app
-    if (!apps[viewport]) return;
-
-    var styles = getStyles(document);
-    var newSource = getSource(viewport, styles);
-
-    // Export all svg Graph on the page
-    if (type === "svg") {
-        downloadSVG(newSource);
-    } else if (type === "image") {
-        downloadSVGImage(newSource);
-    }
-
-}
-
-function getSource(id, styles) {
-    var svgInfo = {},
-        svg = document.getElementById("svgGraph" + id);
-    var doctype = '<?xml version="1.0" standalone="no"?><!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">';
-    var prefix = {
-        xmlns: "http://www.w3.org/2000/xmlns/",
-        xlink: "http://www.w3.org/1999/xlink",
-        svg: "http://www.w3.org/2000/svg"
-    };
-    svg.setAttribute("version", "1.1");
-
-    // insert 3D brain image
-    // Remove old image if exists
-    var oldImage = document.getElementById('brain3D' + id);
-    if (oldImage) oldImage.parentNode.removeChild(oldImage);
-
-    var canvas = apps[id].getDrawingCanvas();
-    var image = document.createElement("image");
-    svg.insertBefore(image, svg.firstChild);
-    image.setAttribute('y', '0');
-    image.setAttribute('x', '0');
-    image.setAttribute('id', 'brain3D' + id);
-    image.setAttribute('xlink:href', canvas.toDataURL());
-    image.setAttribute('width', canvas.width);
-    image.setAttribute('height', canvas.height);
-    image.removeAttribute('xmlns');
-
-    // insert defs
-    var defsEl = document.createElement("defs");
-    svg.insertBefore(defsEl, svg.firstChild); //TODO   .insert("defs", ":first-child")
-    defsEl.setAttribute("class", "svg-crowbar");
-
-    // insert styles to defs
-    var styleEl = document.createElement("style")
-    defsEl.appendChild(styleEl);
-    styleEl.setAttribute("type", "text/css");
-
-
-    // removing attributes so they aren't doubled up
-    svg.removeAttribute("xmlns");
-    svg.removeAttribute("xlink");
-
-    // These are needed for the svg
-
-    if (!svg.hasAttributeNS(prefix.xmlns, "xmlns:xlink")) {
-        svg.setAttributeNS(prefix.xmlns, "xmlns:xlink", prefix.xlink);
-    }
-
-
-
-    var source = (new XMLSerializer()).serializeToString(svg).replace('</style>', '<![CDATA[' + styles + ']]></style>')
-        .replace(/xmlns\=\"http\:\/\/www\.w3\.org\/1999\/xhtml\"/g, '');
-
-    // Convert RGBA to RGB (for old Illustartor)
-    source = source.replace(/rgba\((.+?)\, (.+?)\, (.+?)\,.+?\)/g, function (rgbaText) {
-        var vals = /rgba\((.+?)\, (.+?)\, (.+?)\,.+?\)/i.exec(rgbaText);
-        return "rgb(" + vals[1] + "," + vals[2] + "," + vals[3] + ")";
-    });
-
-
-    svgInfo = {
-        id: svg.getAttribute("id"),
-        childElementCount: svg.childElementCount,
-        source: [doctype + source]
-    };
-
-    return svgInfo;
-}
-
-function downloadSVG(source) {
-    var filename = "untitled";
-    var body = document.body;
-
-    if (source.id) {
-        filename = source.id;
-    } else if (source.class) {
-        filename = source.class;
-    } else if (window.document.title) {
-        filename = window.document.title.replace(/[^a-z0-9]/gi, '-').toLowerCase();
-    }
-
-    var url = window["URL"].createObjectURL(new Blob(source.source, { "type": "text\/xml" }));
-
-    var a = document.createElement("a");
-    body.appendChild(a);
-    a.setAttribute("class", "svg-crowbar");
-    a.setAttribute("download", filename + ".svg");
-    a.setAttribute("href", url);
-    a.style["display"] = "none";
-    a.click();
-
-    setTimeout(function () {
-        window["URL"].revokeObjectURL(url);
-    }, 10);
-}
-function downloadSVGImage(source) {
-    var filename = "untitled";
-
-    if (source.id) {
-        filename = source.id;
-    } else if (source.class) {
-        filename = source.class;
-    } else if (window.document.title) {
-        filename = window.document.title.replace(/[^a-z0-9]/gi, '-').toLowerCase();
-    }
-
-    var image = new Image();
-    image.src = 'data:image/svg+xml;base64,' + window.btoa(extra.unescape(encodeURIComponent(source.source)))
-    image.onload = function () {
-        var canvas = document.createElement('canvas');
-        canvas.width = image.width;
-        canvas.height = image.height;
-        var context = canvas.getContext('2d');
-        context.drawImage(image, 0, 0);
-
-        var a = document.createElement("a");
-        a.setAttribute("download", filename + ".png");
-        a.setAttribute("href", canvas.toDataURL('image/png'));
-        a.click();
-    }
-}
-
-function getStyles(doc) {
-    var styles = "",
-        styleSheets = doc.styleSheets;
-
-    if (styleSheets) {
-        for (var i = 0; i < styleSheets.length; i++) {
-            processStyleSheet(styleSheets[i]);
-        }
-    }
-
-    function processStyleSheet(ss) {
-        if (ss.cssRules) {
-            for (var i = 0; i < ss.cssRules.length; i++) {
-                var rule = ss.cssRules[i];
-                if (rule.type === 3) {
-                    // Import Rule
-                    processStyleSheet(rule.styleSheet);
-                } else {
-                    // hack for illustrator crashing on descendent selectors
-                    if (rule.selectorText) {
-                        if (rule.selectorText.indexOf(">") === -1) {
-                            styles += "\n" + rule.cssText;
-                        }
-                    }
-                }
-            }
-        }
-    }
-    return styles;
-}
-
-function colorToHex(color) {
-    if (color.substr(0, 1) === '#') {
-        return color;
-    }
-    var digits = /rgb\((\d+), (\d+), (\d+)\)/.exec(color);
-
-    var red = parseInt(digits[1]);
-    var green = parseInt(digits[2]);
-    var blue = parseInt(digits[3]);
-
-    var hexRed = red.toString(16);
-    var hexGreen = green.toString(16);
-    var hexBlue = blue.toString(16);
-
-    if (hexRed.length == 1) hexRed = "0" + hexRed;
-    if (hexGreen.length == 1) hexGreen = "0" + hexGreen;
-    if (hexBlue.length == 1) hexBlue = "0" + hexBlue;
-
-    return '#' + hexRed + hexGreen + hexBlue;
-};
-
-function getNodeScaleArray(attribute: string) {
-    var attrArray = dataSet.attributes.get(attribute);
-
-    var columnIndex = dataSet.attributes.columnNames.indexOf(attribute);
-
-    // assume all positive numbers in the array
-    var min = dataSet.attributes.getMin(columnIndex);
-    var max = dataSet.attributes.getMax(columnIndex);
-
-    var scaleArray: number[];
-    //var scaleFactor = 0.5;
-    var scaleFactor = 1;
-
-    scaleArray = attrArray.map((value) => { return scaleFactor * value[0]; });
-
-    return scaleArray;
-}
-
-function setupNodeSizeRangeSlider(attribute: string) {
-    $('#div-node-color-pickers').hide();
-    $('#div-node-color-pickers-discrete').hide();
-    $("#div-node-size").show();
-
-    var scaleArray = getNodeScaleArray(attribute);
-    if (!scaleArray) return;
-
-    var minScale = Math.min.apply(Math, scaleArray);
-    var maxScale = Math.max.apply(Math, scaleArray);
-    $("#div-node-size-slider")['bootstrapSlider']();
-    $("#div-node-size-slider")['bootstrapSlider']().on('slide', function () {
-        var values = $("#div-node-size-slider")['bootstrapSlider']().data('bootstrapSlider').getValue();
-        $("#label_node_size_range").text(values[0] + " - " + values[1]);
-        setNodeSizeOrColor();
-    });
-    $("#div-node-size-slider").slider(<any>{
-        range: true,
-        min: 0.1,
-        max: 10,
-        step: 0.1,
-        values: [minScale, maxScale],
-        change: setNodeSizeOrColor,
-        slide: function (event, ui) {
-
-        }
-    });
-
-    $("#label_node_size_range").text($("#div-node-size-slider").slider("values", 0) + " - " + $("#div-node-size-slider").slider("values", 1));
-}
-
-function setupColorPicker() {
-    $('#div-node-size').hide();
-    $('#div-node-color-pickers-discrete').hide();
-    $('#div-node-color-pickers').show();
-}
-
-function setupColorPickerDiscrete(attribute: string) {
-    $('#div-node-size').hide();
-    $('#div-node-color-pickers').hide();
-    $('#div-node-color-pickers-discrete').show();
-
-    var attrArray = dataSet.attributes.get(attribute);
-    var uniqueKeys = dataSet.attributes.info[attribute].distinctValues;
-
-
-    var d3ColorSelector = d3.scale.category20();
-
-    var uniqueColors = uniqueKeys.map((group: number) => { return d3ColorSelector(group); });
-
-    $('#select-node-key').empty();
-
-    for (var i = 0; i < uniqueKeys.length; i++) {
-        var option = document.createElement('option');
-        option.text = uniqueKeys[i];
-        option.value = uniqueKeys[i];
-        option.style.backgroundColor = uniqueColors[i];
-        $('#select-node-key').append(option);
-    }
-
-    (<any>document.getElementById('input-node-color')).color.fromString(uniqueColors[0].substring(1));
-}
-
-// Shorten the names of the views - they are referenced quite often
-var tl_view = '#view-top-left';
-var tr_view = '#view-top-right';
-var bl_view = '#view-bottom-left';
-var br_view = '#view-bottom-right';
 
 // Create the object that the input target manager will use to update the pointer position when we're using the Leap
 class PointerImageImpl {
@@ -2010,475 +128,2164 @@ class PointerImageImpl {
     }
 }
 
-var pointerImage = new PointerImageImpl;
 
-// Set up the class that will manage which view should be receiving input
-var input = new InputTargetManager([tl_view, tr_view, bl_view, br_view], pointerImage);
-input.setActiveTarget(0);
+class NeuroMarvl {
+    referenceDataSet = new DataSet();
+    commonData = new CommonData();
+    brainSurfaceColor: string;
+    saveObj = new SaveFile({});
+    loader;     // THREE.ObjLoader
+    apps: Brain3DApp[];
 
-function getActiveTargetUnderMouse(x: number, y: number) {
-    var id = -1;
-    switch (getViewUnderMouse(x, y)) {
-        case tl_view:
-            id = 0;
-            break;
-        case tr_view:
-            id = 1;
-            break;
-        case bl_view:
-            id = 2;
-            break;
-        case br_view:
-            id = 3;
-            break;
+    pointerImage = new PointerImageImpl;
+
+    viewWidth = 0;
+    viewHeight = 0;
+    pinWidth = 0;
+    pinHeight = 0;
+
+    // UI elements
+    divLoadingNotification;
+
+    input: InputTargetManager;
+
+
+    constructor() {
+        this.brainSurfaceColor = "0xe3e3e3";
+
+        // Set up OBJ loading
+        let manager = new THREE.LoadingManager();
+        this.loader = new (<any>THREE).OBJLoader(manager);
+        
+        this.apps = Array<Brain3DApp>();
+
+        // Set up the class that will manage which view should be receiving input
+        this.input = new InputTargetManager([TL_VIEW, TR_VIEW, BL_VIEW, BR_VIEW], this.pointerImage);
+        this.input.setActiveTarget(0);
     }
-    return id;
-}
 
-function setNodeColorInContextMenu(color: string) {
-    if (apps[input.activeTarget]) {
-        if ((input.rightClickLabelAppended) && (input.selectedNodeID >= 0)) {
-            apps[input.activeTarget].setANodeColor(input.selectedNodeID, '#' + color);
-            input.contextMenuColorChanged = true;
+
+    /*
+        Functions to create a solid starting state and all UI elements available
+    */
+
+    initUI = () => {
+        // Initialize the view sizes and pin location
+        this.viewWidth = $('#outer-view-panel').width();
+        this.viewHeight = $('#outer-view-panel').height();
+        this.pinWidth = $('#pin').width();
+        this.pinHeight = $('#pin').height();
+
+        // Data set icons are visible when the page loads - reset them immediately
+        // Load notification
+        this.divLoadingNotification = document.createElement('div');
+        this.divLoadingNotification.id = 'div-loading-notification';
+
+        /* 
+            Set up jQuery UI layout objects
+        */
+        $("[data-toggle='tooltip']").tooltip(<any>{ container: 'body' });
+        
+        /*
+            Upload files buttons
+        */
+        $('#button-select-coords').click(() => $("#select-coords").click());
+        $('#select-coords').on('change', () => {
+            // Change the button name according to the file name
+            var file = (<any>$('#select-coords').get(0)).files[0];
+            document.getElementById("button-select-coords-filename").innerHTML = file.name;
+
+            this.changeFileStatus("coords-status", "changed");
+
+            // parse and upload coordinate file
+            this.uploadCoords();
+        });
+
+        $('#button-select-matrices-batching').click(() => {
+            $("#select-matrices-batching").click();
+        });
+        $("#select-matrices-batching").on('change', () => {
+            var numFiles = (<any>$('#select-matrices-batching').get(0)).files.length;
+            document.getElementById("button-select-matrices-batching").innerHTML = numFiles + " files loaded";
+            
+            this.changeFileStatus("matrices-batching-status", "uploaded");
+        });
+        $('#button-select-attrs-batching').click(() => {
+            $("#select-attrs-batching").click();
+        });
+        $("#select-attrs-batching").on('change', () => {
+            var numFiles = (<any>$('#select-attrs-batching').get(0)).files.length;
+            document.getElementById("button-select-attrs-batching").innerHTML = numFiles + " files loaded";
+
+            this.changeFileStatus("attrs-batching-status", "uploaded");
+        });
+
+        $('#btn-start-batching').click(() => {
+            var matrixFiles = (<any>$('#select-matrices-batching').get(0)).files;
+            var attrFiles = (<any>$('#select-attrs-batching').get(0)).files;
+
+            if (matrixFiles.length === attrFiles.length) {
+
+                // Showing modal 
+                $("#alertModal")["modal"]({
+                    backdrop: "static"
+                });
+
+                // Reset modal content
+                document.getElementById("alertModalTitle").innerHTML = "Batching in progress";
+                document.getElementById("alertModalMessage").innerHTML = "Processing " + (i + 1) + " in " + numberOfFiles + " pairs.";
+
+                // Start batching
+                var status = 0.0;
+                var attributes = (<any>$('#select-attrs-batching').get(0)).files;
+                var matrices = (<any>$('#select-matrices-batching').get(0)).files;
+                var numberOfFiles = attributes.length;
+                var i = 0;
+
+                this.batchProcess(i, numberOfFiles, attributes, matrices);
+
+            } else {
+                CommonUtilities.launchAlertMessage(CommonUtilities.alertType.ERROR, "Number of Files do not match.");
+            }
+
+        });
+
+
+        $('#pin').css({ left: this.viewWidth - this.pinWidth, top: this.viewHeight - this.pinHeight });
+        this.setViewCrossroads(this.viewWidth - this.pinWidth, this.viewHeight - this.pinHeight);
+
+        // Set up the pin behaviour
+        $('#pin').draggable({ containment: '#outer-view-panel' }).on('drag', (event: JQueryEventObject, ...args: any[]) => {
+            let ui = args[0];
+            let x = ui.position.left;
+            let y = ui.position.top;
+            this.setViewCrossroads(x, y);
+        });
+
+        $("#div-surface-opacity-slider")['bootstrapSlider']({
+            formatter: value => 'Current value: ' + value
+        });
+
+        $("#div-surface-opacity-slider")['bootstrapSlider']().on('slide', this.setSurfaceOpacity);
+
+        $("#div-edge-size-slider")['bootstrapSlider']({
+            formatter: value => 'Current value: ' + value
+        });
+
+        $("#div-edge-size-slider")['bootstrapSlider']().on('slide', this.setEdgeSize);
+        
+        $('#input-select-model').button();
+        $('#select-coords').button();
+        $('#select-matrix').button();
+        $('#select-attrs').button();
+        $('#select-labels').button();
+
+        $("#overlay-close").click(this.toggleSplashPage);
+        $("#control-panel-bottom-close").click(this.toggleSplashPage);
+
+        // Create color pickers
+        (<any>$("#input-node-color")).colorpicker();
+        (<any>$("#input-surface-color")).colorpicker();
+        (<any>$("#input-min-color")).colorpicker();
+        (<any>$("#input-max-color")).colorpicker();
+        (<any>$("#input-edge-start-color")).colorpicker();
+        (<any>$("#input-edge-end-color")).colorpicker();
+        (<any>$("#input-edge-discretized-0-color")).colorpicker();
+        (<any>$("#input-edge-discretized-1-color")).colorpicker();
+        (<any>$("#input-edge-discretized-2-color")).colorpicker();
+        (<any>$("#input-edge-discretized-3-color")).colorpicker();
+        (<any>$("#input-edge-discretized-4-color")).colorpicker();
+        (<any>$("#input-edge-min-color")).colorpicker();
+        (<any>$("#input-edge-max-color")).colorpicker();
+        (<any>$("#input-edge-color")).colorpicker();
+        (<any>$("#input-context-menu-node-color")).colorpicker();
+    }
+
+    start = () => {
+        this.initUI();
+
+        let query = window.location.search.substring(1);
+        
+        let commonInit = () => {
+            this.initDataDependantUI();
+            this.initListeners();
+        }
+
+        let callbackNoSave = () => {
+            this.createBrainView(TL_VIEW, $('#select-brain3d-model').val(), commonInit, "empty");
+            this.toggleSplashPage();
+        };
+
+        if (query && query.length > 0) {
+            this.showLoadingNotification();
+
+            var p = query.split("=");
+            if (p.length < 2) return false;
+
+            var json;
+            // Only let source be from "save_examples" (if specified by "example") or default to "save".
+            let source = p[0];      // "save" or "example"
+            $.post("brain-app/getapp.aspx",
+                {
+                    filename: p[1],
+                    source
+                },
+                (data, status) => {
+                    console.log(`Data fetch from ${p[0]} location got configuration with length ${data.length} and "${status}" status`);
+                    if (status.toLowerCase() == "success") {
+                        // Ensure that data is not empty
+                        if (!data || !data.length) return;
+
+                        this.saveObj = new SaveFile(jQuery.parseJSON(data));
+                        for (var app of this.saveObj.saveApps) {
+                            if (app.surfaceModel && (app.surfaceModel.length > 0)) {
+                                this.createBrainView(app.view, app.surfaceModel, commonInit, source, app.brainSurfaceMode);
+                            }
+                        }
+                    }
+                    else {
+                        alert("Loading is: " + status + "\nData: " + data);
+                        callbackNoSave();
+                    }
+                }
+            );
+        } else {
+            callbackNoSave();
         }
     }
-}
 
-function highlightSelectedNodes() {
-    if (!dataSet || !dataSet.attributes) return;
 
-    if (dataSet.attributes.filteredRecordsHighlightChanged == true) {
-        dataSet.attributes.filteredRecordsHighlightChanged = false;
+    /*
+        Functions to work with app state
+    */
 
-        if (!dataSet.attributes.filteredRecords) return;
+    initApp = id => {
+        // init edge count
+        var app = this.saveObj.saveApps[id];
+        if ((app.surfaceModel != null) && (app.surfaceModel.length > 0)) {
+            this.apps[id].initEdgeCountSlider(app);
+        }
 
-        var fRecords = dataSet.attributes.filteredRecords;
+        // init cross filter
+        if ((this.saveObj.filteredRecords != null) && (this.saveObj.filteredRecords.length > 0)) {
+            this.referenceDataSet.attributes.filteredRecords = this.saveObj.filteredRecords.slice(0);
+            this.applyFilterButtonOnClick();
+        }
+
+        // make sure the app has required graphs created
+        this.apps[id].restart();
+
+        // init show network
+        if ((app.surfaceModel != null) && (app.surfaceModel.length > 0)) {
+            this.apps[id].initShowNetwork(app);
+        }
+
+        this.removeLoadingNotification();
+    }
+
+    initDataDependantUI = () => {
+        // init the node size and color given the current UI. The UI needs to be redesigned.
+        if ((this.saveObj.nodeSettings.nodeSizeOrColor != null) && (this.saveObj.nodeSettings.nodeSizeOrColor.length > 0)) {
+            if (this.saveObj.nodeSettings.nodeSizeOrColor == "node-size") {
+                this.initNodeColor();
+                this.initNodeSize();
+            }
+            else if (this.saveObj.nodeSettings.nodeSizeOrColor == "node-color") {
+                this.initNodeSize();
+                this.initNodeColor();
+            }
+        }
+
+        // init edge size and color.
+        if (this.saveObj.edgeSettings != null) {
+            this.initEdgeSizeAndColor();
+        }
+
+        // init Surface Setting
+        if (this.saveObj.surfaceSettings != null) {
+            this.initSurfaceSettings();
+        }
+
+        this.selectView(TL_VIEW);
+    }
+
+    batchProcess = (i, numberOfFiles, attributes, matrices) => {
+        // Load pair of files into dataset
+        this.loadAttributes(attributes[i], this.referenceDataSet);
+        this.loadSimilarityMatrix(matrices[i], this.referenceDataSet);
+
+        // Load the new dataset to the app (always use the first viewport - top left);
+        this.setDataset(TL_VIEW);
+
+        // refresh the visualisation with current settings and new data
+        this.apps[0].showNetwork(false);
+        this.setEdgeColor();
+        this.setNodeSizeOrColor();
+        this.apps[0].update(0);
+
+        // Capture and download the visualisation
+        this.exportSVG(0, "svg");
+
+        // update status
+        i++;
+        var percentage = (i / numberOfFiles) * 100;
+        $("#progressBar").css({
+            "width": percentage + "%"
+        });
+        document.getElementById("alertModalMessage").innerHTML = "Processing " + (i + 1) + " in " + numberOfFiles + " pairs.";
+
+        if (i < numberOfFiles) {
+            setTimeout(function () {
+                this.batchProcess(i, numberOfFiles, attributes, matrices)
+            }, 1000);
+        } else {
+            $("#alertModal")["modal"]('hide');
+        }
+    }
+
+    uploadCoords = () => {
+        var file = (<any>$('#select-coords').get(0)).files[0];
+        if (file) {
+            // 1. upload the file to server
+            this.uploadTextFile(file, TYPE_COORD);
+
+            // 2. also load data locally
+            this.loadCoordinates(file);
+
+            // 3. update file status
+            this.changeFileStatus("coords-status", "uploaded");
+        }
+    }
+
+    uploadMatrix = () => {
+        var file = (<any>$('#select-matrix').get(0)).files[0];
+        if (file) {
+            // 1. upload the file to server
+            this.uploadTextFile(file, TYPE_MATRIX);
+
+            // 2. also load data locally
+            this.loadSimilarityMatrix(file, this.referenceDataSet);
+
+            // 3. update file status
+            this.changeFileStatus("matrix-status", "uploaded");
+
+        }
+    }
+
+    uploadAttr = () => {
+        var file = (<any>$('#select-attrs').get(0)).files[0];
+        if (file) {
+            // 1. upload the file to server
+            this. uploadTextFile(file, TYPE_ATTR);
+
+            // 2. also load data locally
+            //loadAttributes(file, dataSet);
+            var reader = new FileReader();
+            reader.onload = () => {
+                this.parseAttributes(reader.result, this.referenceDataSet);
+                this.referenceDataSet.notifyAttributes();
+
+                // 3. update file status
+                $('#attrs-status').removeClass('status-changed');
+                $('#attrs-status').removeClass('glyphicon-info-sign');
+                $('#attrs-status').addClass('status-updated');
+                $('#attrs-status').addClass('glyphicon-ok-sign');
+                document.getElementById("attrs-status").title = "Uploaded Succesfully";
+                $("#attrs-status").tooltip('fixTitle');
+                this.setupAttributeTab();
+            }
+            reader.readAsText(file);
+        }
+    }
+
+    uploadLabels = () => {
+        var file = (<any>$('#select-labels').get(0)).files[0];
+        if (file) {
+            // 1. upload the file to server
+            this.uploadTextFile(file, TYPE_LABEL);
+
+            // 2. also load data locally
+            this.loadLabels(file);
+
+            // 3. update file status
+            this.changeFileStatus("labels-status", "uploaded");
+        }
+    }
+
+    toggleSplashPage = () => {
+        var splashPage = $('#splashPage');
+
+        if (splashPage.hasClass("open")) {
+            splashPage.removeClass("open");
+            splashPage.addClass("close");
+
+            setTimeout(() => splashPage.removeClass("close"), 500)
+        } else {
+            splashPage.addClass("open");
+        }
+
+    }
+
+    uploadTextFile = (file, fileType: string) => {
+        var reader = new FileReader();
+
+        reader.onload = () => {
+            $.post("brain-app/upload.aspx",
+                {
+                    fileText: reader.result,
+                    fileName: file.name,
+                    type: fileType
+                },
+                (data, status) => {
+                    if (status.toLowerCase() == "success") {
+                        if (fileType == TYPE_COORD) {
+                            this.saveObj.serverFileNameCoord = data;
+                        }
+                        else if (fileType == TYPE_MATRIX) {
+                            this.saveObj.serverFileNameMatrix = data;
+                        }
+                        else if (fileType == TYPE_ATTR) {
+                            this.saveObj.serverFileNameAttr = data;
+                        }
+                        else if (fileType == TYPE_LABEL) {
+                            this.saveObj.serverFileNameLabel = data;
+                        }
+                    }
+                    else {
+                        //alert("Loading is: " + status + "\nData: " + data);
+                    }
+                });
+        }
+        reader.readAsText(file);
+    }
+    
+    loadExampleData = func => {
+        var status = {
+            coordLoaded: false,
+            matrixLoaded: false,
+            attrLoaded: false,
+            labelLoaded: false
+        };
+
+        CommonUtilities.launchAlertMessage(CommonUtilities.alertType.INFO, "Loading default data...");
+
+        var callback = () => {
+            if (status.coordLoaded && status.matrixLoaded && status.attrLoaded && status.labelLoaded) {
+                CommonUtilities.launchAlertMessage(CommonUtilities.alertType.SUCCESS, "Default data loaded");
+                this.commonData.notifyCoords();
+                this.referenceDataSet.notifyAttributes();
+                this.commonData.notifyLabels();
+                func();
+            }
+        }
+        $.get('brain-app/data/coords.txt', text => {
+            this.parseCoordinates(text);
+            //$('#shared-coords').css({ color: 'green' });
+            $('#label-coords')
+                .text("default data")
+                .css({ color: 'green' });
+            status.coordLoaded = true;
+            // change status
+            document.getElementById("button-select-coords-filename").innerHTML = "coords.txt";
+            this.changeFileStatus("coords-status", "uploaded");
+
+            callback();
+        });
+        $.get('brain-app/data/mat1.txt', text => {
+            this.parseSimilarityMatrix(text, this.referenceDataSet);
+            //$('#d1-mat').css({ color: 'green' });
+            $('#label-similarity-matrix')
+                .text("default data")
+                .css({ color: 'green' });
+            status.matrixLoaded = true;
+
+            // change status
+            document.getElementById("button-select-matrix-filename").innerHTML = "mat1.txt";
+            this.changeFileStatus("matrix-status", "uploaded");
+
+            callback();
+        });
+        $.get('brain-app/data/attributes1.txt', text => {
+            this.parseAttributes(text, this.referenceDataSet);
+            //$('#d1-att').css({ color: 'green' });
+            $('#label-attributes')
+                .text("default data")
+                .css({ color: 'green' });
+
+            this.setupAttributeTab();
+            status.attrLoaded = true;
+            // change status
+            document.getElementById("button-select-attrs-filename").innerHTML = "attributes1.txt";
+            this.changeFileStatus("attrs-status", "uploaded");
+
+            callback();
+        });
+        $.get('brain-app/data/labels.txt', text => {
+            this.parseLabels(text);
+            //$('#shared-labels').css({ color: 'green' });
+            $('#label-labels')
+                .text("default data")
+                .css({ color: 'green' });
+            status.labelLoaded = true;
+
+            // change status
+            document.getElementById("button-select-labels-filename").innerHTML = "labels.txt";
+            this.changeFileStatus("labels-status", "uploaded");
+
+            callback();
+        });
+    }
+
+    changeFileStatus = (file, status) => {
+        $('#' + file).removeClass('status-changed');
+        $('#' + file).removeClass('glyphicon-info-sign');
+        $('#' + file).removeClass('status-updated');
+        $('#' + file).removeClass('glyphicon-ok-sign');
+
+        if (status === "changed") {
+            $('#' + file).addClass('status-changed');
+            $('#' + file).addClass('glyphicon-info-sign');
+            document.getElementById(file).title = "File is not uploaded";
+
+        } else {
+            $('#' + file).addClass('status-updated');
+            $('#' + file).addClass('glyphicon-ok-sign');
+            document.getElementById(file).title = "Uploaded Succesfully";
+
+        }
+        $('#' + file).tooltip('fixTitle');
+    }
+    
+    loadUploadedData = (saveObj, func, source?: string) => {
+        var status = {
+            coordLoaded: false,
+            matrixLoaded: false,
+            attrLoaded: false,
+            labelLoaded: (saveObj.serverFileNameLabel) ? false : true
+        };
+
+        let sourceLocation = (source === "example") ? "save_examples" : "save";
+        
+        var callback = () => {
+            if (status.coordLoaded && status.matrixLoaded && status.attrLoaded && status.labelLoaded) {
+                this.commonData.notifyCoords();
+                this.referenceDataSet.notifyAttributes();
+                this.commonData.notifyLabels();
+                func();
+            }
+        }
+
+        $.get('brain-app/' + sourceLocation + '/' + saveObj.serverFileNameCoord, text => {
+            this.parseCoordinates(text);
+            //$('#shared-coords').css({ color: 'green' });
+            $('#label-coords')
+                .text("Pre-uploaded data")
+                .css({ color: 'green' });
+            status.coordLoaded = true;
+            // change status
+            document.getElementById("button-select-coords-filename").innerHTML = saveObj.serverFileNameCoord;
+            this.changeFileStatus("coords-status", "uploaded");
+
+            callback();
+        });
+        $.get('brain-app/' + sourceLocation + '/' + saveObj.serverFileNameMatrix, text => {
+            this.parseSimilarityMatrix(text, this.referenceDataSet);
+            //$('#d1-mat').css({ color: 'green' });
+            $('#label-similarity-matrix')
+                .text("Pre-uploaded data")
+                .css({ color: 'green' });
+            status.matrixLoaded = true;
+
+            // change status
+            document.getElementById("button-select-matrix-filename").innerHTML = saveObj.serverFileNameMatrix;
+            this.changeFileStatus("matrix-status", "uploaded");
+
+            callback();
+        });
+        $.get('brain-app/' + sourceLocation + '/' + saveObj.serverFileNameAttr, text => {
+            this.parseAttributes(text, this.referenceDataSet);
+            //$('#d1-att').css({ color: 'green' });
+            $('#label-attributes')
+                .text("Pre-uploaded data")
+                .css({ color: 'green' });
+            this.setupAttributeTab();
+            status.attrLoaded = true;
+            // change status
+            document.getElementById("button-select-attrs-filename").innerHTML = saveObj.serverFileNameAttr;
+            this.changeFileStatus("attrs-status", "uploaded");
+
+            callback()
+        });
+        // Check if Label file is uploaded
+        if (saveObj.serverFileNameLabel) {
+            $.get('brain-app/' + sourceLocation + '/' + saveObj.serverFileNameLabel, text => {
+                this.parseLabels(text);
+                //$('#shared-labels').css({ color: 'green' });
+                $('#label-labels')
+                    .text("Pre-uploaded data")
+                    .css({ color: 'green' });
+
+                status.labelLoaded = true;
+
+                // change status
+                document.getElementById("button-select-labels-filename").innerHTML = saveObj.serverFileNameLabel;
+                this.changeFileStatus("labels-status", "uploaded");
+
+                callback();
+            });
+        }
+        else {
+            status.labelLoaded = true;
+            callback();
+        }
+        $('#load-example-data').button().prop("disabled", "disabled");
+
+    }
+
+    setupAttributeTab = () => {
+        if (this.referenceDataSet && this.referenceDataSet.attributes) {
+            let $selectAttribute = $('#select-attribute');
+
+            let oldAttributeValue = $selectAttribute.val();
+            let gotOldValue = false;
+
+            $selectAttribute.empty();
+            for (var i = 0; i < this.referenceDataSet.attributes.columnNames.length; ++i) {
+                var columnName = this.referenceDataSet.attributes.columnNames[i];
+                $selectAttribute.append('<option value = "' + columnName + '">' + columnName + '</option>');
+                if (columnName === oldAttributeValue) gotOldValue = true;
+            }
+            if (gotOldValue) $selectAttribute.val(oldAttributeValue);
+
+            $('#div-set-node-scale').show();
+
+            $('#div-node-size').hide();
+            $('#div-node-color-pickers').hide();
+            $('#div-node-color-pickers-discrete').hide();
+
+            this.setupCrossFilter(this.referenceDataSet.attributes);
+        }
+    }
+
+    applyFilterButtonOnClick = () => {
+        if (!this.referenceDataSet.attributes.filteredRecords) {
+            $('#button-apply-filter').button("disable");
+            return;
+        }
+
+        var fRecords = this.referenceDataSet.attributes.filteredRecords;
         var idArray = new Array();
 
-        // if all the nodes have been selected, cancel the highlight
-        if (fRecords.length < dataSet.attributes.numRecords) {
-            for (var i = 0; i < fRecords.length; ++i) {
-                var id = fRecords[i]["index"];
-                idArray.push(id);
+        for (var i = 0; i < fRecords.length; ++i) {
+            var id = fRecords[i]["index"];
+            idArray.push(id);
+        }
+
+        if (this.apps[0]) this.apps[0].applyFilter(idArray);
+        if (this.apps[1]) this.apps[1].applyFilter(idArray);
+        if (this.apps[2]) this.apps[2].applyFilter(idArray);
+        if (this.apps[3]) this.apps[3].applyFilter(idArray);
+
+        this.saveObj.filteredRecords = this.referenceDataSet.attributes.filteredRecords;
+    }
+
+    setSelectEdgeKeyBackgroundColor = (color: string) => {
+        if (color.length === 6) color = "#" + color; 
+        var keySelection = <any>document.getElementById('select-edge-key');
+        keySelection.options[keySelection.selectedIndex].style.backgroundColor = color;
+    }
+
+    setSelectNodeKeyBackgroundColor = (color: string) => {
+        if (color.length === 6) color = "#" + color; 
+        var keySelection = <any>document.getElementById('select-node-key');
+        keySelection.options[keySelection.selectedIndex].style.backgroundColor = color;
+    }
+
+    setDefaultEdgeDiscretizedValues = () => {
+        //Assume data is shared across app
+        var range = this.apps[0].getCurrentEdgeWeightRange();
+        var numCategory = Number($('#select-edge-color-number-discretized-category').val());
+        var step = (range.max - range.min) / numCategory;
+        $('#input-edge-discretized-' + 0 + '-from').val(range.min.toString());
+        $('#input-edge-discretized-' + (numCategory - 1) + '-to').val(range.max.toString());
+        for (var i = 0; i < numCategory - 1; i++) {
+            $('#input-edge-discretized-' + (i + 1) + '-from').val((range.min + step * (i + 1)).toString());
+            $('#input-edge-discretized-' + i + '-to').val((range.min + step * (i + 1)).toString());
+        }
+    }
+
+    setEdgeDirectionGradient = () => {
+        this.saveObj.edgeSettings.directionStartColor = (<any>$('#input-edge-start-color')).colorpicker("getValue");
+        this.saveObj.edgeSettings.directionEndColor = (<any>$('#input-edge-end-color')).colorpicker("getValue");
+
+        if (this.apps[0]) this.apps[0].setEdgeDirectionGradient();
+        if (this.apps[1]) this.apps[1].setEdgeDirectionGradient();
+        if (this.apps[2]) this.apps[2].setEdgeDirectionGradient();
+        if (this.apps[3]) this.apps[3].setEdgeDirectionGradient();
+    }
+
+    setEdgeColorByWeight = () => {
+
+        var config = {};
+
+        if (this.commonData.edgeWeightColorMode === "continuous-discretized") {
+            var numCategory = Number($('#select-edge-color-number-discretized-category').val());
+
+            var domainArray = [];
+            var colorArray = [];
+            var from = Number($('#input-edge-discretized-' + 0 + '-from').val());
+            domainArray[domainArray.length] = from;
+            for (var i = 0; i < numCategory; i++) {
+                var to = Number($('#input-edge-discretized-' + i + '-to').val());
+                domainArray[domainArray.length] = to;
+                colorArray[colorArray.length] = (<any>$('#input-edge-discretized-' + i + '-color')).colorpicker("getValue");
+            }
+
+            // save updated settings 
+            this.saveObj.edgeSettings.colorBy = "weight";
+            this.saveObj.edgeSettings.weight.type = "continuous-discretized";
+            this.saveObj.edgeSettings.weight.discretizedSetting.numCategory = numCategory;
+            this.saveObj.edgeSettings.weight.discretizedSetting.domainArray = domainArray;
+            this.saveObj.edgeSettings.weight.discretizedSetting.colorArray = colorArray;
+
+            // set config
+            config["type"] = "continuous-discretized";
+            config["domainArray"] = domainArray;
+            config["colorArray"] = colorArray;
+
+        } else if (this.commonData.edgeWeightColorMode === "continuous-normal") {
+            var minColor = (<any>$('#input-edge-min-color')).colorpicker("getValue");
+            var maxColor = (<any>$('#input-edge-max-color')).colorpicker("getValue");
+
+            // save updated settings
+            this.saveObj.edgeSettings.colorBy = "weight";
+            this.saveObj.edgeSettings.weight.type = "continuous-normal";
+            this.saveObj.edgeSettings.weight.continuousSetting.minColor = minColor;
+            this.saveObj.edgeSettings.weight.continuousSetting.maxColor = maxColor;
+
+            // set config
+            config["type"] = "continuous-normal";
+            config["minColor"] = minColor;
+            config["maxColor"] = maxColor;
+
+        } else if (this.commonData.edgeWeightColorMode === "discrete") {
+            var valueArray = [];
+            var colorArray = [];
+
+            var keySelection = <any>document.getElementById('select-edge-key');
+
+            for (var i = 0; i < keySelection.length; i++) {
+                var key = keySelection.options[i].value;
+                var color = keySelection.options[i].style.backgroundColor;
+                var hex: string = this.colorToHex(color);
+                valueArray.push(key);
+                colorArray.push(hex);
+            }
+
+            // save updated settings
+            this.saveObj.edgeSettings.colorBy = "weight";
+            this.saveObj.edgeSettings.weight.type = "discrete";
+            this.saveObj.edgeSettings.weight.discretizedSetting.domainArray = domainArray;
+            this.saveObj.edgeSettings.weight.discretizedSetting.colorArray = colorArray;
+
+            // set config
+            config["type"] = "discrete";
+            config["valueArray"] = valueArray;
+            config["colorArray"] = colorArray;
+
+        } else {
+            console.log("Nothing is visible");
+        }
+
+        if (this.apps[0]) this.apps[0].setEdgeColorByWeight(config);
+        if (this.apps[1]) this.apps[1].setEdgeColorByWeight(config);
+        if (this.apps[2]) this.apps[2].setEdgeColorByWeight(config);
+        if (this.apps[3]) this.apps[3].setEdgeColorByWeight(config);
+
+    }
+
+    setEdgeColorByNode = () => {
+        // save edge color setting
+        this.saveObj.edgeSettings.colorBy = "node";
+
+        if (this.apps[0]) this.apps[0].setEdgeColorByNode();
+        if (this.apps[1]) this.apps[1].setEdgeColorByNode();
+        if (this.apps[2]) this.apps[2].setEdgeColorByNode();
+        if (this.apps[3]) this.apps[3].setEdgeColorByNode();
+    }
+
+    setEdgeNoColor = () => {
+        // save edge color setting 
+        this.saveObj.edgeSettings.colorBy = "none";
+
+        if (this.apps[0]) this.apps[0].setEdgeNoColor();
+        if (this.apps[1]) this.apps[1].setEdgeNoColor();
+        if (this.apps[2]) this.apps[2].setEdgeNoColor();
+        if (this.apps[3]) this.apps[3].setEdgeNoColor();
+    }
+
+    selectView = view => {
+        this.input.setActiveTarget(this.viewToId(view));
+        $(TL_VIEW).css({ borderColor: 'white', zIndex: 0 });
+        $(TR_VIEW).css({ borderColor: 'white', zIndex: 0 });
+        $(BL_VIEW).css({ borderColor: 'white', zIndex: 0 });
+        $(BR_VIEW).css({ borderColor: 'white', zIndex: 0 });
+        $(view).css({ borderColor: 'black', zIndex: 1 });
+    }
+
+    setNodeSizeOrColor = () => {
+        var sizeOrColor = $('#select-node-size-color').val();
+        var attribute = $('#select-attribute').val();
+
+        if (!sizeOrColor || !attribute) return;
+
+        if (sizeOrColor == "node-size") {
+            var scaleArray = this.getNodeScaleArray(attribute);
+            if (!scaleArray) return;
+
+            var minScale = Math.min.apply(Math, scaleArray);
+            var maxScale = Math.max.apply(Math, scaleArray);
+
+            // Rescale the node based on the the size bar max and min values
+            var values = $("#div-node-size-slider")['bootstrapSlider']().data('bootstrapSlider').getValue();
+            var scaleMap = d3.scale.linear().domain([minScale, maxScale]).range([values[0], values[1]]);
+            var newScaleArray = scaleArray.map((value: number) => { return scaleMap(value); });
+
+            if (this.apps[0]) this.apps[0].setNodeSize(newScaleArray);
+            if (this.apps[1]) this.apps[1].setNodeSize(newScaleArray);
+            if (this.apps[2]) this.apps[2].setNodeSize(newScaleArray);
+            if (this.apps[3]) this.apps[3].setNodeSize(newScaleArray);
+            
+            this.saveObj.nodeSettings.nodeSizeMin = values[0];
+            this.saveObj.nodeSettings.nodeSizeMax = values[1];
+            this.saveObj.nodeSettings.nodeSizeAttribute = attribute;
+        }
+        else if (sizeOrColor == "node-color") {
+            var nodeColorMode = $('#checkbox-node-color-continuous').is(":checked");
+            if (this.referenceDataSet.attributes.info[attribute].isDiscrete && !nodeColorMode) {
+                var keyArray: number[] = [];
+                var colorArray: string[] = [];
+
+                var keySelection = <any>document.getElementById('select-node-key');
+
+                for (var i = 0; i < keySelection.length; i++) {
+                    //var key = keySelection.options[i].value;
+                    var key = parseInt(keySelection.options[i].value);
+                    var color = keySelection.options[i].style.backgroundColor;
+                    var hex: string = this.colorToHex(color);
+                    keyArray.push(key);
+                    colorArray.push(hex);
+                }
+                this.saveObj.nodeSettings.nodeColorMode = "discrete";
+                this.saveObj.nodeSettings.nodeColorDiscrete = colorArray.slice(0);
+                
+                if (this.apps[0]) this.apps[0].setNodeColorDiscrete(attribute, keyArray, colorArray);
+                if (this.apps[1]) this.apps[1].setNodeColorDiscrete(attribute, keyArray, colorArray);
+                if (this.apps[2]) this.apps[2].setNodeColorDiscrete(attribute, keyArray, colorArray);
+                if (this.apps[3]) this.apps[3].setNodeColorDiscrete(attribute, keyArray, colorArray);
+            }
+            else {
+                let minColor = (<any>$('#input-min-color')).colorpicker("getValue");
+                let maxColor = (<any>$('#input-max-color')).colorpicker("getValue");
+
+                if (this.apps[0]) this.apps[0].setNodeColor(attribute, minColor, maxColor);
+                if (this.apps[1]) this.apps[1].setNodeColor(attribute, minColor, maxColor);
+                if (this.apps[2]) this.apps[2].setNodeColor(attribute, minColor, maxColor);
+                if (this.apps[3]) this.apps[3].setNodeColor(attribute, minColor, maxColor);
+
+                this.saveObj.nodeSettings.nodeColorMode = "continuous";
+                this.saveObj.nodeSettings.nodeColorContinuousMin = minColor;
+                this.saveObj.nodeSettings.nodeColorContinuousMax = maxColor;
+            }
+
+            this.saveObj.nodeSettings.nodeColorAttribute = attribute;
+
+            // Edge will also need updating if they are set to "node"
+            if (this.commonData.edgeColorMode === "node") {
+                this.setEdgeColorByNode();
+            }
+        }
+        else if (sizeOrColor == "node-default") {
+            if (this.apps[0]) this.apps[0].setNodeDefaultSizeColor();
+            if (this.apps[1]) this.apps[1].setNodeDefaultSizeColor();
+            if (this.apps[2]) this.apps[2].setNodeDefaultSizeColor();
+            if (this.apps[3]) this.apps[3].setNodeDefaultSizeColor();
+        }
+
+        this.saveObj.nodeSettings.nodeSizeOrColor = sizeOrColor;
+
+    }
+
+    unique = (sourceArray: any[]) => {
+        var arr = [];
+        for (var i = 0; i < sourceArray.length; i++) {
+            if (arr.indexOf(sourceArray[i]) == -1) {
+                arr.push(sourceArray[i]);
+            }
+        }
+        return arr;
+    }
+
+    selectNodeSizeColorOnChange = () => {
+        var value = $('#select-node-size-color').val();
+        var attribute = $('#select-attribute').val();
+
+        if (value == "node-default") {
+            $('#select-attribute').prop("disabled", "disabled");
+
+            $('#div-node-size').hide();
+            $('#div-node-color-pickers').hide();
+            $('#div-node-color-pickers-discrete').hide();
+        }
+        else if (value == "node-size") {
+            $('#select-attribute').prop('disabled', false);
+            $('#div-node-color-mode').hide();
+
+            this.setupNodeSizeRangeSlider(attribute);
+        }
+        else if (value == "node-color") {
+            $('#select-attribute').prop('disabled', false);
+
+            if (this.referenceDataSet.attributes.info[attribute].isDiscrete) {
+                $('#div-node-color-mode').show();
+                this.setupColorPickerDiscrete(attribute);
+            } else {
+                $('#div-node-color-mode').hide();
+                this.setupColorPicker();
             }
         }
 
-        if (apps[0]) apps[0].highlightSelectedNodes(idArray);
-        if (apps[1]) apps[1].highlightSelectedNodes(idArray);
-        if (apps[2]) apps[2].highlightSelectedNodes(idArray);
-        if (apps[3]) apps[3].highlightSelectedNodes(idArray);
+        this.setNodeSizeOrColor();
     }
-}
 
-input.regMouseLocationCallback(getActiveTargetUnderMouse);
-input.regMouseUpCallback(highlightSelectedNodes);
+    loadSettings = () => {
+        if (!(this.referenceDataSet && this.referenceDataSet.attributes && this.referenceDataSet.brainCoords && this.referenceDataSet.simMatrix)) {
+            CommonUtilities.launchAlertMessage(CommonUtilities.alertType.ERROR, "Dataset is required!");
+            return;
+        }
 
-// Set up selectability
-var selectTLView = function () {
-    input.setActiveTarget(0);
-    $(tl_view).css({ borderColor: 'black', zIndex: 1 });
-    $(tr_view).css({ borderColor: 'white', zIndex: 0 });
-    $(bl_view).css({ borderColor: 'white', zIndex: 0 });
-    $(br_view).css({ borderColor: 'white', zIndex: 0 });
-};
-selectTLView(); // Select the top-left view straight away.
-$(tl_view).click(selectTLView);
-$(tr_view).click(function () {
-    input.setActiveTarget(1);
-    $(tl_view).css({ borderColor: 'white', zIndex: 0 });
-    $(tr_view).css({ borderColor: 'black', zIndex: 1 });
-    $(bl_view).css({ borderColor: 'white', zIndex: 0 });
-    $(br_view).css({ borderColor: 'white', zIndex: 0 });
-});
-$(bl_view).click(function () {
-    input.setActiveTarget(2);
-    $(tl_view).css({ borderColor: 'white', zIndex: 0 });
-    $(tr_view).css({ borderColor: 'white', zIndex: 0 });
-    $(bl_view).css({ borderColor: 'black', zIndex: 1 });
-    $(br_view).css({ borderColor: 'white', zIndex: 0 });
-});
-$(br_view).click(function () {
-    input.setActiveTarget(3);
-    $(tl_view).css({ borderColor: 'white', zIndex: 0 });
-    $(tr_view).css({ borderColor: 'white', zIndex: 0 });
-    $(bl_view).css({ borderColor: 'white', zIndex: 0 });
-    $(br_view).css({ borderColor: 'black', zIndex: 1 });
-});
+        var file = (<any>$('#input-select-load-file').get(0)).files[0];
+        var reader = new FileReader();
+        reader.onload = () => {
+            this.saveObj = new SaveFile({});
+            this.saveObj.fromYaml(reader.result.toLowerCase());
 
-// Set up icons
+            for (var i = 0; i < 4; i++) {
+                if (!jQuery.isEmptyObject(this.saveObj.saveApps[i])) {
+                    this.initApp(i);
+                }
+            }
+        }
+        reader.readAsText(file);
+    }
 
-$('#brain3d-icon-front').draggable(
-    <any>{
-        containment: 'body',
-        stop: function (event) {
-            var model = $('#select-brain3d-model').val();
-            var view = getViewUnderMouse(event.pageX, event.pageY);
+    saveSettings = () => {
+        var filename = "brain-model.cfg";
+        var body = document.body;
 
-            brainIconDraggableEvent(view, model);
+        //Save all the apps
+        for (var i = 0; i < 4; i++) {
+            var app = this.saveObj.saveApps[i];
+            if (this.apps[i]) this.apps[i].save(app);
+        }
+
+        var configText = this.saveObj.toYaml();
+
+        var url = window["URL"].createObjectURL(new Blob([configText], { "type": "text\/xml" }));
+
+        var a = document.createElement("a");
+        body.appendChild(a);
+        a.setAttribute("download", filename);
+        a.setAttribute("href", url);
+        a.style["display"] = "none";
+        a.click();
+
+        setTimeout(() => window["URL"].revokeObjectURL(url), 10);
+    }
+
+    exportSVG = (viewport, type) => {
+        var documents = [window.document],
+            SVGSources = [];
+
+        // loop through all active app
+        if (!this.apps[viewport]) return;
+
+        var styles = this.getStyles(document);
+        var newSource = this.getSource(viewport, styles);
+
+        // Export all svg Graph on the page
+        if (type === "svg") {
+            this.downloadSVG(newSource);
+        } else if (type === "image") {
+            this.downloadSVGImage(newSource);
+        }
+
+    }
+
+    getSource = (id, styles) => {
+        var svgInfo = {},
+            svg = document.getElementById("svgGraph" + id);
+        var doctype = '<?xml version="1.0" standalone="no"?><!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">';
+        var prefix = {
+            xmlns: "http://www.w3.org/2000/xmlns/",
+            xlink: "http://www.w3.org/1999/xlink",
+            svg: "http://www.w3.org/2000/svg"
+        };
+        svg.setAttribute("version", "1.1");
+
+        // insert 3D brain image
+        // Remove old image if exists
+        var oldImage = document.getElementById('brain3D' + id);
+        if (oldImage) oldImage.parentNode.removeChild(oldImage);
+
+        var canvas = this.apps[id].getDrawingCanvas();
+        var image = document.createElement("image");
+        svg.insertBefore(image, svg.firstChild);
+        image.setAttribute('y', '0');
+        image.setAttribute('x', '0');
+        image.setAttribute('id', 'brain3D' + id);
+        image.setAttribute('xlink:href', canvas.toDataURL());
+        image.setAttribute('width', canvas.width);
+        image.setAttribute('height', canvas.height);
+        image.removeAttribute('xmlns');
+
+        // insert defs
+        var defsEl = document.createElement("defs");
+        svg.insertBefore(defsEl, svg.firstChild); //TODO   .insert("defs", ":first-child")
+        defsEl.setAttribute("class", "svg-crowbar");
+
+        // insert styles to defs
+        var styleEl = document.createElement("style")
+        defsEl.appendChild(styleEl);
+        styleEl.setAttribute("type", "text/css");
+
+
+        // removing attributes so they aren't doubled up
+        svg.removeAttribute("xmlns");
+        svg.removeAttribute("xlink");
+
+        // These are needed for the svg
+
+        if (!svg.hasAttributeNS(prefix.xmlns, "xmlns:xlink")) {
+            svg.setAttributeNS(prefix.xmlns, "xmlns:xlink", prefix.xlink);
+        }
+
+        var source = (new XMLSerializer()).serializeToString(svg).replace('</style>', '<![CDATA[' + styles + ']]></style>')
+            .replace(/xmlns\=\"http\:\/\/www\.w3\.org\/1999\/xhtml\"/g, '');
+
+        // Convert RGBA to RGB (for old Illustartor)
+        source = source.replace(/rgba\((.+?)\, (.+?)\, (.+?)\,.+?\)/g, rgbaText => {
+            let vals = /rgba\((.+?)\, (.+?)\, (.+?)\,.+?\)/i.exec(rgbaText);
+            return "rgb(" + vals[1] + "," + vals[2] + "," + vals[3] + ")";
+        });
+
+        svgInfo = {
+            id: svg.getAttribute("id"),
+            childElementCount: svg.childElementCount,
+            source: [doctype + source]
+        };
+
+        return svgInfo;
+    }
+
+    downloadSVG = source => {
+        var filename = "untitled";
+        var body = document.body;
+
+        if (source.id) {
+            filename = source.id;
+        } else if (source.class) {
+            filename = source.class;
+        } else if (window.document.title) {
+            filename = window.document.title.replace(/[^a-z0-9]/gi, '-').toLowerCase();
+        }
+
+        var url = window["URL"].createObjectURL(new Blob(source.source, { "type": "text\/xml" }));
+
+        var a = document.createElement("a");
+        body.appendChild(a);
+        a.setAttribute("class", "svg-crowbar");
+        a.setAttribute("download", filename + ".svg");
+        a.setAttribute("href", url);
+        a.style["display"] = "none";
+        a.click();
+
+        setTimeout(() => window["URL"].revokeObjectURL(url), 10);
+    }
+
+    downloadSVGImage = source => {
+        var filename = "untitled";
+
+        if (source.id) {
+            filename = source.id;
+        } else if (source.class) {
+            filename = source.class;
+        } else if (window.document.title) {
+            filename = window.document.title.replace(/[^a-z0-9]/gi, '-').toLowerCase();
+        }
+
+        var image = new Image();
+        image.src = 'data:image/svg+xml;base64,' + window.btoa(extra.unescape(encodeURIComponent(source.source)))
+        image.onload = () => {
+            var canvas = document.createElement('canvas');
+            canvas.width = image.width;
+            canvas.height = image.height;
+            var context = canvas.getContext('2d');
+            context.drawImage(image, 0, 0);
+
+            var a = document.createElement("a");
+            a.setAttribute("download", filename + ".png");
+            a.setAttribute("href", canvas.toDataURL('image/png'));
+            a.click();
         }
     }
-);
 
-function setBrainMode(brainMode, view: string) {
-    switch (view) {
-        case tl_view:
-            apps[0].brainSurfaceMode = brainMode;
-            break;
-        case tr_view:
-            apps[1].brainSurfaceMode = brainMode;
-            break;
-        case bl_view:
-            apps[2].brainSurfaceMode = brainMode;
-            break;
-        case br_view:
-            apps[3].brainSurfaceMode = brainMode;
-            break;
-    }
-}
+    getStyles = doc => {
+        var styles = "",
+            styleSheets = doc.styleSheets;
 
-function brainIconDraggableEvent(view: string, model: string, brainSurfaceMode?) {
-    resetBrain3D();
+        if (styleSheets) {
+            for (var i = 0; i < styleSheets.length; i++) {
+                processStyleSheet(styleSheets[i]);
+            }
+        }
 
-    var file = 'none';
-    if (model === 'ch2') {
-        file = 'BrainMesh_ch2.obj';
-
-    } else if (model === 'ch2_inflated') {
-        file = 'BrainMesh_Ch2_Inflated.obj';
-
-    } else if (model === 'icbm') {
-        file = 'BrainMesh_ICBM152.obj';
-
-    } else if (model === 'ch2_cerebellum') {
-        file = 'BrainMesh_Ch2withCerebellum.obj';
-
-    } else if (model === 'upload') {
-        file = (<any>$('#input-select-model').get(0)).files[0].name;
-
+        function processStyleSheet(ss) {
+            if (ss.cssRules) {
+                for (var i = 0; i < ss.cssRules.length; i++) {
+                    var rule = ss.cssRules[i];
+                    if (rule.type === 3) {
+                        // Import Rule
+                        processStyleSheet(rule.styleSheet);
+                    } else {
+                        // hack for illustrator crashing on descendent selectors
+                        if (rule.selectorText) {
+                            if (rule.selectorText.indexOf(">") === -1) {
+                                styles += "\n" + rule.cssText;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return styles;
     }
 
-    loadBrainModel(file, function (object) {
-        var appID = -1;
+    colorToHex = color => {
+        if (color.substr(0, 1) === '#') {
+            return color;
+        }
+        var digits = /rgb\((\d+), (\d+), (\d+)\)/.exec(color);
+
+        var red = parseInt(digits[1]);
+        var green = parseInt(digits[2]);
+        var blue = parseInt(digits[3]);
+
+        var hexRed = red.toString(16);
+        var hexGreen = green.toString(16);
+        var hexBlue = blue.toString(16);
+
+        if (hexRed.length == 1) hexRed = "0" + hexRed;
+        if (hexGreen.length == 1) hexGreen = "0" + hexGreen;
+        if (hexBlue.length == 1) hexBlue = "0" + hexBlue;
+
+        return '#' + hexRed + hexGreen + hexBlue;
+    };
+
+    getNodeScaleArray = (attribute: string) => {
+        var attrArray = this.referenceDataSet.attributes.get(attribute);
+
+        var columnIndex = this.referenceDataSet.attributes.columnNames.indexOf(attribute);
+
+        // assume all positive numbers in the array
+        var min = this.referenceDataSet.attributes.getMin(columnIndex);
+        var max = this.referenceDataSet.attributes.getMax(columnIndex);
+
+        var scaleArray: number[];
+        var scaleFactor = 1;
+
+        scaleArray = attrArray.map((value) => { return scaleFactor * value[0]; });
+
+        return scaleArray;
+    }
+
+    setupNodeSizeRangeSlider = (attribute: string) => {
+        $('#div-node-color-pickers').hide();
+        $('#div-node-color-pickers-discrete').hide();
+        $("#div-node-size").show();
+
+        var scaleArray = this.getNodeScaleArray(attribute);
+        if (!scaleArray) return;
+
+        var minScale = Math.min.apply(Math, scaleArray);
+        var maxScale = Math.max.apply(Math, scaleArray);
+        //TODO: Do we really need to call setNodeSizeOrColor for all these events?
+        var slider = $("#div-node-size-slider")['bootstrapSlider']({
+            range: true,
+            min: 0.1,
+            max: 10,
+            step: 0.1,
+            value: [minScale, maxScale],
+            change: this.setNodeSizeOrColor,
+        });
+        slider.on("slide", () => {
+            var values = $("#div-node-size-slider")['bootstrapSlider']().data('bootstrapSlider').getValue();
+            $("#label_node_size_range").text(values[0] + " - " + values[1]);
+            this.setNodeSizeOrColor();
+        });
+        slider.on("change", this.setNodeSizeOrColor);
+        $("#label_node_size_range").text(minScale + " - " + maxScale);
+    }
+
+    setupColorPicker = () => {
+        $('#div-node-size').hide();
+        $('#div-node-color-pickers-discrete').hide();
+        $('#div-node-color-pickers').show();
+    }
+
+    setupColorPickerDiscrete = (attribute: string) => {
+        $('#div-node-size').hide();
+        $('#div-node-color-pickers').hide();
+        $('#div-node-color-pickers-discrete').show();
+
+        var attrArray = this.referenceDataSet.attributes.get(attribute);
+        var uniqueKeys = this.referenceDataSet.attributes.info[attribute].distinctValues;
+
+        var d3ColorSelector = d3.scale.category20();
+
+        var uniqueColors = uniqueKeys.map((group: number) => { return d3ColorSelector(group); });
+
+        $('#select-node-key').empty();
+
+        for (var i = 0; i < uniqueKeys.length; i++) {
+            var option = document.createElement('option');
+            option.text = uniqueKeys[i];
+            option.value = uniqueKeys[i];
+            option.style.backgroundColor = uniqueColors[i];
+            $('#select-node-key').append(option);
+        }
+        
+        (<any>$("#input-node-color")).colorpicker("setValue", uniqueColors[0]);
+    }
+
+    // Find which view is currently located under the mouse
+    getViewUnderMouse = (x, y) => {
+        let $view = $(TL_VIEW);
+        let innerViewLeft = $view.offset().left;
+        if (x < innerViewLeft) return "";
+        x -= innerViewLeft;
+        if (y < $view.height()) {
+            if (x < $view.width()) {
+                return TL_VIEW;
+            } else {
+                return TR_VIEW;
+            }
+        } else {
+            if (x < $view.width()) {
+                return BL_VIEW;
+            } else {
+                return BR_VIEW;
+            }
+        }
+    }
+
+    getActiveTargetUnderMouse = (x: number, y: number) => {
+        let view = this.getViewUnderMouse(x, y);
+        return this.viewToId(view);
+    }
+
+    setNodeColorInContextMenu = (color: string) => {
+        if (color.length === 6) color = "#" + color;
+        if (this.apps[this.input.activeTarget]) {
+            if ((this.input.rightClickLabelAppended) && (this.input.selectedNodeID >= 0)) {
+                this.apps[this.input.activeTarget].setANodeColor(this.input.selectedNodeID, color);
+                this.input.contextMenuColorChanged = true;
+            }
+        }
+    }
+
+    highlightSelectedNodes = () => {
+        if (!this.referenceDataSet || !this.referenceDataSet.attributes) return;
+
+        if (this.referenceDataSet.attributes.filteredRecordsHighlightChanged) {
+            this.referenceDataSet.attributes.filteredRecordsHighlightChanged = false;
+
+            if (!this.referenceDataSet.attributes.filteredRecords) return;
+
+            var fRecords = this.referenceDataSet.attributes.filteredRecords;
+            var idArray = new Array();
+
+            // if all the nodes have been selected, cancel the highlight
+            if (fRecords.length < this.referenceDataSet.attributes.numRecords) {
+                for (var i = 0; i < fRecords.length; ++i) {
+                    var id = fRecords[i]["index"];
+                    idArray.push(id);
+                }
+            }
+
+            if (this.apps[0]) this.apps[0].highlightSelectedNodes(idArray);
+            if (this.apps[1]) this.apps[1].highlightSelectedNodes(idArray);
+            if (this.apps[2]) this.apps[2].highlightSelectedNodes(idArray);
+            if (this.apps[3]) this.apps[3].highlightSelectedNodes(idArray);
+        }
+    }
+
+    setBrainMode = (brainMode, view: string) => {
         switch (view) {
-            case tl_view:
-                var info = {
-                    id: 0,
-                    jDiv: $(tl_view),
-                    brainModelOrigin: object
-                };
-                $(tl_view).empty();
-                apps[0] = new Brain3DApp(info, commonData, input.newTarget(0));
-                appID = 0;
+            case TL_VIEW:
+                this.apps[0].brainSurfaceMode = brainMode;
                 break;
-            case tr_view:
-                var info = {
-                    id: 1,
-                    jDiv: $(tl_view),
-                    brainModelOrigin: object
-                };
-                $(tr_view).empty();
-                apps[1] = new Brain3DApp(info, commonData, input.newTarget(1));
-                appID = 1;
+            case TR_VIEW:
+                this.apps[1].brainSurfaceMode = brainMode;
                 break;
-            case bl_view:
-                var info = {
-                    id: 2,
-                    jDiv: $(tl_view),
-                    brainModelOrigin: object
-                };
-                $(bl_view).empty();
-                apps[2] = new Brain3DApp(info, commonData, input.newTarget(2));
-                appID = 2;
+            case BL_VIEW:
+                this.apps[2].brainSurfaceMode = brainMode;
                 break;
-            case br_view:
-                var info = {
-                    id: 3,
-                    jDiv: $(tl_view),
-                    brainModelOrigin: object
-                };
-                $(br_view).empty();
-                apps[3] = new Brain3DApp(info, commonData, input.newTarget(3));
-                appID = 3;
+            case BR_VIEW:
+                this.apps[3].brainSurfaceMode = brainMode;
                 break;
-        }
-
-        saveObj.saveApps[appID] = new SaveApp(); // create a new instance (if an old instance exists)
-        saveObj.saveApps[appID].surfaceModel = model;
-        saveObj.saveApps[appID].view = view;
-
-        $('#button-save-app').button({ disabled: false });
-    });
-
-
-}
-
-$('#dataset1-icon-front').draggable(
-    <any>{
-        containment: 'body',
-        stop: function (event) {
-            var view = getViewUnderMouse(event.pageX, event.pageY);
-            setDataset(view);
         }
     }
- );
 
-function setDataset(view: string) {
-    resetDataSetIcon();
+    viewToId = (view: string): number => {
+        switch (view) {
+            case TL_VIEW: return 0;
+            case TR_VIEW: return 1;
+            case BL_VIEW: return 2;
+            case BR_VIEW: return 3;
+            default: return -1;
+        }
+    }
 
-    if (!dataSet) {
-        loadExampleData(view, function (view) {
-            var clonedDataSet = dataSet.clone();
-            var appID = -1;
-            switch (view) {
-                case tl_view:
-                    if (apps[0]) apps[0].setDataSet(clonedDataSet);
-                    appID = 0;
-                    break;
-                case tr_view:
-                    if (apps[1]) apps[1].setDataSet(clonedDataSet);
-                    appID = 1;
-                    break;
-                case bl_view:
-                    if (apps[2]) apps[2].setDataSet(clonedDataSet);
-                    appID = 2;
-                    break;
-                case br_view:
-                    if (apps[3]) apps[3].setDataSet(clonedDataSet);
-                    appID = 3;
-                    break;
+
+    setBrainModel = (view: string, model: string) => {
+        let id = this.viewToId(view);
+        this.loadBrainModel(model, object => {
+            this.apps[id].setBrainModelObject(object);
+        });
+    }
+
+    
+    createBrainView = (view: string, model: string, finalCallback?, source?: string, brainSurfaceMode?) => {
+        // source is "example", "empty", or "save" (default)
+
+        let id = this.viewToId(view);
+
+        this.loadBrainModel(model, object => {
+            $(view).empty();
+            let makeBrain = () => {
+                this.apps[id] = new Brain3DApp(
+                    {
+                        id,
+                        jDiv: $(view),
+                        brainModelOrigin: object,
+                        brainSurfaceMode
+                    },
+                    this.commonData,
+                    this.input.newTarget(id),
+                    this.saveObj
+                );
+                this.apps[id].setDataSet(this.referenceDataSet);
+                
+                this.setDataset(view);
+                this.initApp(id);
+                if (finalCallback) finalCallback();
             }
 
-            if (appID != -1) {
-                saveObj.saveApps[appID].setDataSetView = view;
+            let save = this.saveObj.saveApps[id] = (this.saveObj && this.saveObj.saveApps[id]) || new SaveApp({}); // create a new instance (if an old instance exists)
+            save.surfaceModel = model;
+            save.view = view;
+
+            $('#button-save-app').button({ disabled: false });
+            
+            // Load dataset into the webapp
+            if (source === "empty") {
+                makeBrain();
+                CommonUtilities.launchAlertMessage(CommonUtilities.alertType.SUCCESS, "Empty dataset is loaded.");
+            }
+            else if (this.saveObj.useExampleData()) {
+                this.loadExampleData(() => {
+                    makeBrain();
+                    CommonUtilities.launchAlertMessage(CommonUtilities.alertType.SUCCESS, "Default example dataset is loaded.");
+                });
+            }
+            else {
+                this.loadUploadedData(this.saveObj, () => {
+                    makeBrain();
+                    CommonUtilities.launchAlertMessage(CommonUtilities.alertType.SUCCESS, "Uploaded dataset is loaded.");
+                }, source);
             }
         });
-    } else {
-        if (!dataSet.verify()) return;
-        var clonedDataSet = dataSet.clone();
-        var appID = -1;
-        switch (view) {
-            case tl_view:
-                if (apps[0]) apps[0].setDataSet(clonedDataSet);
-                appID = 0;
-                break;
-            case tr_view:
-                if (apps[1]) apps[1].setDataSet(clonedDataSet);
-                appID = 1;
-                break;
-            case bl_view:
-                if (apps[2]) apps[2].setDataSet(clonedDataSet);
-                appID = 2;
-                break;
-            case br_view:
-                if (apps[3]) apps[3].setDataSet(clonedDataSet);
-                appID = 3;
-                break;
-        }
-
-        if (appID != -1) {
-            saveObj.saveApps[appID].setDataSetView = view;
-        }
+    }
     
-    }
-}
 
-
-$('#checkbox_yoking_view').on('change', function () {
-    if ($('#checkbox_yoking_view').is(":checked")) {
-        input.yokingView = true;
-    }
-    else {
-        input.yokingView = false;
-    }
-});
-
-$('#checkbox-thickness-by-weight').on('change', function () {
-    if ($('#checkbox-thickness-by-weight').is(":checked")) {
-        if (apps[0]) apps[0].setEdgeThicknessByWeight(true);
-        if (apps[1]) apps[1].setEdgeThicknessByWeight(true);
-        if (apps[2]) apps[2].setEdgeThicknessByWeight(true);
-        if (apps[3]) apps[3].setEdgeThicknessByWeight(true);
-    }
-    else {
-        if (apps[0]) apps[0].setEdgeThicknessByWeight(false);
-        if (apps[1]) apps[1].setEdgeThicknessByWeight(false);
-        if (apps[2]) apps[2].setEdgeThicknessByWeight(false);
-        if (apps[3]) apps[3].setEdgeThicknessByWeight(false);
-    }
-});
-
-
-
-$('#checkbox-edge-color-force-continuous').on('change', function () {
-    if ($("#checkbox-edge-color-force-continuous").is(":checked")) {
-        commonData.edgeForceContinuous = true;
-    } else {
-        commonData.edgeForceContinuous = false;
-    }
-    setEdgeColor();
-});
-
-$('#checkbox-edge-color-discretized').on('change', function () {
-    if ($("#checkbox-edge-color-discretized").is(":checked")) {
-        setDefaultEdgeDiscretizedValues();
-        $("#div-edge-color-continuous-discretized").show();
-        $("#div-edge-color-continuous-normal").hide();
-        commonData.edgeWeightColorMode = "continuous-discretized";
-
-        var numCategory = Number($('#select-edge-color-number-discretized-category').val());
-        for (var i = 0; i < 5; i++) {
-            if (i < numCategory) {
-                $('#div-edge-discretized-' + i).show();
-            } else {
-                $('#div-edge-discretized-' + i).hide();
-            }
-        }
-    } else {
-        $("#div-edge-color-continuous-discretized").hide();
-        $("#div-edge-color-continuous-normal").show();
-        commonData.edgeWeightColorMode = "continuous-normal";
-    }
-
-    setEdgeColorByWeight();
-});
-
-$('#select-edge-direction').on('change', function () {
-    saveObj.edgeSettings.directionMode = $('#select-edge-direction').val();
-    setEdgeDirection();
-});
-
-$('#select-edge-color').on('change', function () {
-    setEdgeColor();
-});
-
-$('#select-brain3d-model').on('change', function () {
-    var model = $('#select-brain3d-model').val();
-
-    if (model === "upload") {
-        $("#div-upload-brain-model").show();
-    } else {
-        $("#div-upload-brain-model").hide();
-    }
-
-    resetBrain3D();
-
-});
-
-$('#select-edge-color-number-discretized-category').on('change', function () {
-    var numCategory = Number($('#select-edge-color-number-discretized-category').val());
-
-    setDefaultEdgeDiscretizedValues();
-    for (var i = 0; i < 5; i++) {
-        if (i < numCategory) {
-            $('#div-edge-discretized-' + i).show();
+    setDataset = (view: string) => {
+        let id = this.viewToId(view);
+        if (!this.referenceDataSet) {
+            // Get a dataset from the default example
+            this.loadExampleData(() => this.apps[id].setDataSet(this.referenceDataSet));
         } else {
-            $('#div-edge-discretized-' + i).hide();
+            if (!this.referenceDataSet.verify()) return;
+            this.apps[id].setDataSet(this.referenceDataSet);
         }
     }
 
-    setEdgeColorByWeight();
-});
+    setEdgeDirection = () => {
+        var value = $('#select-edge-direction').val();
 
+        if (value === "gradient") {
+            $("#div-edge-gradient-color-pickers").show();
+        } else {
+            $("#div-edge-gradient-color-pickers").hide();
+        }
 
-$('#input-edge-discretized-' + 0 + '-from').on('change keyup paste', function () {
-    setEdgeColorByWeight();
-});
-
-$('#input-edge-discretized-' + 4 + '-to').on('change keyup paste', function () {
-    setEdgeColorByWeight();
-});
-
-$('#input-edge-discretized-1-from').on('change keyup paste', function () {
-    var val = $('#input-edge-discretized-1-from').val();
-    $('#input-edge-discretized-0-to').val(val);
-    setEdgeColorByWeight();
-});
-
-$('#input-edge-discretized-2-from').on('change keyup paste', function () {
-    var val = $('#input-edge-discretized-2-from').val();
-    $('#input-edge-discretized-1-to').val(val);
-    setEdgeColorByWeight();
-});
-
-$('#input-edge-discretized-3-from').on('change keyup paste', function () {
-    var val = $('#input-edge-discretized-3-from').val();
-    $('#input-edge-discretized-2-to').val(val);
-    setEdgeColorByWeight();
-});
-
-$('#input-edge-discretized-4-from').on('change keyup paste', function () {
-    var val = $('#input-edge-discretized-4-from').val();
-    $('#input-edge-discretized-3-to').val(val);
-    setEdgeColorByWeight();
-});
-
-$('#input-edge-discretized-0-to').on('change keyup paste', function () {
-    var val = $('#input-edge-discretized-0-to').val();
-    $('#input-edge-discretized-1-from').val(val);
-    setEdgeColorByWeight();
-});
-
-$('#input-edge-discretized-1-to').on('change keyup paste', function () {
-    var val = $('#input-edge-discretized-1-to').val();
-    $('#input-edge-discretized-2-from').val(val);
-    setEdgeColorByWeight();
-});
-
-$('#input-edge-discretized-2-to').on('change keyup paste', function () {
-    var val = $('#input-edge-discretized-2-to').val();
-    $('#input-edge-discretized-3-from').val(val);
-    setEdgeColorByWeight();
-});
-
-$('#input-edge-discretized-3-to').on('change keyup paste', function () {
-    var val = $('#input-edge-discretized-3-to').val();
-    $('#input-edge-discretized-4-from').val(val);
-    setEdgeColorByWeight();
-});
-
-function setEdgeDirection() {
-    var value = $('#select-edge-direction').val();
-
-    if (value === "gradient") {
-        $("#div-edge-gradient-color-pickers").show();
-    } else {
-        $("#div-edge-gradient-color-pickers").hide();
+        if (this.apps[0]) this.apps[0].setEdgeDirection(value);
+        if (this.apps[1]) this.apps[1].setEdgeDirection(value);
+        if (this.apps[2]) this.apps[2].setEdgeDirection(value);
+        if (this.apps[3]) this.apps[3].setEdgeDirection(value);
     }
 
-    if (apps[0]) apps[0].setEdgeDirection(value);
-    if (apps[1]) apps[1].setEdgeDirection(value);
-    if (apps[2]) apps[2].setEdgeDirection(value);
-    if (apps[3]) apps[3].setEdgeDirection(value);
-}
+    setEdgeColor = () => {
+        var value = $('#select-edge-color').val();
 
-function setEdgeColor() {
-    var value = $('#select-edge-color').val();
+        if (value === "none") {
+            this.setEdgeNoColor();
+            this.commonData.edgeColorMode = "none";
+            $("#div-edge-color-pickers").hide();
 
-    if (value === "none") {
-        setEdgeNoColor();
-        commonData.edgeColorMode = "none";
-        $("#div-edge-color-pickers").hide();
+        } else if (value === "weight") {
+            this.commonData.edgeColorMode = "weight";
+            $("#div-edge-color-pickers").show();
 
-    } else if (value === "weight") {
-        commonData.edgeColorMode = "weight";
-        $("#div-edge-color-pickers").show();
+            // check if discrete for all apps
+            CommonUtilities.launchAlertMessage(CommonUtilities.alertType.WARNING, "Current version of application assumes all view port shares the same dataset");
+            if (this.referenceDataSet.info.edgeWeight.type === "continuous" || this.commonData.edgeForceContinuous) {
+                if (this.referenceDataSet.info.edgeWeight.type === "continuous") {
+                    $("#checkbox-edge-color-force-continuous").hide();
+                }
 
-        // check if discrete for all apps
-        CommonUtilities.launchAlertMessage(CommonUtilities.alertType.WARNING, "Current version of application assumes all view port shares the same dataset");
-        if (dataSet.info.edgeWeight.type === "continuous" || commonData.edgeForceContinuous) {
-            if (dataSet.info.edgeWeight.type === "continuous") {
-                $("#checkbox-edge-color-force-continuous").hide();
+                $("#div-edge-color-continuous").show();
+                $("#div-edge-color-discrete").hide();
+
+                if ($("#checkbox-edge-color-discretized").is(":checked")) {
+                    this.commonData.edgeWeightColorMode = "continuous-discretized";
+                    this.setDefaultEdgeDiscretizedValues();
+
+                    $("#div-edge-color-continuous-discretized").show();
+                    $("#div-edge-color-continuous-normal").hide();
+
+                    var numCategory = Number($('#select-edge-color-number-discretized-category').val());
+                    for (var i = 0; i < 5; i++) {
+                        if (i < numCategory) {
+                            $('#div-edge-discretized-' + i).show();
+                        } else {
+                            $('#div-edge-discretized-' + i).hide();
+                        }
+                    }
+                } else {
+                    this.commonData.edgeWeightColorMode = "continuous-normal";
+                    $("#div-edge-color-continuous-discretized").hide();
+                    $("#div-edge-color-continuous-normal").show();
+                }
+            } else if (this.referenceDataSet.info.edgeWeight.type === "discrete") {
+                // Enable force continuous checkbox
+                $("#checkbox-edge-color-force-continuous").show();
+
+                this.commonData.edgeWeightColorMode = "discrete";
+                $("#div-edge-color-continuous").hide();
+                $("#div-edge-color-discrete").show();
+
+                var distinctValues = this.referenceDataSet.info.edgeWeight.distincts;
+                distinctValues.sort((a, b) => a - b);
+                var d3ColorSelector = d3.scale.category20();
+                var distinctColors = distinctValues.map((group: number) => { return d3ColorSelector(group); });
+                $('#select-edge-key').empty();
+                for (var i = 0; i < distinctValues.length; i++) {
+                    var option = document.createElement('option');
+                    option.text = distinctValues[i];
+                    option.value = distinctValues[i];
+                    option.style.backgroundColor = distinctColors[i];
+                    if (i == 0) {
+                        var color = option.style.backgroundColor;
+                        var hex = this.colorToHex(color);
+                        (<any>document.getElementById('input-edge-color')).color.fromString(hex.substring(1));
+                    }
+                    $('#select-edge-key').append(option);
+                }
             }
 
-            $("#div-edge-color-continuous").show();
-            $("#div-edge-color-discrete").hide();
+            this.setEdgeColorByWeight();
+        } else if (value === "node") {
+            this.commonData.edgeColorMode = "node";
+            this.setEdgeColorByNode();
+            $("#div-edge-color-pickers").hide();
+        }
+    }
 
+    setSurfaceOpacity = () => {
+        var opacity = $("#div-surface-opacity-slider")['bootstrapSlider']().data('bootstrapSlider').getValue();
+        this.saveObj.surfaceSettings.opacity = opacity;
+
+        if (this.apps[0]) this.apps[0].setSurfaceOpacity(opacity);
+        if (this.apps[1]) this.apps[1].setSurfaceOpacity(opacity);
+        if (this.apps[2]) this.apps[2].setSurfaceOpacity(opacity);
+        if (this.apps[3]) this.apps[3].setSurfaceOpacity(opacity);
+    }
+
+    setEdgeSize = () => {
+        var edgeSize = $("#div-edge-size-slider")['bootstrapSlider']().data('bootstrapSlider').getValue();
+        this.saveObj.edgeSettings.size = edgeSize;
+        
+        if (this.apps[0]) this.apps[0].setEdgeSize(edgeSize);
+        if (this.apps[1]) this.apps[1].setEdgeSize(edgeSize);
+        if (this.apps[2]) this.apps[2].setEdgeSize(edgeSize);
+        if (this.apps[3]) this.apps[3].setEdgeSize(edgeSize);
+    }
+
+    // Resizes the views such that the crossroads is located at (x, y) on the screen
+    setViewCrossroads = (x, y) => {
+        var viewWidth = $('#view-panel').width();
+        var viewHeight = $('#view-panel').height();
+        var lw = x - 1;
+        var rw = viewWidth - x - 1;
+        var th = y - 1;
+        var bh = viewHeight - y - 1;
+        $(TL_VIEW).css({ width: lw, height: th });
+        $(TR_VIEW).css({ width: rw, height: th });
+        $(BL_VIEW).css({ width: lw, height: bh });
+        $(BR_VIEW).css({ width: rw, height: bh });
+
+        // Make callbacks to the application windows
+        if (this.apps[0]) this.apps[0].resize(lw, th);
+        if (this.apps[1]) this.apps[1].resize(rw, th);
+        if (this.apps[2]) this.apps[2].resize(lw, bh);
+        if (this.apps[3]) this.apps[3].resize(rw, bh);
+    }
+
+    // Load the physiological coordinates of each node in the brain
+    loadCoordinates = file => {
+        var reader = new FileReader();
+        reader.onload = () => {
+            this.parseCoordinates(reader.result);
+            this.commonData.notifyCoords();
+        }
+        reader.readAsText(file);
+    }
+
+    parseCoordinates = (text: string) => {
+        // For some reason the text file uses a carriage return to separate coordinates (ARGGgggh!!!!)
+        //var lines = text.split(String.fromCharCode(13));
+        var lines = text.replace(/\t|\,/g, ' ').trim().split(/\r\n|\r|\n/g).map(s => s.trim());
+        // check the last line:
+        var lastline = lines[lines.length - 1].trim();
+        if (lastline.length == 0) {
+            lines.splice(lines.length - 1, 1); // remove last line
+        }
+
+        // Check if first line contains labels
+        var firstWords = lines[0].split(' ');
+        if (isNaN(Number(firstWords[0])) || isNaN(Number(firstWords[1])) || isNaN(Number(firstWords[2]))) {
+            console.log("In Coordinate File: detect labels in the first line");
+            lines.shift(); // remove if the first line is just labels
+        }
+
+        var len = lines.length;
+
+        this.referenceDataSet.brainCoords = [Array(len), Array(len), Array(len)];
+        this.referenceDataSet.info.nodeCount = len;
+        for (var i = 0; i < len; ++i) {
+            var words = lines[i].split(' ');
+            // Translate the coords into Cola's format
+            this.referenceDataSet.brainCoords[0][i] = parseFloat(words[0]);
+            this.referenceDataSet.brainCoords[1][i] = parseFloat(words[1]);
+            this.referenceDataSet.brainCoords[2][i] = parseFloat(words[2]);
+        }
+        //this.commonData.notifyCoords();
+    }
+
+    // Load the labels
+    loadLabels = file => {
+        let reader = new FileReader();
+        reader.onload = () => {
+            this.parseLabels(reader.result);
+            this.commonData.notifyLabels();
+        }
+        reader.readAsText(file);
+    }
+
+    parseLabels = (text: string) => {
+        this.referenceDataSet.brainLabels = text.replace(/\t|\n|\r/g, ' ').trim().split(' ').map(s => s.trim());
+        //this.commonData.notifyLabels();
+    }
+
+    initSurfaceSettings = () => {
+        if (this.saveObj.surfaceSettings.opacity) {
+            $("#div-surface-opacity-slider")['bootstrapSlider']().data('bootstrapSlider').setValue(this.saveObj.surfaceSettings.opacity);
+            this.setSurfaceOpacity();
+        }
+    }
+
+    initEdgeSizeAndColor = () => {
+
+        $('select-edge-direction').val(this.saveObj.edgeSettings.directionMode);
+        this.setEdgeDirection();
+
+        if (this.saveObj.edgeSettings.colorBy === "none") {
+            $('#select-edge-color').val("none");
+            this.setEdgeColor();
+
+        } else if (this.saveObj.edgeSettings.colorBy === "node") {
+            $('#select-edge-color').val("node");
+            this.setEdgeColor();
+
+        } else if (this.saveObj.edgeSettings.colorBy === "weight") {
+            $('#select-edge-color').val("weight");
+            if (this.saveObj.edgeSettings.weight.type === "continuous-discretized") {
+                $('#checkbox-edge-color-discretized').prop('checked', true);
+            }
+
+            // make all corresponding elements visible
+
+            if (this.saveObj.edgeSettings.weight.type === "discrete") {
+                var setting = this.saveObj.edgeSettings.weight.discreteSetting;
+                var keySelection = <any>document.getElementById('select-edge-key');
+
+                for (var i = 0; i < setting.valueArray; i++) {
+                    keySelection.options[i].style.backgroundColor = setting.colorArray[i];
+                }
+
+            } else if (this.saveObj.edgeSettings.weight.type === "continuous-normal") {
+                var setting = this.saveObj.edgeSettings.weight.continuousSetting;
+                
+                (<any>$('#input-edge-min-color')).colorpicker("setValue", setting.minColor);
+                (<any>$('#input-edge-max-color')).colorpicker("setValue", setting.maxColor);
+
+            } else if (this.saveObj.edgeSettings.weight.type === "continuous-discretized") {
+                var setting = this.saveObj.edgeSettings.weight.discretizedSetting;
+
+                $('#select-edge-color-number-discretized-category').val(setting.numCategory);
+                for (var i = 0; i < 5; i++) {
+                    if (i < setting.numCategory) {
+                        $('#div-edge-discretized-' + i).show();
+                    } else {
+                        $('#div-edge-discretized-' + i).hide();
+                    }
+                }
+
+                $('#input-edge-discretized-' + 0 + '-from').val(setting.domainArray[0]);
+                $('#input-edge-discretized-' + (setting.numCategory - 1) + '-to')
+                    .val(setting.domainArray[setting.domainArray.length - 1]);
+                for (var i = 0; i < setting.numCategory - 1; i++) {
+                    var value = setting.domainArray[i + 1];
+                    $('#input-edge-discretized-' + (i + 1) + '-from').val(value);
+                    $('#input-edge-discretized-' + i + '-to').val(value);
+                }
+
+                for (var i = 0; i < setting.numCategory; i++) {
+                    (<any>$('#input-edge-discretized-' + i + '-color')).colorpicker("setValue", setting.colorArray[i]);
+                }
+
+            } else {
+                throw "Load Data: Wrong data type setting for weight";
+            }
+            
+            this.setEdgeColor();
+        }
+    }
+
+    initNodeSize = () => {
+        if ((this.saveObj.nodeSettings.nodeSizeAttribute != null) && (this.saveObj.nodeSettings.nodeSizeAttribute.length > 0)) {
+            $('#select-node-size-color').val("node-size");
+            $('#select-attribute').val(this.saveObj.nodeSettings.nodeSizeAttribute);
+            
+            $("#div-node-size-slider")['bootstrapSlider']().data('bootstrapSlider').setValue([this.saveObj.nodeSettings.nodeSizeMin, this.saveObj.nodeSettings.nodeSizeMax]);
+
+            $("#label_node_size_range").text(this.saveObj.nodeSettings.nodeSizeMin + " - " + this.saveObj.nodeSettings.nodeSizeMax);
+            
+            this.selectNodeSizeColorOnChange();
+        }
+    }
+
+    initNodeColor = () => {
+        if ((this.saveObj.nodeSettings.nodeColorAttribute != null) && (this.saveObj.nodeSettings.nodeColorAttribute.length > 0)) {
+            $('#select-node-size-color').val("node-color");
+            $('#select-attribute').val(this.saveObj.nodeSettings.nodeColorAttribute);
+
+            if (this.referenceDataSet.attributes.info[this.saveObj.nodeSettings.nodeColorAttribute].isDiscrete) {
+                var keySelection = <any>document.getElementById('select-node-key');
+
+                for (var i = 0; i < keySelection.length; i++) {
+                    keySelection.options[i].style.backgroundColor = this.saveObj.nodeSettings.nodeColorDiscrete[i];
+                }
+                
+                (<any>$("#input-node-color")).colorpicker("setValue", this.saveObj.nodeSettings.nodeColorDiscrete[0]);
+            }
+            else {
+                (<any>$("#input-min-color")).colorpicker("setValue", this.saveObj.nodeSettings.nodeColorContinuousMin);
+                (<any>$("#input-max-color")).colorpicker("setValue", this.saveObj.nodeSettings.nodeColorContinuousMax);
+            }
+            this.selectNodeSizeColorOnChange();
+        }
+    }
+
+    showLoadingNotification = () => {
+        //$('body').css({ cursor: 'wait' });
+
+        document.body.appendChild(this.divLoadingNotification);
+        $('#div-loading-notification').empty(); // empty this.rightClickLabel
+
+        this.divLoadingNotification.style.position = 'absolute';
+        this.divLoadingNotification.style.left = '50%';
+        this.divLoadingNotification.style.top = '50%';
+        this.divLoadingNotification.style.padding = '5px';
+        this.divLoadingNotification.style.borderRadius = '2px';
+        this.divLoadingNotification.style.zIndex = '1';
+        this.divLoadingNotification.style.backgroundColor = '#feeebd'; // the color of the control panel
+
+        var text = document.createElement('div');
+        text.innerHTML = "Loading...";
+        this.divLoadingNotification.appendChild(text);
+    }
+
+    removeLoadingNotification = () => {
+        if ($('#div-loading-notification').length > 0)
+            document.body.removeChild(this.divLoadingNotification);
+    }
+
+    // Load the brain surface (hardcoded - it is not simple to load geometry from the local machine, but this has not been deeply explored yet).
+    // NOTE: The loaded model cannot be used in more than one WebGL context (scene) at a time - the geometry and materials must be .cloned() into
+    // new THREE.Mesh() objects by the application wishing to use the model.
+    loadBrainModel = (model: string, callback) => {
+        let file = (model === 'ch2') && 'BrainMesh_ch2.obj'
+            || (model === 'ch2_inflated') && 'BrainMesh_Ch2_Inflated.obj'
+            || (model === 'icbm') && 'BrainMesh_ICBM152.obj'
+            || (model === 'ch2_cerebellum') && 'BrainMesh_Ch2withCerebellum.obj'
+            ;
+        if (!file) {
+            callback();
+            return;
+        }
+
+        this.loader.load('examples/graphdata/' + file, object => {
+            if (!object) {
+                CommonUtilities.launchAlertMessage(CommonUtilities.alertType.ERROR, "Failed to load brain surface.");
+                return;
+            }
+
+            callback(object);
+        });
+    }
+
+    setBrainSurfaceColor = (color: string) => {
+        this.saveObj.surfaceSettings.color = color;
+
+        if (this.apps[0]) this.apps[0].setSurfaceColor(color);
+        if (this.apps[1]) this.apps[1].setSurfaceColor(color);
+        if (this.apps[2]) this.apps[2].setSurfaceColor(color);
+        if (this.apps[3]) this.apps[3].setSurfaceColor(color);
+    }
+
+    // Load the similarity matrix for the specified dataSet
+    //TODO: Move into DataSet class
+    loadSimilarityMatrix = (file, dataSet: DataSet) => {
+        var reader = new FileReader();
+        reader.onload = () => this.parseSimilarityMatrix(reader.result, dataSet);
+        reader.readAsText(file);
+    }
+
+    parseSimilarityMatrix = (text: string, dataSet: DataSet) => {
+    //TODO: Move into DataSet class
+        var lines = text.replace(/\t|\,/g, ' ').trim().split(/\r\n|\r|\n/g).map(s => s.trim());
+        var simMatrix = [];
+        lines.forEach((line, i) => {
+            if (line.length > 0) {
+                simMatrix.push(line.split(' ').map(parseFloat));
+            }
+        })
+        dataSet.setSimMatrix(simMatrix);
+    }
+
+    // Load the attributes for the specified dataSet
+    //TODO: Move into DataSet class
+    loadAttributes = (file, dataSet: DataSet) => {
+        var reader = new FileReader();
+        reader.onload = () => {
+            this.parseAttributes(reader.result, dataSet);
+            dataSet.notifyAttributes();
+        };
+        reader.readAsText(file);
+    }
+
+    parseAttributes = (text: string, dataSet: DataSet) => {
+    //TODO: Move into DataSet class
+        var newAttributes = new Attributes(text);
+        dataSet.attributes = newAttributes;
+        //dataSet.notifyAttributes();
+    }
+
+    setupCrossFilter = (attrs: Attributes) => {
+        if (!attrs) return;
+
+        // put attributes into an object array; round the attribute values for grouping in crossfilter
+        var objectArray = new Array();
+        for (var i = 0; i < attrs.numRecords; ++i) {
+            // create an object for each record:
+            var object = new Object();
+            object["index"] = i;
+
+            for (var j = 0; j < attrs.columnNames.length; ++j) {
+                //object[attrs.columnNames[j]] = attrs.getValue(attrs.columnNames[j], i);
+
+                var attrValue: number;
+                if (j == 1) {
+                    attrValue = attrs.getValue(j, i)[0];
+                }
+                else if (j == 3) {
+                    attrValue = attrs.getValue(j, i)[0];
+                    attrValue = Math.round(attrValue / 20) * 20;
+                }
+                else {
+                    attrValue = attrs.getValue(j, i)[0];
+                    attrValue = parseFloat(attrValue.toFixed(2));
+                }
+
+                object[attrs.columnNames[j]] = attrValue;
+
+            }
+
+            objectArray.push(object);
+        }
+
+        // convert the object array to json format
+        var json = JSON.parse(JSON.stringify(objectArray));
+
+        // create crossfilter
+        var cfilter = crossfilter(json);
+        var totalReadings = cfilter.size();
+        var all = cfilter.groupAll();
+
+        var dimArray = new Array();
+
+        // create a data count widget
+        // once created data count widget will automatically update the text content of the following elements under the parent element.
+        // ".total-count" - total number of records
+        // ".filter-count" - number of records matched by the current filters
+        dc.dataCount(".dc-data-count")
+            .dimension(cfilter)
+            .group(all);
+        // create the charts 
+        // listener
+        let filtered = () => {
+            this.referenceDataSet.attributes.filteredRecords = dimArray[0].top(Number.POSITIVE_INFINITY);
+            this.referenceDataSet.attributes.filteredRecordsHighlightChanged = true;
+
+            $('#button-apply-filter').button("enable");
+        }
+        for (var j = 0; j < attrs.columnNames.length; ++j) {
+            $('#barCharts').append('<div id="barChart' + j + '"></div>');
+            var chart = dc.barChart("#barChart" + j);
+
+            var columnName = attrs.columnNames[j];
+            var minValue = attrs.getMin(j);
+            var maxValue = attrs.getMax(j);
+            var offset = (maxValue - minValue) * 0.1;
+
+            var dim = cfilter.dimension(d => d[columnName]);
+            dimArray.push(dim);
+            var group = dim.group().reduceCount(d => d[columnName]);
+
+            chart
+                .gap(5)
+                .width(270)
+                .height(150)
+                .dimension(dim)
+                .group(group)
+                .x(d3.scale.linear().domain([minValue - offset, maxValue + offset]))
+                .xAxisLabel(columnName)
+                .xUnits(() => 25)       //TODO: this could be smarter
+                .centerBar(true)
+                .on("filtered", filtered)
+                .xAxis().ticks(6);
+        }
+
+        // keep track of total readings
+        d3.select("#total").text(totalReadings);
+
+        $('#button-apply-filter').button("disable");
+
+        // render all charts
+        dc.renderAll();
+    }
+
+
+    /*
+        Functions to set up interaction, when everything else is ready
+    */
+    
+    initListeners = () => {
+
+        $(document).keyup(e => {
+            if (e.keyCode == 27) this.toggleSplashPage();   // esc
+        });
+
+
+        // Colour pickers
+        $("#input-node-color").on("changeColor", e => {
+            this.setSelectNodeKeyBackgroundColor((<any>e).color.toHex());
+            this.setNodeSizeOrColor();
+        });
+        $("#input-surface-color").on("changeColor", e => this.setBrainSurfaceColor((<any>e).color.toHex()));
+        $("#input-min-color").on("changeColor", e => this.setNodeSizeOrColor());
+        $("#input-max-color").on("changeColor", e => this.setNodeSizeOrColor());
+        $("#input-edge-start-color").on("changeColor", e => this.setEdgeDirectionGradient());
+        $("#input-edge-end-color").on("changeColor", e => this.setEdgeDirectionGradient());
+        $("#input-edge-discretized-0-color").on("changeColor", e => this.setEdgeColorByWeight());
+        $("#input-edge-discretized-1-color").on("changeColor", e => this.setEdgeColorByWeight());
+        $("#input-edge-discretized-2-color").on("changeColor", e => this.setEdgeColorByWeight());
+        $("#input-edge-discretized-3-color").on("changeColor", e => this.setEdgeColorByWeight());
+        $("#input-edge-discretized-4-color").on("changeColor", e => this.setEdgeColorByWeight());
+        $("#input-edge-min-color").on("changeColor", e => this.setEdgeColorByWeight());
+        $("#input-edge-max-color").on("changeColor", e => this.setEdgeColorByWeight());
+        $("#input-edge-color").on("changeColor", e => {
+            this.setSelectEdgeKeyBackgroundColor((<any>e).color.toHex());
+            this.setEdgeColorByWeight()
+        });
+        $("#input-context-menu-node-color").on("changeColor", e => this.setNodeColorInContextMenu((<any>e).color.toHex()));
+
+
+        $('#button-select-matrix').click(() => $("#select-matrix").click());
+        $('#select-matrix').on('change', () => {
+            // Change the button name according to the file name
+            let file = (<any>$('#select-matrix').get(0)).files[0];
+            //document.getElementById("button-select-matrix").innerHTML = file.name;
+            document.getElementById("button-select-matrix-filename").innerHTML = file.name;
+
+            // update file status to changed
+            this.changeFileStatus("matrix-status", "changed");
+
+            // Parse and upload attribute file
+            this.uploadMatrix();
+
+        });
+
+        $('#button-select-attrs').click(() => $("#select-attrs").click());
+
+        $('#select-attrs').on('change', () => {
+            // Change the button name according to the file name
+            var file = (<any>$('#select-attrs').get(0)).files[0];
+            //document.getElementById("button-select-attrs").innerHTML = file.name;
+            document.getElementById("button-select-attrs-filename").innerHTML = file.name;
+            // update file status to changed
+            this.changeFileStatus("attrs-status", "changed");
+
+            // Parse and upload attribute file
+            this.uploadAttr();
+        });
+
+        $('#button-select-labels').click(() => $("#select-labels").click());
+
+        $('#select-labels').on('change', () => {
+            // Change the button name according to the file name
+            var file = (<any>$('#select-labels').get(0)).files[0];
+            //document.getElementById("button-select-labels").innerHTML = file.name;
+            document.getElementById("button-select-labels-filename").innerHTML = file.name;
+
+            // update file status to changed
+            this.changeFileStatus("labels-status", "changed");
+
+            // Parse and upload labels
+            this.uploadLabels();
+        });
+        
+        $('#button-load-settings').button().click(() => $("#input-select-load-file").click());
+
+        $('#input-select-load-file').on('change', this.loadSettings);
+
+        $('#button-save-settings').button().click(this.saveSettings);
+
+        $('#button-export-svg').button().click(() => $("#exportModal")["modal"]());
+
+        $('#button-export-submit').button().click(() => {
+            var viewport = $('#select-export-viewport').val();
+            var type = $('#select-export-type').val();
+
+            this.exportSVG(parseInt(viewport), type)
+        });
+
+        $('#button-save-app').button().click(() => {
+            //Save all the apps
+            for (var i = 0; i < 4; i++) {
+                var app = this.saveObj.saveApps[i];
+                if (this.apps[i]) this.apps[i].save(app);
+            }
+
+            var saveJson = JSON.stringify(this.saveObj);
+            $.post("brain-app/saveapp.aspx",
+                {
+                    save: saveJson
+                },
+                (data, status) => {
+                    if (status.toLowerCase() == "success") {
+                        var url = document.URL.split('?')[0];
+                        prompt("The project is saved. Use the following URL to restore the project:", url + "?save=" + data);
+                    }
+                    else {
+                        alert("save: " + status);
+                    }
+                });
+        });
+
+        $('[data-toggle="btns"] .btn').on('click', function () {
+            var $this = $(this);
+            $this.parent().find('.active').removeClass('active');
+            $this.addClass('active');
+        });
+
+        $('#button-upload-model').button().click(() => {
+            CommonUtilities.launchAlertMessage(CommonUtilities.alertType.WARNING, "Uploading the brain model...");
+            var file = (<any>$('#input-select-model').get(0)).files[0];
+            if (file) {
+                var reader = new FileReader();
+                reader.onload = () => {
+                    let brainModel = this.loader.parse(reader.result);
+                    this.apps[0].setBrainModelObject(brainModel);
+                    CommonUtilities.launchAlertMessage(CommonUtilities.alertType.SUCCESS, "New brain model uploaded");
+                };
+                reader.onerror = () => {
+                    let message = "Failed to upload model " + file;
+                    CommonUtilities.launchAlertMessage(CommonUtilities.alertType.ERROR, message);
+                    console.log(message);
+                };
+
+                reader.readAsText(file);
+            }
+        });
+        
+        $('#load-example-data').button().click(() => this.loadExampleData(() => { }));
+
+        $('#button-apply-filter').button().click(this.applyFilterButtonOnClick);
+
+        $('#button-apply-filter').button("disable");
+
+        $('#button-set-node-size-color').button().click(this.setNodeSizeOrColor);
+
+        $('#select-node-size-color').on('change', this.selectNodeSizeColorOnChange);
+
+        $("#checkbox-node-color-continuous").on("change", () => {
+            var attribute = $('#select-attribute').val();
+            var nodeColorMode = $('#checkbox-node-color-continuous').is(":checked");
+            if (!nodeColorMode && this.referenceDataSet.attributes.info[attribute].isDiscrete) {
+                this.setupColorPickerDiscrete(attribute);
+            }
+            else {
+                this.setupColorPicker();
+            }
+
+            this.setNodeSizeOrColor();
+        });
+
+        $('#select-attribute').on('change', () => {
+            var sizeOrColor = $('#select-node-size-color').val();
+            var attribute = $('#select-attribute').val();
+
+            if (sizeOrColor == "node-size") {
+                this.setupNodeSizeRangeSlider(attribute);
+            }
+            if (sizeOrColor == "node-color") {
+                if (this.referenceDataSet.attributes.info[attribute].isDiscrete) {
+                    $('#div-node-color-mode').show();
+                    $('#checkbox-node-color-continuous').prop('checked', false);
+                    this.setupColorPickerDiscrete(attribute);
+                }
+                else {
+                    $('#div-node-color-mode').hide();
+                    this.setupColorPicker();
+                }
+            }
+
+            this.setNodeSizeOrColor();
+        });
+
+        $('#select-node-key').on('change', () => {
+            var key = $('#select-node-key').val();
+
+            var keySelection = <any>document.getElementById('select-node-key');
+
+            for (var i = 0; i < keySelection.length; i++) {
+                if (keySelection.options[i].value == key) {
+                    var color = keySelection.options[i].style.backgroundColor;
+                    var hex = this.colorToHex(color);
+                    (<any>$("#input-node-color")).colorpicker("setValue", hex);
+
+                    break;
+                }
+            }
+        });
+
+        $('#select-edge-key').on('change', () => {
+            var key = $('#select-edge-key').val();
+
+            var keySelection = <any>document.getElementById('select-edge-key');
+
+            // find the coressponding key and retrieve color data
+            for (var i = 0; i < keySelection.length; i++) {
+                if (keySelection.options[i].value == key) {
+                    var color = keySelection.options[i].style.backgroundColor;
+                    var hex = this.colorToHex(color);
+                    (<any>$('#input-edge-color')).colorpicker("setValue", hex);
+                    break;
+                }
+            }
+        });
+
+        this.input.regMouseLocationCallback(this.getActiveTargetUnderMouse);
+        this.input.regMouseUpCallback(this.highlightSelectedNodes);
+
+        // Set up selectability of view spaces
+        $(TL_VIEW).click(() => this.selectView(TL_VIEW));
+        $(TR_VIEW).click(() => this.selectView(TR_VIEW));
+        $(BL_VIEW).click(() => this.selectView(BL_VIEW));
+        $(BR_VIEW).click(() => this.selectView(BR_VIEW));
+        
+        $('#checkbox_yoking_view').on('change', () => {
+            if ($('#checkbox_yoking_view').is(":checked")) {
+                this.input.yokingView = true;
+            }
+            else {
+                this.input.yokingView = false;
+            }
+        });
+
+        $('#checkbox-thickness-by-weight').on('change', () => {
+            if ($('#checkbox-thickness-by-weight').is(":checked")) {
+                if (this.apps[0]) this.apps[0].setEdgeThicknessByWeight(true);
+                if (this.apps[1]) this.apps[1].setEdgeThicknessByWeight(true);
+                if (this.apps[2]) this.apps[2].setEdgeThicknessByWeight(true);
+                if (this.apps[3]) this.apps[3].setEdgeThicknessByWeight(true);
+            }
+            else {
+                if (this.apps[0]) this.apps[0].setEdgeThicknessByWeight(false);
+                if (this.apps[1]) this.apps[1].setEdgeThicknessByWeight(false);
+                if (this.apps[2]) this.apps[2].setEdgeThicknessByWeight(false);
+                if (this.apps[3]) this.apps[3].setEdgeThicknessByWeight(false);
+            }
+        });
+
+        $('#checkbox-edge-color-force-continuous').on('change', () => {
+            if ($("#checkbox-edge-color-force-continuous").is(":checked")) {
+                this.commonData.edgeForceContinuous = true;
+            } else {
+                this.commonData.edgeForceContinuous = false;
+            }
+            this.setEdgeColor();
+        });
+
+        $('#checkbox-edge-color-discretized').on('change', () => {
             if ($("#checkbox-edge-color-discretized").is(":checked")) {
-                commonData.edgeWeightColorMode = "continuous-discretized";
-                setDefaultEdgeDiscretizedValues();
-
+                this.setDefaultEdgeDiscretizedValues();
                 $("#div-edge-color-continuous-discretized").show();
                 $("#div-edge-color-continuous-normal").hide();
+                this.commonData.edgeWeightColorMode = "continuous-discretized";
 
                 var numCategory = Number($('#select-edge-color-number-discretized-category').val());
                 for (var i = 0; i < 5; i++) {
@@ -2489,761 +2296,122 @@ function setEdgeColor() {
                     }
                 }
             } else {
-                commonData.edgeWeightColorMode = "continuous-normal";
                 $("#div-edge-color-continuous-discretized").hide();
                 $("#div-edge-color-continuous-normal").show();
-            }
-        } else if (dataSet.info.edgeWeight.type === "discrete") {
-            // Enable force continuous checkbox
-            $("#checkbox-edge-color-force-continuous").show();
-
-            commonData.edgeWeightColorMode = "discrete";
-            $("#div-edge-color-continuous").hide();
-            $("#div-edge-color-discrete").show();
-
-            var distinctValues = dataSet.info.edgeWeight.distincts;
-            distinctValues.sort(function (a, b) { return a - b; });
-            var d3ColorSelector = d3.scale.category20();
-            var distinctColors = distinctValues.map((group: number) => { return d3ColorSelector(group); });
-            $('#select-edge-key').empty();
-            for (var i = 0; i < distinctValues.length; i++) {
-                var option = document.createElement('option');
-                option.text = distinctValues[i];
-                option.value = distinctValues[i];
-                option.style.backgroundColor = distinctColors[i];
-                if (i == 0) {
-                    var color = option.style.backgroundColor;
-                    var hex = colorToHex(color);
-                    (<any>document.getElementById('input-edge-color')).color.fromString(hex.substring(1));
-                }
-                $('#select-edge-key').append(option);
-            }
-        }
-
-        setEdgeColorByWeight();
-    } else if (value === "node") {
-        setEdgeColorByNode();
-        $("#div-edge-color-pickers").hide();
-    }
-}
-
-// Move an icon back to its origin
-function resetIcon(object: string, location: string) {
-    return function () {
-        var rect = $(location).get(0).getBoundingClientRect();
-        $(object).css({ left: rect.left, top: rect.top });
-    };
-}
-
-var resetBrain3D = resetIcon('#brain3d-icon-front', '#brain3d-icon-back');
-var resetDataSetIcon = resetIcon('#dataset1-icon-front', '#dataset1-icon-back');
-
-
-// Data set icons are visible when the page loads - reset them immediately
-var visIcons = [$('#brain3d-icon-front')];
-
-// These functions show and hide the icons for all the visualisations - they're called when we change tabs
-function showVisIcons() {
-    visIcons.forEach(function (icon) {
-        icon.show();
-    });
-}
-function hideVisIcons() {
-    visIcons.forEach(function (icon) {
-        icon.hide();
-    });
-}
-//hideVisIcons(); // Hide all the icons immediately
-
-// Reset all (surface tab) icons
-resetBrain3D();
-resetDataSetIcon();
-showVisIcons();
-
-var apps = Array<Application>(null, null, null, null);
-
-// Initialize the view sizes and pin location
-var viewWidth = $('#outer-view-panel').width();
-var viewHeight = $('#outer-view-panel').height();
-//$('#pin').css({ left: viewWidth / 2, top: viewHeight / 2 });
-//setViewCrossroads(viewWidth / 2, viewHeight / 2);
-var pinWidth = $('#pin').width();
-var pinHeight = $('#pin').height();
-$('#pin').css({ left: viewWidth - pinWidth, top: viewHeight - pinHeight });
-setViewCrossroads(viewWidth - pinWidth, viewHeight - pinHeight);
-
-// Set up the pin behaviour
-$('#pin').draggable({ containment: '#outer-view-panel' }).on('drag', function (event: JQueryEventObject, ...args: any[]) {
-    var ui = args[0];
-    var x = ui.position.left;
-    var y = ui.position.top;
-    setViewCrossroads(x, y);
-});
-
-$("#div-surface-opacity-slider")['bootstrapSlider']({
-    formatter: function (value) {
-        return 'Current value: ' + value;
-    }
-});
-
-$("#div-surface-opacity-slider")['bootstrapSlider']().on('slide', setSurfaceOpacity);
-
-$("#div-edge-size-slider")['bootstrapSlider']({
-    formatter: function (value) {
-        return 'Current value: ' + value;
-    }
-});
-
-$("#div-edge-size-slider")['bootstrapSlider']().on('slide', setEdgeSize);
-
-/*
-{
-    min: 0.1,
-    max: 3,
-    step: 0.1,
-    value: 1,
-    change: setEdgeSize,
-    slide: function (event, ui) {
-        $("#label_edge_size").text(ui.value);
-        setEdgeSize();
-    }
-}
-*/
-function setSurfaceOpacity() {
-    var opacity = $("#div-surface-opacity-slider")['bootstrapSlider']().data('bootstrapSlider').getValue();
-    saveObj.surfaceSettings.opacity = opacity;
-
-    if (apps[0]) apps[0].setSurfaceOpacity(opacity);
-    if (apps[1]) apps[1].setSurfaceOpacity(opacity);
-    if (apps[2]) apps[2].setSurfaceOpacity(opacity);
-    if (apps[3]) apps[3].setSurfaceOpacity(opacity);
-}
-
-function setEdgeSize() {
-    var edgeSize = $("#div-edge-size-slider")['bootstrapSlider']().data('bootstrapSlider').getValue();
-    saveObj.edgeSettings.size = edgeSize;
-
-
-    if (apps[0]) apps[0].setEdgeSize(edgeSize);
-    if (apps[1]) apps[1].setEdgeSize(edgeSize);
-    if (apps[2]) apps[2].setEdgeSize(edgeSize);
-    if (apps[3]) apps[3].setEdgeSize(edgeSize);
-}
-
-// Resizes the views such that the crossroads is located at (x, y) on the screen
-function setViewCrossroads(x, y) {
-    var viewWidth = $('#view-panel').width();
-    var viewHeight = $('#view-panel').height();
-    var lw = x - 1;
-    var rw = viewWidth - x - 1;
-    var th = y - 1;
-    var bh = viewHeight - y - 1;
-    $(tl_view).css({ width: lw, height: th });
-    $(tr_view).css({ width: rw, height: th });
-    $(bl_view).css({ width: lw, height: bh });
-    $(br_view).css({ width: rw, height: bh });
-
-    // Make callbacks to the application windows
-    if (apps[0]) apps[0].resize(lw, th);
-    if (apps[1]) apps[1].resize(rw, th);
-    if (apps[2]) apps[2].resize(lw, bh);
-    if (apps[3]) apps[3].resize(rw, bh);
-}
-
-window.addEventListener('resize', function () {
-    var newViewWidth = $('#outer-view-panel').width();
-    var newViewHeight = $('#outer-view-panel').height();
-    var xScale = newViewWidth / viewWidth;
-    var yScale = newViewHeight / viewHeight;
-    var pinPos = $('#pin').position();
-    var newPinX = pinPos.left * xScale;
-    var newPinY = pinPos.top * yScale;
-
-    $('#pin').css({ left: newPinX, top: newPinY });
-    setViewCrossroads(newPinX, newPinY);
-
-    viewWidth = newViewWidth;
-    viewHeight = newViewHeight;
-}, false);
-
-// Find which view is currently located under the mouse
-function getViewUnderMouse(x, y) {
-    var innerViewLeft = $(tl_view).offset().left;
-    if (x < innerViewLeft) {
-        return null;
-    } else {
-        x -= innerViewLeft;
-        if (y < $(tl_view).height()) {
-            if (x < $(tl_view).width()) {
-                return tl_view;
-            } else {
-                return tr_view;
-            }
-        } else {
-            if (x < $(tl_view).width()) {
-                return bl_view;
-            } else {
-                return br_view;
-            }
-        }
-    }
-}
-
-// Resource loading
-var commonData = new CommonData();
-var dataSet: DataSet = null;
-
-// Load the physiological coordinates of each node in the brain
-function loadCoordinates(file) {
-    var reader = new FileReader();
-    reader.onload = function () {
-        parseCoordinates(reader.result);
-    }
-    reader.readAsText(file);
-}
-
-function parseCoordinates(text: string) {
-
-    if (!dataSet) dataSet = new DataSet();
-
-    // For some reason the text file uses a carriage return to separate coordinates (ARGGgggh!!!!)
-    //var lines = text.split(String.fromCharCode(13));
-    var lines = text.replace(/\t|\,/g, ' ').trim().split(/\r\n|\r|\n/g).map(function (s) { return s.trim() });
-    // check the last line:
-    var lastline = lines[lines.length - 1].trim();
-    if (lastline.length == 0) {
-        lines.splice(lines.length - 1, 1); // remove last line
-    }
-
-    // Check if first line contains labels
-    var firstWords = lines[0].split(' ');
-    if (isNaN(Number(firstWords[0])) || isNaN(Number(firstWords[1])) || isNaN(Number(firstWords[2]))) {
-        console.log("In Coordinate File: detect labels in the first line");
-        lines.shift(); // remove if the first line is just labels
-    }
-
-    var len = lines.length;
-
-    dataSet.brainCoords = [Array(len), Array(len), Array(len)];
-    dataSet.info.nodeCount = len;
-    for (var i = 0; i < len; ++i) {
-        var words = lines[i].split(' ');
-        // Translate the coords into Cola's format
-        dataSet.brainCoords[0][i] = parseFloat(words[0]);
-        dataSet.brainCoords[1][i] = parseFloat(words[1]);
-        dataSet.brainCoords[2][i] = parseFloat(words[2]);
-    }
-    commonData.notifyCoords();
-}
-
-// Load the labels
-function loadLabels(file) {
-    var reader = new FileReader();
-    reader.onload = function () {
-        parseLabels(reader.result);
-    }
-    reader.readAsText(file);
-}
-
-function parseLabels(text: string) {
-    if (!dataSet) dataSet = new DataSet();
-    dataSet.brainLabels = text.replace(/\t|\n|\r/g, ' ').trim().split(' ').map(function (s) { return s.trim() });
-    commonData.notifyLabels();
-}
-
-// Set up OBJ loading
-var manager = new THREE.LoadingManager();
-manager.onProgress = function (item, loaded, total) {
-    console.log(item, loaded, total);
-};
-
-var loader = new (<any>THREE).OBJLoader(manager);
-
-var brainSurfaceColor: string = "0xe3e3e3";
-
-var saveObj = new SaveFile();
-var loadObj: SaveFile;
-
-var divLoadingNotification = document.createElement('div');
-divLoadingNotification.id = 'div-loading-notification';
-
-
-
-//-------------------------------------------------------------------------------------------------------------------------------------------
-// functions
-
-function initFromSaveFile() {
-    var query = window.location.search.substring(1);
-    if (query && query.length > 0) {
-        showLoadingNotification();
-
-        var p = query.split("=");
-        if (p.length < 2) return false;
-
-        var json;
-        // Only let source be from "save_examples" (if specified by "example") or default to "save".
-        var source = (p[0] == "example") ? "save_examples" : "save";
-        $.post("brain-app/getapp.aspx",
-            {
-                filename: p[1],
-                source
-            },
-            function (data, status) {
-                if (status.toLowerCase() == "success") {
-                    initProject(data, source);
-                }
-                else {
-                    alert("Loading is: " + status + "\nData: " + data);
-                }
-            }
-        );
-        return true;
-    } else {
-        return false;
-    }
-}
-
-function initProject(data: string, source = "save") {
-
-    // Ensure that data is not empty
-    if (data == null) return;
-    if (data.length == 0) return;
-
-    loadObj = <SaveFile>jQuery.parseJSON(data);
-    saveObj.loadExampleData = (source !== "save");
-
-    var initViewPort = function (app, id) {
-        loadBrainModel(file, function (object) {
-            var info = {
-                id: id,
-                jDiv: $(app.view),
-                brainModelOrigin: object,
-                brainSurfaceMode: app.brainSurfaceMode
-            };
-            $(app.view).empty();
-            apps[id] = new Brain3DApp(info, commonData, input.newTarget(id));
-
-            saveObj.saveApps[id] = loadObj.saveApps[id];
-
-            $('#button-save-app').button({ disabled: false });
-
-            // Load dataset into the webapp
-            if (loadObj.loadExampleData) {
-                loadExampleData(app.setDataSetView, function (view) {
-                    setDataset(view);
-                    initApp(id)
-                    CommonUtilities.launchAlertMessage(CommonUtilities.alertType.SUCCESS,
-                        "Default example dataset is loaded.");
-                });
-            } else {
-                loadUploadedData(loadObj, app.setDataSetView, function (view) {
-                    // Set data set to the right view
-                    setDataset(view);
-                    initApp(id);
-                    CommonUtilities.launchAlertMessage(CommonUtilities.alertType.SUCCESS,
-                        "Uploaded dataset is loaded.");
-                }, source);
+                this.commonData.edgeWeightColorMode = "continuous-normal";
             }
 
+            this.setEdgeColorByWeight();
         });
-    };
 
+        $('#select-edge-direction').on('change', () => {
+            this.saveObj.edgeSettings.directionMode = $('#select-edge-direction').val();
+            this.setEdgeDirection();
+        });
 
+        $('#select-edge-color').on('change', () => {
+            this.setEdgeColor();
+        });
+        
+        $('#select-brain3d-model').on('change', () => {
+            var model = $('#select-brain3d-model').val();
 
-    for (var i = 0; i < 4; i++) {
-        resetBrain3D();
-        var id = i;
-        var app = loadObj.saveApps[id];
-        if (app && (app.surfaceModel != null) && (app.surfaceModel.length > 0)) {
-            // if this app exists:
-            brainIconDraggableEvent(app.view, app.surfaceModel, app.brainSurfaceMode);
-
-            var file = 'none';
-            if (app.surfaceModel === 'ch2') {
-                file = 'BrainMesh_ch2.obj';
-
-            } else if (app.surfaceModel === 'ch2_inflated') {
-                file = 'BrainMesh_Ch2_Inflated.obj';
-
-            } else if (app.surfaceModel === 'icbm') {
-                file = 'BrainMesh_ICBM152.obj';
-
-            } else if (app.surfaceModel === 'ch2_cerebellum') {
-                file = 'BrainMesh_Ch2withCerebellum.obj';
-
-            } else if (app.surfaceModel === 'upload') {
-                file = (<any>$('#input-select-model').get(0)).files[0].name;
-
+            if (model === "upload") {
+                $("#div-upload-brain-model").show();
+            } else {
+                $("#div-upload-brain-model").hide();
+                
+                var model = $('#select-brain3d-model').val();
+                this.setBrainModel(TL_VIEW, model);
             }
+        });
 
-            initViewPort(app, id);
+        $('#select-edge-color-number-discretized-category').on('change', () => {
+            var numCategory = Number($('#select-edge-color-number-discretized-category').val());
 
-        }
-    }
-
-
-    //setTimeout(function () { initApps() }, 3000);
-}
-
-function initApp(id) {
-
-    // init edge count
-    var app = loadObj.saveApps[id];
-    if ((app.surfaceModel != null) && (app.surfaceModel.length > 0)) {
-        apps[id].initEdgeCountSlider(app);
-    }
-
-    // init cross filter
-    if ((loadObj.filteredRecords != null) && (loadObj.filteredRecords.length > 0)) {
-        dataSet.attributes.filteredRecords = loadObj.filteredRecords.slice(0);
-        applyFilterButtonOnClick();
-    }
-
-    // init show network
-    if ((app.surfaceModel != null) && (app.surfaceModel.length > 0)) {
-        apps[id].initShowNetwork(app);
-    }
-
-
-    // init the node size and color given the current UI. The UI needs to be redesigned.
-    if ((loadObj.nodeSettings.nodeSizeOrColor != null) && (loadObj.nodeSettings.nodeSizeOrColor.length > 0)) {
-        if (loadObj.nodeSettings.nodeSizeOrColor == "node-size") {
-            initNodeColor();
-            initNodeSize();
-        }
-        else if (loadObj.nodeSettings.nodeSizeOrColor == "node-color") {
-            initNodeSize();
-            initNodeColor();
-        }
-    }
-
-    // init edge size and color.
-    if (loadObj.edgeSettings != null) {
-        initEdgeSizeAndColor();
-    }
-
-    // init Surface Setting
-    if (loadObj.surfaceSettings != null) {
-        initSurfaceSettings();
-    }
-
-
-    removeLoadingNotification();
-}
-
-function initSurfaceSettings() {
-    if (loadObj.surfaceSettings.opacity) {
-        $("#div-surface-opacity-slider")['bootstrapSlider']().data('bootstrapSlider').setValue(loadObj.surfaceSettings.opacity);
-        setSurfaceOpacity();
-    }
-}
-
-function initEdgeSizeAndColor() {
-
-    $('select-edge-direction').val(loadObj.edgeSettings.directionMode);
-    setEdgeDirection();
-
-    if (loadObj.edgeSettings.colorBy === "none") {
-        $('#select-edge-color').val("none");
-        setEdgeColor();
-
-    } else if (loadObj.edgeSettings.colorBy === "node") {
-        $('#select-edge-color').val("node");
-        setEdgeColor();
-
-    } else if (loadObj.edgeSettings.colorBy === "weight") {
-        $('#select-edge-color').val("weight");
-        if (loadObj.edgeSettings.weight.type === "continuous-discretized") {
-            $('#checkbox-edge-color-discretized').prop('checked', true);
-        }
-
-        // make all corresponding elements visible
-        setEdgeColor();
-
-        if (loadObj.edgeSettings.weight.type === "discrete") {
-            var setting = loadObj.edgeSettings.weight.discreteSetting;
-            var keySelection = <any>document.getElementById('select-edge-key');
-
-            for (var i = 0; i < setting.valueArray; i++) {
-                keySelection.options[i].style.backgroundColor = setting.colorArray[i];
-            }
-
-        } else if (loadObj.edgeSettings.weight.type === "continuous-normal") {
-            var setting = loadObj.edgeSettings.weight.continuousSetting;
-
-            $('#input-edge-min-color').val(setting.minColor.substring(1));
-            $('#input-edge-max-color').val(setting.maxColor.substring(1));
-
-        } else if (loadObj.edgeSettings.weight.type === "continuous-discretized") {
-            var setting = loadObj.edgeSettings.weight.discretizedSetting;
-
-            $('#select-edge-color-number-discretized-category').val(setting.numCategory);
+            this.setDefaultEdgeDiscretizedValues();
             for (var i = 0; i < 5; i++) {
-                if (i < setting.numCategory) {
+                if (i < numCategory) {
                     $('#div-edge-discretized-' + i).show();
                 } else {
                     $('#div-edge-discretized-' + i).hide();
                 }
             }
 
-            $('#input-edge-discretized-' + 0 + '-from').val(setting.domainArray[0]);
-            $('#input-edge-discretized-' + (setting.numCategory - 1) + '-to')
-                .val(setting.domainArray[setting.domainArray.length - 1]);
-            for (var i = 0; i < setting.numCategory - 1; i++) {
-                var value = setting.domainArray[i + 1];
-                $('#input-edge-discretized-' + (i + 1) + '-from').val(value);
-                $('#input-edge-discretized-' + i + '-to').val(value);
-            }
+            this.setEdgeColorByWeight();
+        });
 
-            for (var i = 0; i < setting.numCategory; i++) {
-                $('#input-edge-discretized-' + i + '-color')['colorpicker']('setValue', setting.colorArray[i]);
-                (<any>document.getElementById('input-edge-discretized-' + i + '-color')).color.fromString(setting.colorArray[i].substring(1));
-            }
+        $('#input-edge-discretized-' + 0 + '-from').on('change keyup paste', this.setEdgeColorByWeight);
 
-        } else {
-            throw "Load Data: Wrong data type setting for weight";
-        }
+        $('#input-edge-discretized-' + 4 + '-to').on('change keyup paste', this.setEdgeColorByWeight);
 
-        setEdgeColorByWeight();
-    }
-}
+        $('#input-edge-discretized-1-from').on('change keyup paste', () => {
+            var val = $('#input-edge-discretized-1-from').val();
+            $('#input-edge-discretized-0-to').val(val);
+            this.setEdgeColorByWeight();
+        });
 
-function initNodeSize() {
-    if ((loadObj.nodeSettings.nodeSizeAttribute != null) && (loadObj.nodeSettings.nodeSizeAttribute.length > 0)) {
-        $('#select-node-size-color').val("node-size");
-        $('#select-attribute').val(loadObj.nodeSettings.nodeSizeAttribute);
-        selectNodeSizeColorOnChange();
+        $('#input-edge-discretized-2-from').on('change keyup paste', () => {
+            var val = $('#input-edge-discretized-2-from').val();
+            $('#input-edge-discretized-1-to').val(val);
+            this.setEdgeColorByWeight();
+        });
 
-        $("#div-node-size-slider")['bootstrapSlider']().data('bootstrapSlider').setValue([loadObj.nodeSettings.nodeSizeMin, loadObj.nodeSettings.nodeSizeMax]);
+        $('#input-edge-discretized-3-from').on('change keyup paste', () => {
+            var val = $('#input-edge-discretized-3-from').val();
+            $('#input-edge-discretized-2-to').val(val);
+            this.setEdgeColorByWeight();
+        });
 
-        $("#label_node_size_range").text(loadObj.nodeSettings.nodeSizeMin + " - " + loadObj.nodeSettings.nodeSizeMax);
+        $('#input-edge-discretized-4-from').on('change keyup paste', () => {
+            var val = $('#input-edge-discretized-4-from').val();
+            $('#input-edge-discretized-3-to').val(val);
+            this.setEdgeColorByWeight();
+        });
 
-        setNodeSizeOrColor();
-    }
-}
+        $('#input-edge-discretized-0-to').on('change keyup paste', () => {
+            var val = $('#input-edge-discretized-0-to').val();
+            $('#input-edge-discretized-1-from').val(val);
+            this.setEdgeColorByWeight();
+        });
 
-function initNodeColor() {
-    if ((loadObj.nodeSettings.nodeColorAttribute != null) && (loadObj.nodeSettings.nodeColorAttribute.length > 0)) {
-        $('#select-node-size-color').val("node-color");
-        $('#select-attribute').val(loadObj.nodeSettings.nodeColorAttribute);
-        selectNodeSizeColorOnChange();
+        $('#input-edge-discretized-1-to').on('change keyup paste', () => {
+            var val = $('#input-edge-discretized-1-to').val();
+            $('#input-edge-discretized-2-from').val(val);
+            this.setEdgeColorByWeight();
+        });
 
-        if (dataSet.attributes.info[loadObj.nodeSettings.nodeColorAttribute].isDiscrete) {
-            var keySelection = <any>document.getElementById('select-node-key');
+        $('#input-edge-discretized-2-to').on('change keyup paste', () => {
+            var val = $('#input-edge-discretized-2-to').val();
+            $('#input-edge-discretized-3-from').val(val);
+            this.setEdgeColorByWeight();
+        });
 
-            for (var i = 0; i < keySelection.length; i++) {
-                keySelection.options[i].style.backgroundColor = loadObj.nodeSettings.nodeColorDiscrete[i];
-            }
-
-            (<any>document.getElementById('input-node-color')).color.fromString(loadObj.nodeSettings.nodeColorDiscrete[0].substring(1));
-
-            setNodeSizeOrColor();
-        }
-        else {
-            (<any>document.getElementById('input-min-color')).color.fromString(loadObj.nodeSettings.nodeColorContinuousMin.substring(1));
-            (<any>document.getElementById('input-max-color')).color.fromString(loadObj.nodeSettings.nodeColorContinuousMax.substring(1));
-            setNodeSizeOrColor();
-        }
-    }
-}
-
-function showLoadingNotification() {
-    //console.log("function: cursorWait()");
-    //$('body').css({ cursor: 'wait' });
-
-    document.body.appendChild(divLoadingNotification);
-    $('#div-loading-notification').empty(); // empty this.rightClickLabel
-
-    divLoadingNotification.style.position = 'absolute';
-    divLoadingNotification.style.left = '50%';
-    divLoadingNotification.style.top = '50%';
-    divLoadingNotification.style.padding = '5px';
-    divLoadingNotification.style.borderRadius = '2px';
-    divLoadingNotification.style.zIndex = '1';
-    divLoadingNotification.style.backgroundColor = '#feeebd'; // the color of the control panel
-
-    var text = document.createElement('div');
-    text.innerHTML = "Loading...";
-    divLoadingNotification.appendChild(text);
-
-    //var button = document.createElement('button');
-    //button.textContent = "continue";
-    //divLoadingNotification.appendChild(button);
-}
-
-function removeLoadingNotification() {
-    if ($('#div-loading-notification').length > 0)
-        document.body.removeChild(divLoadingNotification);
-}
-
-// Load the brain surface (hardcoded - it is not simple to load geometry from the local machine, but this has not been deeply explored yet).
-// NOTE: The loaded model cannot be used in more than one WebGL context (scene) at a time - the geometry and materials must be .cloned() into
-// new THREE.Mesh() objects by the application wishing to use the model.
-function loadBrainModel(file: string, callback) {
-    loader.load('examples/graphdata/' + file, function (object) {
-    //loader.setPath('examples/graphdata/');
-    //loader.load(file, function (object) {
-        if (!object) {
-            CommonUtilities.launchAlertMessage(CommonUtilities.alertType.ERROR, "Failed to load brain surface.");
-            return;
-        }
-
-        var surfaceColor = parseInt(brainSurfaceColor);
-
-        callback(object);
-    });
-}
-
-function setBrainSurfaceColor(color: string) {
-    brainSurfaceColor = '0x' + color;
-}
-
-// Load the similarity matrix for the specified dataSet
-function loadSimilarityMatrix(file, dataSet: DataSet) {
-    var reader = new FileReader();
-    reader.onload = function () {
-        parseSimilarityMatrix(reader.result, dataSet);
-
-    }
-    reader.readAsText(file);
-}
-
-function parseSimilarityMatrix(text: string, dataSet: DataSet) {
-    if (!dataSet) dataSet = new DataSet();
-    //var lines = text.split('\n').map(function (s) { return s.trim() });
-    var lines = text.replace(/\t|\,/g, ' ').trim().split(/\r\n|\r|\n/g).map(function (s) { return s.trim() });
-    var simMatrix = [];
-    lines.forEach((line, i) => {
-        if (line.length > 0) {
-            simMatrix.push(line.split(' ').map(function (string) {
-                return parseFloat(string);
-            }));
-        }
-    })
-    dataSet.setSimMatrix(simMatrix);
-}
-
-// Load the attributes for the specified dataSet
-function loadAttributes(file, dataSet: DataSet) {
-    var reader = new FileReader();
-    reader.onload = function () {
-        parseAttributes(reader.result, dataSet);
-    }
-    reader.readAsText(file);
-}
-
-function parseAttributes(text: string, dataSet: DataSet) {
-    if (!dataSet) dataSet = new DataSet();
-    var newAttributes = new Attributes(text);
-    dataSet.attributes = newAttributes;
-    dataSet.notifyAttributes();
-}
-
-//var fcount = 0;
-function setupCrossFilter(attrs: Attributes) {
-    if (!attrs) return;
-
-    // put attributes into an object array; round the attribute values for grouping in crossfilter
-    var objectArray = new Array();
-    for (var i = 0; i < attrs.numRecords; ++i) {
-        // create an object for each record:
-        var object = new Object();
-        object["index"] = i;
-
-        for (var j = 0; j < attrs.columnNames.length; ++j) {
-            //object[attrs.columnNames[j]] = attrs.getValue(attrs.columnNames[j], i);
-
-            var attrValue: number;
-            if (j == 1) {
-                attrValue = attrs.getValue(j, i)[0];
-            }
-            else if (j == 3) {
-                attrValue = attrs.getValue(j, i)[0];
-                attrValue = Math.round(attrValue / 20) * 20;
-            }
-            else {
-                attrValue = attrs.getValue(j, i)[0];
-                attrValue = parseFloat(attrValue.toFixed(2));
-            }
-
-            object[attrs.columnNames[j]] = attrValue;
-
-        }
-
-        objectArray.push(object);
-    }
-
-    // convert the object array to json format
-    var json = JSON.parse(JSON.stringify(objectArray));
-    //console.log(json);
-
-    // create crossfilter
-    var cfilter = crossfilter(json);
-    var totalReadings = cfilter.size();
-    var all = cfilter.groupAll();
-
-    var dimArray = new Array();
-
-    // create a data count widget
-    // once created data count widget will automatically update the text content of the following elements under the parent element.
-    // ".total-count" - total number of records
-    // ".filter-count" - number of records matched by the current filters
-    dc.dataCount(".dc-data-count")
-        .dimension(cfilter)
-        .group(all);
-    // create the charts 
-    for (var j = 0; j < attrs.columnNames.length; ++j) {
-        $('#barCharts').append('<div id="barChart' + j + '"></div>');
-        var chart = dc.barChart("#barChart" + j);
-
-        var columnName = attrs.columnNames[j];
-        var minValue = attrs.getMin(j);
-        var maxValue = attrs.getMax(j);
-        var offset = (maxValue - minValue) * 0.1;
-
-        var dim = cfilter.dimension(function (d) { return d[columnName]; });
-        dimArray.push(dim);
-        var group = dim.group().reduceCount(function (d) { return d[columnName]; });
-
-        chart
-            .gap(5)
-            .width(270)
-            .height(150)
-            .dimension(dim)
-            .group(group)
-            .x(d3.scale.linear().domain([minValue - offset, maxValue + offset]))
-            .xAxisLabel(columnName)
-            .xUnits(function () { return 25; })
-            .centerBar(true)
-            .on("filtered", filtered)
-            .xAxis().ticks(6);
-
-
-    }
-
-    // keep track of total readings
-    d3.select("#total").text(totalReadings);
-
-    // listener
-    function filtered() {
-        //console.log("filter event...");
-
-        dataSet.attributes.filteredRecords = dimArray[0].top(Number.POSITIVE_INFINITY);
-        dataSet.attributes.filteredRecordsHighlightChanged = true;
-        //console.log(dimArray);
-        if (dataSet.attributes.filteredRecords) {
-            //console.log(fcount + "). count: " + dataSet.attributes.filteredRecords.length);
-            //fcount++; 
-        }
+        $('#input-edge-discretized-3-to').on('change keyup paste', () => {
+            var val = $('#input-edge-discretized-3-to').val();
+            $('#input-edge-discretized-4-from').val(val);
+            this.setEdgeColorByWeight();
+        });
         
-        $('#button-apply-filter').button("enable");
+        window.addEventListener('resize', () => {
+            let newViewWidth = $('#outer-view-panel').width();
+            let newViewHeight = $('#outer-view-panel').height();
+            let xScale = newViewWidth / this.viewWidth;
+            let yScale = newViewHeight / this.viewHeight;
+            let pinPos = $('#pin').position();
+            let newPinX = pinPos.left * xScale;
+            let newPinY = pinPos.top * yScale;
+
+            $('#pin').css({ left: newPinX, top: newPinY });
+            this.setViewCrossroads(newPinX, newPinY);
+
+            this.viewWidth = newViewWidth;
+            this.viewHeight = newViewHeight;
+        }, false);
     }
 
-    $('#button-apply-filter').button("disable");
-
-    // render all charts
-    dc.renderAll();
 }
+
 
 
 //////////////////////////////////////////////////////////////////
@@ -3251,8 +2419,7 @@ function setupCrossFilter(attrs: Attributes) {
 //////////////////////////////////////////////////////////////////
 
 function defaultFunction() {
-    if (!initFromSaveFile()) {
-        brainIconDraggableEvent(tl_view, $('#select-brain3d-model').val());
-        toggleSplashPage();
-    }
+    let neuroMarvl = new NeuroMarvl();
+    neuroMarvl.start();
 }
+

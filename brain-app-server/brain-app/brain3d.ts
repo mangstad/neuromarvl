@@ -51,6 +51,7 @@ class Brain3DApp implements Application, Loopable {
     // Data/objects
     commonData: CommonData;
     dataSet: DataSet;
+    saveObj;
 
     // Brain Surface
     surfaceUniformList = [];
@@ -60,6 +61,7 @@ class Brain3DApp implements Application, Loopable {
     brainSurfaceBoundingSphere;
     brainObject; // Brain Object surface used for controling object rotation
     brainContainer; // Container of brain object used for translation and camera facing direction
+    surfaceMaterial;
 
     // 3D graph of brain connectivity
     colaObject; // Base object for the cola graph
@@ -70,21 +72,23 @@ class Brain3DApp implements Application, Loopable {
     //Graphs
     circularGraph: CircularGraph = null;
     colaGraph: Graph3D = null;
-    svgGraph: Graph2D = null;
+    canvasGraph: Graph2D = null;
     physioGraph: Graph3D = null;
     needUpdate = false;
     isAnimationOn = false;
 
+    graph2dContainer;
+
     svg;
     svgDefs;
-    svgMode;
+    ignore3dControl: boolean;
     svgAllElements;
     svgNodeBundleArray: any[];
-    svgControlMode: boolean = false;
+    isControllingGraphOnly: boolean = false;
     svgNeedsUpdate: boolean = false;
     d3Zoom = d3.behavior.zoom();
 
-    nodeColorings: number[]; // Stores the colorings associated with the groups
+    //nodeColorings: number[]; // Stores the colorings associated with the groups
     dissimilarityMatrix: number[][] = []; // An inversion of the similarity matrix, used for Cola graph distances
 
     // State
@@ -105,7 +109,7 @@ class Brain3DApp implements Application, Loopable {
     fovZoomRatio = 1;
     currentViewWidth: number; 
 
-    allLables: boolean = false;
+    allLabels: boolean = false;
     autoRotation: boolean = false;
     weightEdges: boolean = false;
     colorMode: string = "none";
@@ -136,7 +140,7 @@ class Brain3DApp implements Application, Loopable {
     }
     */
     
-    constructor(info, commonData: CommonData, inputTargetCreator: (l: number, r: number, t: number, b: number) => InputTarget) {
+    constructor(info, commonData: CommonData, inputTargetCreator: (l: number, r: number, t: number, b: number) => InputTarget, saveObj) {
 
         this.id = info.id;
         this.brainModelOrigin = info.brainModelOrigin;
@@ -148,6 +152,7 @@ class Brain3DApp implements Application, Loopable {
             this.brainSurfaceMode = 0;
         }
         this.commonData = commonData;
+        this.saveObj = saveObj;
         this.input = inputTargetCreator(0, 0, 0, sliderSpace);
         this.edgeCountSliderValue = initialEdgesShown;
          
@@ -203,7 +208,7 @@ class Brain3DApp implements Application, Loopable {
         // Initialize Graph Objects
         this.circularGraph = new CircularGraph( this.id, this.jDiv, this.dataSet,
                                                 this.svg, this.svgDefs, this.svgAllElements,
-                                                this.d3Zoom, this.commonData);
+                                                this.d3Zoom, this.commonData, this.saveObj);
         
     }   
 
@@ -213,20 +218,115 @@ class Brain3DApp implements Application, Loopable {
         if (this.colaGraph) this.colaGraph.setEdgeDirection(directionMode);
 
         if (this.circularGraph) this.circularGraph.circularLayoutEdgeDirectionModeOnChange(directionMode);
-        if (this.svgGraph) this.svgGraph.updateEdgeDirectionMode(directionMode);
-
         
-       this.isAnimationOn = (directionMode === "animation");
+        this.isAnimationOn = (directionMode === "animation");
         
-
         this.svgNeedsUpdate = true;
 
-        if (dataSet.info.isSimatricalMatrix && directionMode !== "none") {
+        if (this.dataSet.info.isSymmetricalMatrix && directionMode !== "none") {
             CommonUtilities.launchAlertMessage(CommonUtilities.alertType.WARNING,
                 "The given similarity matrix is symmetrical," +
                 "so the animation of edges do not reflect their actual direction.");
         }
     }
+
+
+    getNodeColors(colorAttribute: string, minColor: number, maxColor: number): { color: number, portion: number }[][] {
+        /* Get the colour array, a mapping of the configured colour attribute to colour values, e.g.
+            [
+                // Continuous values are evenly split
+                [
+	                {color: 0xfa36dd, portion: 0.33},
+	                {color: 0x006f34, portion: 0.33},
+	                {color: 0x228d00, portion: 0.33}
+                ]
+            ]
+        */
+        let a = this.dataSet.attributes;
+
+        if (!a.info[colorAttribute]) {
+            return this.getNodeColorsEmpty();
+        }
+
+        let valueArray = a.get(colorAttribute);
+
+        // D3 can scale colours, but needs to use colour strings
+        let minString = "#" + minColor.toString(16);
+        let maxString = "#" + maxColor.toString(16);
+        
+        // Continuous has each value mapped with equal proportion
+        let i = a.columnNames.indexOf(colorAttribute);
+        let singlePortion = (1 / a.info[colorAttribute].numElements) || 0;
+        let colorMap = d3.scale
+            .linear()
+            .domain([a.getMin(i), a.getMax(i)])
+            .range([minString, maxString])
+            ;
+        return valueArray.map(aArray => aArray.map(value => ({
+            color: parseInt(colorMap(value).substring(1), 16),
+            portion: singlePortion
+        })));
+    }
+
+
+    getNodeColorsDiscrete(colorAttribute: string, discreteValues: number[], discreteColors: number[]): { color: number, portion: number }[][] {
+        /* Get the colour array, a mapping of the configured colour attribute to colour values, e.g.
+            [
+                // Discrete values are weighted by proportion
+                [
+	                {color: 0xff0000, portion: 1.0},
+	                {color: 0x00ff00, portion: 0.0},
+	                {color: 0x0000ff, portion: 0.0}
+                ]
+            ]
+        */
+        let a = this.dataSet.attributes;
+
+        if (!a.info[colorAttribute]) {
+            return this.getNodeColorsEmpty();
+        }
+
+        let valueArray = a.get(colorAttribute);
+
+        
+        if (a.info[colorAttribute].numElements > 1) {
+            // Discrete multi-value has each colour from the mapping with its proportion of total value in that node
+            return valueArray.map(aArray => {
+                let singlePortion = (1 / aArray.reduce((weight, acc) => acc + weight, 0)) || 0;
+                return aArray.map((value, i) => ({
+                    color: discreteColors[i],
+                    portion: value * singlePortion
+                }))
+            });
+        }
+        else {
+            // Discrete single value is just an ordinal mapping
+            let colorMap = d3.scale
+                .ordinal()
+                .domain(discreteValues)
+                .range(discreteColors)
+                ;
+            return valueArray.map(aArray => aArray.map(value => ({
+                color: colorMap(value),
+                portion: 1.0
+            })));
+        }
+    }
+
+
+    getNodeColorsEmpty(): { color: number, portion: number }[][] {
+        /* Get a minimal practical color array
+            [
+                // Empty values are a minimal set of grey
+                [
+	                {color: 0xd3d3d3, portion: 1.0}
+                ]
+            ]
+        */
+        let defaultColor = { color: 0xd3d3d3, portion: 1.0 };
+        return Array.apply(null, Array(this.dataSet.attributes.numRecords)).map(d => [defaultColor]);
+    }
+
 
     setupUserInteraction(jDiv) {
         var varShowNetwork = (b: boolean) => { this.showNetwork(b); };
@@ -269,6 +369,7 @@ class Brain3DApp implements Application, Loopable {
             preserveDrawingBuffer: true,
             alpha: true
         });
+        this.renderer.sortObjects = true;
 
         this.renderer.setSize(jDiv.width(), (jDiv.height() - sliderSpace));
         jDiv.append($('<span id="close-brain-app-' + this.id + '" title="Close" class="view-panel-span"  data-toggle="tooltip" data-placement="bottom">x</span>')
@@ -306,7 +407,7 @@ class Brain3DApp implements Application, Loopable {
 
             // Circular Graph
             .append($('<div id="div-svg-' + this.id + '"></div>')
-                .css({ 'position': 'absolute', 'width': '100%', 'height': '100%', 'top': 0, 'left': 0, 'z-index': 10 }))
+                .css({ 'position': 'absolute', 'width': '100%', 'height': '100%', 'top': 0, 'left': 0, 'z-index': 10, 'overflow': 'hidden' }))
 
             .append(this.renderer.domElement)
             .append('<p>Showing <label id="count-' + this.id + '">0</label> edges (<label id=percentile-' + this.id + '>0</label>th percentile)</p>')
@@ -321,7 +422,7 @@ class Brain3DApp implements Application, Loopable {
             )
 
             // Show Network button
-            .append($('<button id="button-show-network-' + this.id + ' data-toggle="tooltip" data-placement="top" title="Show side-by-side graph representation">Show Network</button>')
+            .append($('<button id="button-show-network-' + this.id + ' data-toggle="tooltip" data-placement="top" title="Show or update the side-by-side graph representation">Show/Update Network</button>')
                 .css({ 'margin-left': '10px', 'font-size': '12px', 'position': 'relative', 'z-index': 1000 })
                 .click(function () { varShowNetwork(false); })
             )
@@ -331,7 +432,7 @@ class Brain3DApp implements Application, Loopable {
                     .css({ 'margin-left': '5px', 'font-size': '12px', 'width': '80px', 'position': 'relative', 'z-index': 1000 })
                 .on("change", function () { varNetworkTypeOnChange($(this).val()); })
             )
-        ;
+            ;
 
         $("[data-toggle='tooltip']").tooltip(<any>{ container: 'body' });
 
@@ -356,6 +457,16 @@ class Brain3DApp implements Application, Loopable {
         option.value = 'circular';
         $(networkTypeSelect).append(option);
 
+        // Graph canvas setup
+        this.graph2dContainer = d3.select('#div-svg-' + this.id)
+            .append("div")
+            .style({
+                width: "100%",
+                height: "100%",
+            })
+            .classed("graph2dContainer", true)
+            .node();
+
         // SVG Initializing
         var varSVGZoom = () => { this.svgZoom(); }
         this.svg = d3.select('#div-svg-' + this.id).append("svg")
@@ -379,16 +490,16 @@ class Brain3DApp implements Application, Loopable {
                 .append("path")
                 .attr("d", "M 0,0 V 4 L6,2 Z"); //this is actual shape for arrowhead
 
-        this.svgAllElements.append("defs").append("marker")
-            .attr("id", "arrowhead-2d")
-            .attr("refX", 8) /*must be smarter way to calculate shift*/
-            .attr("refY", 2)
-            .attr("markerWidth", 6)
-            .attr("markerHeight", 4)
-            .attr("orient", "auto")
-            .attr("viewbox", "0 0 20 20")
-            .append("path")
-            .attr("d", "M 0,0 V 4 L6,2 Z"); //this is actual shape for arrowhead
+            this.svgAllElements.append("defs").append("marker")
+                .attr("id", "arrowhead-2d")
+                .attr("refX", 8) /*must be smarter way to calculate shift*/
+                .attr("refY", 2)
+                .attr("markerWidth", 6)
+                .attr("markerHeight", 4)
+                .attr("orient", "auto")
+                .attr("viewbox", "0 0 20 20")
+                .append("path")
+                .attr("d", "M 0,0 V 4 L6,2 Z"); //this is actual shape for arrowhead
 
             var varSvg = this.svg[0];
             var varNamespaceURI = varSvg[0].namespaceURI;
@@ -455,7 +566,7 @@ class Brain3DApp implements Application, Loopable {
         });
 
         this.input.regMouseDragCallback((dx: number, dy: number, mode: number) => {
-            if (this.svgControlMode) return;
+            if (this.isControllingGraphOnly) return;
 
             // left button: rotation
             if (mode == 1) {
@@ -497,6 +608,7 @@ class Brain3DApp implements Application, Loopable {
 
             }
         });
+
         this.input.regMouseLeftClickCallback((x: number, y: number) => {
             var oldSelectedNodeID = this.commonData.selectedNode;
             this.commonData.selectedNode = -1;
@@ -534,19 +646,19 @@ class Brain3DApp implements Application, Loopable {
 
             }
 
-            // If the pointer is poiting to any node in 2D or 3D graph
+            // If the pointer is pointing to any node in 2D or 3D graph
             if (node || (nodeIDUnderPointer != -1)) {
                 this.commonData.selectedNode = node ? node.userData.id : nodeIDUnderPointer;
 
                 // Select the new node
                 this.physioGraph.selectNode(this.commonData.selectedNode, false, false);
-                this.colaGraph.selectNode(this.commonData.selectedNode, this.svgMode, true);
+                this.colaGraph.selectNode(this.commonData.selectedNode, this.ignore3dControl, true);
 
 
                 var varNodeID = this.commonData.selectedNode;
                 if (this.networkType == "circular") {
-                    var varMouseOveredCircularLayout = (d) => { this.circularGraph.mouseOveredCircularLayout(d); }
-                this.svgAllElements.selectAll(".nodeCircular")
+                    var varMouseOveredCircularLayout = (d) => { this.circularGraph.mouseOveredCircularLayout(d); };
+                    this.svgAllElements.selectAll(".nodeCircular")
                         .each(function (d) {
                             if (varNodeID == d.id) varMouseOveredCircularLayout(d);
                         });
@@ -554,19 +666,17 @@ class Brain3DApp implements Application, Loopable {
                 else if (this.networkType == "2D") {
                     this.svgNeedsUpdate = true;
                 }
-
             }
         });
 
         this.input.regMouseRightClickCallback((x: number, y: number) => {
-            if (this.svgControlMode) return;
+            if (this.isControllingGraphOnly) return;
 
-            var record;
+            let record;
             var node = this.getNodeUnderPointer(this.input.localPointerPosition());
             if (node) {
-                var color = (<any>node).material.color.getHex();
-                record = this.dataSet.getRecord(node.id);
-                record["color"] = color;
+                record = this.dataSet.getRecord(node.userData.id);
+                record["color"] = (<any>node).material.color.getHex();
             }
             return record;
         });
@@ -574,7 +684,7 @@ class Brain3DApp implements Application, Loopable {
 
         /* Double Click the viewport will reset the Model*/
         this.input.regMouseDoubleClickCallback(() => {
-            if (this.svgControlMode) return;
+            if (this.isControllingGraphOnly) return;
 
             this.fovZoomRatio = 1;
             this.camera.fov = this.defaultFov;
@@ -592,7 +702,7 @@ class Brain3DApp implements Application, Loopable {
         this.input.regMouseWheelCallback((delta: number) => {
             const ZOOM_FACTOR = 10;
 
-            if (this.svgControlMode) return; // 2D Flat Version of the network
+            if (this.isControllingGraphOnly) return; // 2D Flat Version of the network
             var pointer = this.input.localPointerPosition();
             var pointerNDC = new THREE.Vector3(pointer.x, pointer.y, 1);
 
@@ -623,11 +733,18 @@ class Brain3DApp implements Application, Loopable {
 
     }
 
+
+    setBrainModelObject(modelObject) {
+        this.brainModelOrigin = modelObject;
+        this.setBrainMode(this.brainSurfaceMode);
+    }
+
+
     setBrainMode(mode) {
         this.brainSurfaceMode = mode;
-        var model = this.brainModelOrigin;
+        let model = this.brainModelOrigin;
         this.surfaceUniformList = [];
-        var uniformList = this.surfaceUniformList;
+        let uniformList = this.surfaceUniformList;
         /*
         var normalShader = {
             vertexShader: [
@@ -675,150 +792,150 @@ class Brain3DApp implements Application, Loopable {
         var clonedObject = new THREE.Object3D();
         var boundingSphereObject = new THREE.Object3D();
 
-        var basicMaterial = new THREE.MeshLambertMaterial({
-            color: 0x888888,
+        let surfaceMaterial = new THREE.MeshLambertMaterial({
+            color: 0xcccccc,
             transparent: true,
-            opacity: 0.3,
+            opacity: 0.5,
             depthWrite: true,
             depthTest: false,
             side: THREE.FrontSide
         });
+        
+        if (model) {
+            // Default mode: full brain model 
+            if (mode == 0) {
 
-        // Default mode: full brain model 
-        if (mode == 0) {
-            
-            // Clone the mesh - we can't share it between different canvases without cloning it
-            this.brainModelOrigin.traverse(function (child) {
-                if (child instanceof THREE.Mesh) {
-                    /*
-                    this.uniforms = {
-                        opacity: { type: "f", value: 0.5 },
-                        mode: { type: 'f', value: 0.0 }
-                    };
-                    uniformList.push(this.uniforms);
+                // Clone the mesh - we can't share it between different canvases without cloning it
+                model.traverse(function (child) {
+                    if (child instanceof THREE.Mesh) {
+                        /*
+                        this.uniforms = {
+                            opacity: { type: "f", value: 0.5 },
+                            mode: { type: 'f', value: 0.0 }
+                        };
+                        uniformList.push(this.uniforms);
+    
+                        clonedObject.add(new THREE.Mesh(child.geometry.clone(), new THREE.ShaderMaterial(<any>{
+                            uniforms: this.uniforms,
+                            vertexShader: normalShader.vertexShader,
+                            fragmentShader: normalShader.fragmentShader,
+                            transparent: true
+                        })));
+                        */
 
-                    clonedObject.add(new THREE.Mesh(child.geometry.clone(), new THREE.ShaderMaterial(<any>{
-                        uniforms: this.uniforms,
-                        vertexShader: normalShader.vertexShader,
-                        fragmentShader: normalShader.fragmentShader,
-                        transparent: true
-                    })));
-                    */
+                        clonedObject.add(new THREE.Mesh(child.geometry.clone(), surfaceMaterial));
 
-                    clonedObject.add(new THREE.Mesh(child.geometry.clone(), basicMaterial));
-                    clonedObject.renderOrder = RENDER_ORDER_BRAIN;
-
-                    child.geometry.computeBoundingSphere();
-                    var boundingSphere = child.geometry.boundingSphere;
-                    var sphereMaterial = child.material.clone();
-                    sphereMaterial.visible = false;
-                    var sphereGeometry = new THREE.SphereGeometry(boundingSphere.radius + 10, 10, 10);
-                    var sphereObject = new THREE.Mesh(sphereGeometry, sphereMaterial);
-                    sphereObject.position.copy(boundingSphere.center);
-                    boundingSphereObject.add(sphereObject);
-                }
-            });
-
-        // Medial View
-        } else if (mode === 1) {
-            // Clone the mesh - we can't share it between different canvases without cloning it
-            
-            this.brainModelOrigin.traverse(function (child) {
-                if (child instanceof THREE.Mesh) {
-                    /*
-                    this.leftUniforms = {
-                        opacity: { type: "f", value: 0.5 },
-                        mode: { type: 'f', value: -1.0 }
-                    };
-
-                    this.rightUniforms = {
-                        opacity: { type: "f", value: 0.5 },
-                        mode: { type: 'f', value: 1.0 }
-                    };
-
-                    uniformList.push(this.leftUniforms);
-                    uniformList.push(this.rightUniforms);
-
-                    // left brain
-                    var leftBrain = new THREE.Mesh(child.geometry.clone(), new THREE.ShaderMaterial(<any>{
-                        uniforms: this.leftUniforms,
-                        vertexShader: normalShader.vertexShader,
-                        fragmentShader: normalShader.fragmentShader,
-                        transparent: true
-                    }));
-                    leftBrain.renderDepth = 2;
-                    var rightBrain = new THREE.Mesh(child.geometry.clone(), new THREE.ShaderMaterial(<any>{
-                        uniforms: this.rightUniforms,
-                        vertexShader: normalShader.vertexShader,
-                        fragmentShader: normalShader.fragmentShader,
-                        transparent: true
-                    }));
-                    rightBrain.renderDepth = 2;
-                    */
-                    // Need to edit geometries to "slice" them in half
-                    // Each face is represented by a group 9 values (3 vertices * 3 dimensions). Move to other side if any face touches the right side (i.e. x > 0).
-                    var leftPositions = Array.prototype.slice.call(child.geometry.getAttribute("position").array);
-                    var rightPositions = [];
-                    const FACE_CHUNK = 9;
-                    const VERT_CHUNK = 3;
-                    let i = leftPositions.length - VERT_CHUNK;      // Start from last x position
-                    while (i -= VERT_CHUNK) {
-                        if (leftPositions[i] > 0) {
-                            // Move whole face to other geometry
-                            var faceStart = Math.floor(i / FACE_CHUNK) * FACE_CHUNK;
-                            rightPositions.push(...leftPositions.splice(faceStart, FACE_CHUNK));
-                            i = faceStart;
-                        }
+                        child.geometry.computeBoundingSphere();
+                        var boundingSphere = child.geometry.boundingSphere;
+                        var sphereMaterial = child.material.clone();
+                        sphereMaterial.visible = false;
+                        var sphereGeometry = new THREE.SphereGeometry(boundingSphere.radius + 10, 10, 10);
+                        var sphereObject = new THREE.Mesh(sphereGeometry, sphereMaterial);
+                        sphereObject.position.copy(boundingSphere.center);
+                        boundingSphereObject.add(sphereObject);
                     }
+                });
 
-                    var leftGeometry = new THREE.BufferGeometry;
-                    leftGeometry.addAttribute("position", new THREE.BufferAttribute(new Float32Array(leftPositions), VERT_CHUNK));
-                    leftGeometry.computeVertexNormals();
-                    leftGeometry.computeFaceNormals();
-                    var leftBrain = new THREE.Mesh(leftGeometry, basicMaterial);
-                    leftBrain.renderOrder = RENDER_ORDER_BRAIN;
+                // Medial View
+            } else if (mode === 1) {
+                // Clone the mesh - we can't share it between different canvases without cloning it
 
-                    var rightGeometry = new THREE.BufferGeometry;
-                    rightGeometry.addAttribute("position", new THREE.BufferAttribute(new Float32Array(rightPositions), VERT_CHUNK));
-                    rightGeometry.computeVertexNormals();
-                    rightGeometry.computeFaceNormals();
-                    var rightBrain = new THREE.Mesh(rightGeometry, basicMaterial);
-                    rightBrain.renderOrder = RENDER_ORDER_BRAIN;
+                model.traverse(function (child) {
+                    if (child instanceof THREE.Mesh) {
+                        /*
+                        this.leftUniforms = {
+                            opacity: { type: "f", value: 0.5 },
+                            mode: { type: 'f', value: -1.0 }
+                        };
+    
+                        this.rightUniforms = {
+                            opacity: { type: "f", value: 0.5 },
+                            mode: { type: 'f', value: 1.0 }
+                        };
+    
+                        uniformList.push(this.leftUniforms);
+                        uniformList.push(this.rightUniforms);
+    
+                        // left brain
+                        var leftBrain = new THREE.Mesh(child.geometry.clone(), new THREE.ShaderMaterial(<any>{
+                            uniforms: this.leftUniforms,
+                            vertexShader: normalShader.vertexShader,
+                            fragmentShader: normalShader.fragmentShader,
+                            transparent: true
+                        }));
+                        leftBrain.renderDepth = 2;
+                        var rightBrain = new THREE.Mesh(child.geometry.clone(), new THREE.ShaderMaterial(<any>{
+                            uniforms: this.rightUniforms,
+                            vertexShader: normalShader.vertexShader,
+                            fragmentShader: normalShader.fragmentShader,
+                            transparent: true
+                        }));
+                        rightBrain.renderDepth = 2;
+                        */
+                        // Need to edit geometries to "slice" them in half
+                        // Each face is represented by a group 9 values (3 vertices * 3 dimensions). Move to other side if any face touches the right side (i.e. x > 0).
+                        var leftPositions = Array.prototype.slice.call(child.geometry.getAttribute("position").array);
+                        var rightPositions = [];
+                        const FACE_CHUNK = 9;
+                        const VERT_CHUNK = 3;
+                        let i = leftPositions.length - VERT_CHUNK;      // Start from last x position
+                        while (i -= VERT_CHUNK) {
+                            if (leftPositions[i] > 0) {
+                                // Move whole face to other geometry
+                                var faceStart = Math.floor(i / FACE_CHUNK) * FACE_CHUNK;
+                                rightPositions.push(...leftPositions.splice(faceStart, FACE_CHUNK));
+                                i = faceStart;
+                            }
+                        }
 
-                    var box = new THREE.Box3()['setFromObject'](model);
-                    leftBrain.rotation.z = 3.14 / 2;
-                    rightBrain.rotation.z = -3.14 / 2;
+                        var leftGeometry = new THREE.BufferGeometry;
+                        leftGeometry.addAttribute("position", new THREE.BufferAttribute(new Float32Array(leftPositions), VERT_CHUNK));
+                        leftGeometry.computeVertexNormals();
+                        leftGeometry.computeFaceNormals();
+                        var leftBrain = new THREE.Mesh(leftGeometry, surfaceMaterial);
 
-                    // center the brain along y axis
-                    var mean = (box.max.z - box.min.z) / 2;
-                    var offsetToHead = box.max.z - mean;
-                    var offsetDistance = 10;
-                    leftBrain.translateY(offsetToHead);
-                    rightBrain.translateY(offsetToHead);
+                        var rightGeometry = new THREE.BufferGeometry;
+                        rightGeometry.addAttribute("position", new THREE.BufferAttribute(new Float32Array(rightPositions), VERT_CHUNK));
+                        rightGeometry.computeVertexNormals();
+                        rightGeometry.computeFaceNormals();
+                        var rightBrain = new THREE.Mesh(rightGeometry, surfaceMaterial);
 
-                    leftBrain.translateZ(-(box.max.z + offsetDistance));
-                    rightBrain.translateZ(Math.abs(box.min.z) + offsetDistance);
+                        var box = new THREE.Box3()['setFromObject'](model);
+                        leftBrain.rotation.z = 3.14 / 2;
+                        rightBrain.rotation.z = -3.14 / 2;
 
-                    clonedObject.add(leftBrain);
-                    clonedObject.add(rightBrain);
+                        // center the brain along y axis
+                        var mean = (box.max.z - box.min.z) / 2;
+                        var offsetToHead = box.max.z - mean;
+                        var offsetDistance = 10;
+                        leftBrain.translateY(offsetToHead);
+                        rightBrain.translateY(offsetToHead);
 
-                    child.geometry.computeBoundingSphere();
-                    var boundingSphere = child.geometry.boundingSphere;
-                    var material = child.material.clone();
-                    material.visible = false;
-                    var sphereGeometry = new THREE.SphereGeometry(boundingSphere.radius + 10, 10, 10);
-                    var sphereObject = new THREE.Mesh(sphereGeometry, material);
-                    sphereObject.position.copy(boundingSphere.center);
-                    
-                    boundingSphereObject.add(sphereObject);
-                }
-            });
+                        leftBrain.translateZ(-(box.max.z + offsetDistance));
+                        rightBrain.translateZ(Math.abs(box.min.z) + offsetDistance);
 
-        } else {
-            console.log("ERROR: Wrong Brain Surface Mode");
-            return;
+                        clonedObject.add(leftBrain);
+                        clonedObject.add(rightBrain);
+
+                        child.geometry.computeBoundingSphere();
+                        var boundingSphere = child.geometry.boundingSphere;
+                        var material = child.material.clone();
+                        material.visible = false;
+                        var sphereGeometry = new THREE.SphereGeometry(boundingSphere.radius + 10, 10, 10);
+                        var sphereObject = new THREE.Mesh(sphereGeometry, material);
+                        sphereObject.position.copy(boundingSphere.center);
+
+                        boundingSphereObject.add(sphereObject);
+                    }
+                });
+
+            } else {
+                console.log("ERROR: Wrong Brain Surface Mode");
+                return;
+            }
         }
 
+        clonedObject.renderOrder = RENDER_ORDER_BRAIN;
         this.brainSurface = clonedObject;
         this.brainObject.add(this.brainSurface);
         
@@ -838,8 +955,15 @@ class Brain3DApp implements Application, Loopable {
     }
 
     setSurfaceOpacity(opacity: number) {
-        for (var i = 0; i < this.surfaceUniformList.length; i++) {
-            this.surfaceUniformList[i].opacity.value = opacity; 
+        for (let object of this.brainSurface.children) {
+            object.material.opacity = opacity;
+            object.material.needsUpdate = true;
+        }
+    }
+
+    setSurfaceColor(color: string) {
+        for (let object of this.brainSurface.children) {
+            object.material.color.set(color);
         }
     }
 
@@ -866,7 +990,6 @@ class Brain3DApp implements Application, Loopable {
     initEdgeCountSlider(app: SaveApp) {
         this.edgeCountSliderOnChange(app.edgeCount);
         $('#edge-count-slider-' + this.id).val(<any>app.edgeCount);
-        
     }
 
     initShowNetwork(app: SaveApp) {
@@ -938,20 +1061,25 @@ class Brain3DApp implements Application, Loopable {
 
         if (type === "circular" && this.circularGraph) {
             this.circularGraph.setupOptionMenuUI(); // add options button to the page
+            this.svg.attr("visibility", "visible");
+            $(this.graph2dContainer).hide();
         } else {
             // hide options button
             $('#button-circular-layout-histogram-' + this.id).hide();
         }
-        
-        if (type === "2D" && this.svgGraph) {
-            this.svgGraph.setupOptionMenuUI(); // add options button to the page
+
+        if (type === "2D" && this.canvasGraph) {
+            this.canvasGraph.setupOptionMenuUI(); // add options button to the page
+            this.svg.attr("visibility", "hidden");
+            $(this.graph2dContainer).show();
         } else {
             // hide options button
             $('#button-graph2d-option-menu-' + this.id).hide();
+            $(this.graph2dContainer).hide();
         }
 
 
-        if (this.colaGraph.isVisible()) {
+        if (this.colaGraph && this.colaGraph.isVisible()) {
             this.showNetwork(true);
         }
         else {
@@ -996,19 +1124,24 @@ class Brain3DApp implements Application, Loopable {
 
     edgeCountSliderOnChange(numEdges) {
         this.edgeCountSliderValue = numEdges;
+        if (!this.dataSet.sortedSimilarities) return;
 
-        var max = this.dataSet.sortedSimilarities.length;
+        let max = this.dataSet.sortedSimilarities.length;
         if (numEdges > max) numEdges = max;
-        $('#count-' + this.id).get(0).textContent = numEdges;
-        var percentile = numEdges * 100 / max;
-        $('#percentile-' + this.id).get(0).textContent = percentile.toFixed(2);
+        let $count = $('#count-' + this.id).get(0);
+        if ($count) $count.textContent = numEdges;
+        let percentile = numEdges * 100 / max;
+        let $percentile = $('#percentile-' + this.id).get(0);
+        if ($percentile) $percentile.textContent = percentile.toFixed(2);
         if (this.brainSurfaceMode === 0) {
             this.filteredAdjMatrix = this.dataSet.adjMatrixFromEdgeCount(numEdges);
         } else {
             this.filteredAdjMatrix = this.dataSet.adjMatrixWithoutEdgesCrossHemisphere(numEdges);
         }
-        this.physioGraph.findNodeConnectivity(this.filteredAdjMatrix, this.dissimilarityMatrix, null);
-        this.physioGraph.setEdgeVisibilities(this.filteredAdjMatrix);
+        if (this.physioGraph) {
+            this.physioGraph.findNodeConnectivity(this.filteredAdjMatrix, this.dissimilarityMatrix, null);
+            this.physioGraph.setEdgeVisibilities(this.filteredAdjMatrix);
+        }
 
     }
 
@@ -1038,7 +1171,6 @@ class Brain3DApp implements Application, Loopable {
         this.physioGraph.setEdgeColorConfig(this.colorMode, config);
         this.colaGraph.setEdgeColorConfig(this.colorMode, config);
         if (this.circularGraph) this.circularGraph.circularLayoutEdgeColorModeOnChange(colorMode);
-        if (this.svgGraph) this.svgGraph.updateEdgeColorMode(colorMode);
         
         this.svgNeedsUpdate = true;
         this.needUpdate = true;
@@ -1052,7 +1184,7 @@ class Brain3DApp implements Application, Loopable {
 
         this.bundlingEdges = !this.bundlingEdges;
 
-        if (this.bundlingEdges == true) {
+        if (this.bundlingEdges) {
             $('#bundling-edges-' + this.id).css('opacity', 1);
         }
         else {
@@ -1097,7 +1229,7 @@ class Brain3DApp implements Application, Loopable {
         this.mouse.dy = 0;
 
         // set default rotation
-        if (this.autoRotation == true) {
+        if (this.autoRotation) {
             $('#anti-auto-rotation-' + this.id).css('opacity', 1);
             if (s == "anticlockwise") {
                 this.mouse.dx = 1;
@@ -1111,15 +1243,15 @@ class Brain3DApp implements Application, Loopable {
     allLabelsOnChange() {
         if ((!this.physioGraph) || (!this.colaGraph)) return;
 
-        this.allLables = !this.allLables;
+        this.allLabels = !this.allLabels;
 
-        this.physioGraph.allLabels = this.allLables;
-        this.colaGraph.allLabels = this.allLables;
+        this.physioGraph.allLabels = this.allLabels;
+        this.colaGraph.allLabels = this.allLabels;
 
-        if (this.allLables == true) {
+        if (this.allLabels) {
             $('#all-labels-' + this.id).css('opacity', 1);
             this.physioGraph.showAllLabels(false, false);
-            this.colaGraph.showAllLabels(this.svgMode, true);
+            this.colaGraph.showAllLabels(this.ignore3dControl, true);
         }
         else {
             $('#all-labels-' + this.id).css('opacity', 0.2);
@@ -1149,8 +1281,8 @@ class Brain3DApp implements Application, Loopable {
             this.colaGraph.findNodeConnectivity(this.filteredAdjMatrix, this.dissimilarityMatrix, edges);
             this.colaGraph.setNodeVisibilities(); // Hide the nodes without neighbours
             this.colaGraph.setEdgeVisibilities(this.filteredAdjMatrix); // Hide the edges that have not been selected
-            if (this.allLables == true) {
-                this.colaGraph.showAllLabels(this.svgMode, true);
+            if (this.allLabels) {
+                this.colaGraph.showAllLabels(this.ignore3dControl, true);
             }
             //-------------------------------------------------------------------------------------------------------------
             // 3d cola graph
@@ -1182,7 +1314,7 @@ class Brain3DApp implements Application, Loopable {
             this.descent = new cola.Descent(clonedPhysioCoords, D); // Create the solver
 
             var originColaCoords: number[][];
-            if (switchNetworkType == true) {
+            if (switchNetworkType) {
                 if (this.colaCoords) {
                     originColaCoords = this.colaCoords.map(function (array) {
                         return array.slice(0);
@@ -1202,44 +1334,17 @@ class Brain3DApp implements Application, Loopable {
             }
 
             // clear svg graphs
-            if (this.svgMode) {
-
-                // clear svg 
-                this.svgGraph.clear();
-
+            if (this.ignore3dControl) {
                 // clear  circular
                 this.circularGraph.clear();
 
-                this.svgMode = false;
+                this.ignore3dControl = false;
             }
 
             //-------------------------------------------------------------------------------------------------------------
             // animation
-            if (this.networkType == '2D') {
-                // Redraw 3D cola graph
-                if (this.edgeCountSliderValue < 500) {
-                    if (!switchNetworkType) {
-                        // Set up a coroutine to do the animation
-                        var origin = new THREE.Vector3(this.brainContainer.position.x, this.brainContainer.position.y, this.brainContainer.position.z);
-                        var target = new THREE.Vector3(this.brainContainer.position.x + 2 * this.graphOffset,
-                            this.brainContainer.position.y,
-                            this.brainContainer.position.z);
-
-                        this.colaObjectAnimation(origin, target, originColaCoords, this.colaCoords, switchNetworkType, false);
-                    }
-
-                    // Animating process converting from 3D graph to 2Dg
-                    this.threeToSVGAnimation(true);
-                } else {
-                    this.colaGraph.setVisible(true);
-                    this.colaGraph.setNodePositions(this.colaCoords);
-                    this.colaGraph.setVisible(false);
-                    this.svgGraph.initSVGGraphWithoutCola(this.colaGraph);
-                    this.svgMode = true;
-                }
-            } else if (this.networkType == 'circular') { // There's no animation for this ... 
-
-                this.svgMode = true;
+            if (this.networkType == 'circular') { // There's no animation for this ... 
+                this.ignore3dControl = true;
                 this.svgNeedsUpdate = true;
                 this.colaGraph.setVisible(false); // turn off 3D and 2D graph
 
@@ -1253,13 +1358,17 @@ class Brain3DApp implements Application, Loopable {
                 this.circularGraph.setColaGraph(this.physioGraph);
                 this.circularGraph.create();
 
+            } else if (this.networkType == '2D') {
+                // Also not animated
+                this.ignore3dControl = true;
+                this.canvasGraph.updateGraph();
+                this.colaGraph.setVisible(false);
             } else { // this.network === "3D"
                 // Set up a coroutine to do the animation
                 var origin = new THREE.Vector3(this.brainContainer.position.x, this.brainContainer.position.y, this.brainContainer.position.z);
                 var target = new THREE.Vector3(this.brainContainer.position.x + 2 * this.graphOffset, this.brainContainer.position.y, this.brainContainer.position.z);
 
-                this.colaObjectAnimation(origin, target, originColaCoords, this.colaCoords, switchNetworkType, true);
-                
+                this.colaObjectAnimation(origin, target, originColaCoords, this.colaCoords, switchNetworkType, true);                
             }
         }
     }
@@ -1286,9 +1395,8 @@ class Brain3DApp implements Application, Loopable {
     }
 
     threeToSVGAnimation(transitionFinish: boolean) {
-        this.svgGraph.initSVGGraph(this.colaGraph, this.camera);
         this.colaGraph.setVisible(false);
-        this.svgMode = true;
+        this.ignore3dControl = true;
         this.svgNeedsUpdate = true;
         this.transitionInProgress = false;
 
@@ -1316,7 +1424,7 @@ class Brain3DApp implements Application, Loopable {
         $('#select-network-type-' + this.id).prop('disabled', true);    
         $('#graph-view-slider-' + this.id).prop('disabled', true); 
 
-        if (switchNetworkType == true) {
+        if (switchNetworkType) {
             this.colaObject.position.copy(colaObjectTarget);
         } else {
             this.colaObject.position.copy(colaObjectOrigin);
@@ -1360,9 +1468,9 @@ class Brain3DApp implements Application, Loopable {
     }
   
     svgZoom() {
-        if (this.svgControlMode) {
+        if (this.isControllingGraphOnly) {
             this.svgAllElements.attr("transform", "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")");
-            if (this.networkType == "2D") this.svgNeedsUpdate = true;
+            //if (this.networkType == "2D") this.svgNeedsUpdate = true;
         }
     }
    
@@ -1409,20 +1517,6 @@ class Brain3DApp implements Application, Loopable {
         marker.appendChild(path);
 
         this.svgDefs.appendChild(marker);
-    }
-
-    update2DGraph() {
-        if (this.networkType == '2D') {
-            if (this.svgGraph) {
-                this.svgGraph.update(this.colaGraph, this.allLables);
-            }
-        }
-        else if (this.networkType == 'circular') {           
-            if (this.circularGraph) {
-                this.circularGraph.setColaGraph(this.physioGraph);
-                this.circularGraph.update();
-            }
-        }
     }
     
     isDeleted() {
@@ -1493,36 +1587,42 @@ class Brain3DApp implements Application, Loopable {
         if (!attrArray) {
             throw "Attribute " + attribute + " does not exist.";
         }
+
+        /*
         var columnIndex = this.dataSet.attributes.columnNames.indexOf(attribute);
 
         // assume all positive numbers in the array
         var min = this.dataSet.attributes.getMin(columnIndex);
         var max = this.dataSet.attributes.getMax(columnIndex);
         
-        var colorArray: number[];
+        let colorArray: number[][];
+        let colorMap;
         if (attrArray[0].length > 1) {
-            var colorMap = d3.scale.linear().domain([Math.log(min), Math.log(max)]).range([minColor, maxColor]);
-            colorArray = attrArray.map((value: number[]) => {
+            colorMap = d3.scale.linear().domain([Math.log(min), Math.log(max)]).range([minColor, maxColor]);
+            colorArray = attrArray.map((values: number[]) => {
                 var str = colorMap(value.indexOf(Math.max.apply(Math,value))).replace("#", "0x");
                 return parseInt(str);
             });
         }
         else {
-            var colorMap = d3.scale.linear().domain([min, max]).range([minColor, maxColor]);
-            colorArray = attrArray.map((value: number[]) => {
+            colorMap = d3.scale.linear().domain([min, max]).range([minColor, maxColor]);
+            colorArray = attrArray.map((values: number[]) => {
                 var str = colorMap(Math.max.apply(Math, value)).replace("#", "0x");
                 return parseInt(str);
             });
 
         }
+        */
+
+        let colorArray = this.getNodeColors(attribute, parseInt(minColor.replace("#", "0x")), parseInt(maxColor.replace("#", "0x")));
+
         if (!colorArray) {
             throw "Encountered error in generating color array.";
         }
 
         // update graphs
         if (this.physioGraph) this.physioGraph.setNodesColor(colorArray);
-        if(this.colaGraph) this.colaGraph.setNodesColor(colorArray);
-        if (this.svgGraph) this.svgGraph.isEdgeColorChanged = true;
+        if (this.colaGraph) this.colaGraph.setNodesColor(colorArray);
 
         this.svgNeedsUpdate = true; // update to change node color
     }
@@ -1534,7 +1634,8 @@ class Brain3DApp implements Application, Loopable {
         var attrArray = this.dataSet.attributes.get(attribute);
         if (!attrArray) return;
 
-        var colorArrayNum: number[];
+        /*
+        var colorArrayNum: number[][];
         var colorMap = d3.scale.ordinal().domain(keyArray).range(colorArray);
 
         if (attrArray[0].length > 1) {
@@ -1555,12 +1656,14 @@ class Brain3DApp implements Application, Loopable {
                 return parseInt(str);
             });
         }
+        */
+        let discreteColorValues = colorArray.map(colorString => parseInt(colorString.substring(1), 16));
+        let colorArrayNum = this.getNodeColorsDiscrete(attribute, keyArray, discreteColorValues);
 
         if (!colorArrayNum) return;
 
-        this.physioGraph.setNodesColor(colorArrayNum);
-        this.colaGraph.setNodesColor(colorArrayNum);
-        if (this.svgGraph) this.svgGraph.isEdgeColorChanged = true;
+        if (this.physioGraph) this.physioGraph.setNodesColor(colorArrayNum);
+        if (this.colaGraph) this.colaGraph.setNodesColor(colorArrayNum);
 
         this.svgNeedsUpdate = true ;
 
@@ -1613,10 +1716,7 @@ class Brain3DApp implements Application, Loopable {
     setEdgeDirectionGradient() {
         if (this.physioGraph) this.physioGraph.setEdgeDirectionGradient();
         if (this.colaGraph) this.colaGraph.setEdgeDirectionGradient();
-
         if (this.circularGraph) this.circularGraph.update();
-        if (this.svgGraph) this.svgGraph.isEdgeColorChanged;
-        if (this.svgGraph) this.svgGraph.updateEdgeColor();
 
         this.needUpdate = true;
     }
@@ -1655,15 +1755,16 @@ class Brain3DApp implements Application, Loopable {
 
     setDataSet(dataSet: DataSet) {
         this.dataSet = dataSet;
-
-        // Update slider max value
-        if (this.dataSet.sortedSimilarities.length < maxEdgesShowable) {
-            $("#edge-count-slider-" + this.id).prop("max", this.dataSet.sortedSimilarities.length);
-        } else {
-            $("#edge-count-slider-" + this.id).prop("max", maxEdgesShowable);
+        if (this.dataSet.sortedSimilarities) {
+            // Update slider max value
+            if (this.dataSet.sortedSimilarities.length < maxEdgesShowable) {
+                $("#edge-count-slider-" + this.id).prop("max", this.dataSet.sortedSimilarities.length);
+            } else {
+                $("#edge-count-slider-" + this.id).prop("max", maxEdgesShowable);
+            }
+            // update Circular Dataset
+            this.circularGraph.setDataSet(dataSet);
         }
-        // update Circular Dataset
-        this.circularGraph.setDataSet(dataSet);
 
         var sim = () => {
             this.restart();
@@ -1673,19 +1774,19 @@ class Brain3DApp implements Application, Loopable {
         };
         dataSet.regNotifySim(sim);
         dataSet.regNotifyAttributes(att);
-        if (dataSet.simMatrix && dataSet.attributes) {
+        if (dataSet.simMatrix && dataSet.attributes && this.physioGraph) {
             this.restart();
+            this.physioGraph.update();
         } else {
-            console.log("Warning: Similarity Matrix and Attributes not Available.");
+            console.log("Warning: attempted to set dataset before minimal data is available.");
         }
-
-        this.physioGraph.update();
     }
 
     // Initialize or re-initialize the visualisation.
     restart() {
         if (!this.dataSet || !this.dataSet.verify()) return;
-        console.log("restarted");
+        console.log("Restarted view: " + this.id);
+
         // Create the dissimilarity matrix from the similarity matrix (we need dissimilarity for Cola)
         for (var i = 0; i < this.dataSet.simMatrix.length; ++i) {
             this.dissimilarityMatrix.push(this.dataSet.simMatrix[i].map((sim) => {
@@ -1695,16 +1796,27 @@ class Brain3DApp implements Application, Loopable {
         }
 
         // Set up the node colorings
-        this.nodeColorings = this.dataSet.attributes.attrValues[0].map((group: number[]) => {
-            return 0xd3d3d3;
-        });
+        let nSettings = this.saveObj.nodeSettings;
+        let colorAttribute = nSettings.nodeColorAttribute;
+        let nodeColors;
+        if (!this.dataSet.attributes.info[colorAttribute]) {
+            nodeColors = this.getNodeColorsEmpty();
+        }
+        else if (this.dataSet.attributes.info[colorAttribute].isDiscrete) {
+            let discreteColorValues = nSettings.nodeColorDiscrete.map(colorString => parseInt(colorString.substring(1), 16)); 
+            nodeColors = this.getNodeColorsDiscrete(colorAttribute, this.dataSet.attributes.info[colorAttribute].distinctValues, discreteColorValues);
+        }
+        else {      // continuous
+            nodeColors = this.getNodeColors(colorAttribute, nSettings.nodeColorContinuousMin, nSettings.nodeColorContinuousMax);
+        }
 
         // Set up loop
 
-        // Set up the two graphs
-        var edgeMatrix = this.dataSet.adjMatrixFromEdgeCount(maxEdgesShowable); // Don''t create more edges than we will ever be showing
+        // Set up the graphs
+        var edgeMatrix = this.dataSet.adjMatrixFromEdgeCount(maxEdgesShowable); // Don't create more edges than we will ever be showing
+
         if (this.physioGraph) this.physioGraph.destroy();
-        this.physioGraph = new Graph3D(this.brainObject, edgeMatrix, this.nodeColorings, this.dataSet.simMatrix, this.dataSet.brainLabels, this.commonData);
+        this.physioGraph = new Graph3D(this.brainObject, edgeMatrix, nodeColors, this.dataSet.simMatrix, this.dataSet.brainLabels, this.commonData, this.saveObj);
 
         if (this.brainSurfaceMode === 0) {
             this.physioGraph.setNodePositions(this.dataSet.brainCoords);
@@ -1712,17 +1824,15 @@ class Brain3DApp implements Application, Loopable {
             var newCoords = this.computeMedialViewCoords();
             this.physioGraph.setNodePositions(newCoords);
         } else {
-            
             console.log("ERROR: Wrong Brain Surface Mode");
         }
 
-        var edgeMatrix = this.dataSet.adjMatrixFromEdgeCount(maxEdgesShowable);
+        edgeMatrix = this.dataSet.adjMatrixFromEdgeCount(maxEdgesShowable);
         if (this.colaGraph) this.colaGraph.destroy();
-        this.colaGraph = new Graph3D(this.colaObject, edgeMatrix, this.nodeColorings, this.dataSet.simMatrix, this.dataSet.brainLabels, this.commonData);
+        this.colaGraph = new Graph3D(this.colaObject, edgeMatrix, nodeColors, this.dataSet.simMatrix, this.dataSet.brainLabels, this.commonData, this.saveObj);
         this.colaGraph.setVisible(false);
-
-        this.svgGraph = new Graph2D(this.id, this.jDiv, this.dataSet, this.svg, this.svgDefs, this.svgAllElements,
-                                    this.d3Zoom, this.commonData);
+        
+        this.canvasGraph = new Graph2D(this.id, this.jDiv, this.dataSet, this.graph2dContainer, this.commonData, this.saveObj, this.physioGraph, this.camera, this.edgeCountSliderValue);
 
         // Initialize the filtering
         if (this.brainSurfaceMode === 0) {
@@ -1736,6 +1846,7 @@ class Brain3DApp implements Application, Loopable {
         this.colaGraph.setEdgeVisibilities(this.filteredAdjMatrix);
         this.edgeCountSliderOnChange(Number(this.edgeCountSliderValue));
         
+        
         // Enable the slider
         $('#edge-count-slider-' + this.id).prop('disabled', false);
         $('#edge-count-slider-' + this.id).val("" + this.edgeCountSliderValue);
@@ -1747,7 +1858,13 @@ class Brain3DApp implements Application, Loopable {
     computeMedialViewCoords() {
         var newCoords = [[], [], []];
         var zAxis = new THREE.Vector3(0, 0, 1);
-        var box = new THREE.Box3()['setFromObject'](this.brainModelOrigin);
+        var box;
+        if (this.brainModelOrigin) {
+            box = new THREE.Box3()['setFromObject'](this.brainModelOrigin);
+        }
+        else {
+            box = new THREE.Box3(new THREE.Vector3(-70, -100, -50), new THREE.Vector3(70, 70, 100));
+        }
         var mean = (box.max.z - box.min.z) / 2;
         var offsetToHead = box.max.z - mean;
 
@@ -1774,13 +1891,14 @@ class Brain3DApp implements Application, Loopable {
         return newCoords;
     }
 
-    getNodeUnderPointer(pointer) {
-        var raycaster = new THREE.Raycaster();
+    getNodeUnderPointer = pointer => {
+        let raycaster = new THREE.Raycaster();
         raycaster.setFromCamera(pointer, this.camera);
 
-        var n = raycaster.intersectObjects(this.colaGraph.nodeMeshes)[0]
-            || raycaster.intersectObjects(this.physioGraph.nodeMeshes)[0]
-        ;
+        let nCola = (this.colaGraph && this.colaGraph.nodeMeshes) || [];
+        let nPhysio = (this.physioGraph && this.physioGraph.nodeMeshes) || [];
+
+        let n = raycaster.intersectObjects(nCola)[0] || raycaster.intersectObjects(nPhysio)[0];
         if (n) {
             this.commonData.nodeIDUnderPointer[this.id] = n.object.userData.id;
             return n.object;
@@ -1796,18 +1914,21 @@ class Brain3DApp implements Application, Loopable {
             raycaster.setFromCamera(pointer, this.camera);
             
             var inBoundingSphere = !!(raycaster.intersectObject(this.brainSurfaceBoundingSphere, true).length);
-            if (inBoundingSphere == true) {
-                this.svgControlMode = false;
+            if (inBoundingSphere) {
+                this.isControllingGraphOnly = false;
                 this.svg.on(".zoom", null);
+                this.canvasGraph.setUserControl(false);
             }
             else {
-                this.svgControlMode = true;
+                this.isControllingGraphOnly = true;
                 var varSVGZoom = () => { this.svgZoom(); }
                 this.svg.call(this.d3Zoom.on("zoom", varSVGZoom));
+                this.canvasGraph.setUserControl(true);
             }
         } else {
-            this.svgControlMode = false;
+            this.isControllingGraphOnly = false;
             this.svg.on(".zoom", null);
+            if (this.canvasGraph) this.canvasGraph.setUserControl(true);
         }
     }
 
@@ -1834,7 +1955,7 @@ class Brain3DApp implements Application, Loopable {
                 }
             }
 
-            // If the pointer is poiting to any node in 2D or 3D graph
+            // If the pointer is pointing to any node in 2D or 3D graph
             if (this.selectedNodeID !== nodeIDUnderPointer){
                 if (nodeIDUnderPointer !== -1) {
                     // If we already have a node ID selected, deselect it
@@ -1852,13 +1973,13 @@ class Brain3DApp implements Application, Loopable {
 
                     // Select the new node ID
                     this.physioGraph.selectNode(this.selectedNodeID, false, false);
-                    this.colaGraph.selectNode(this.selectedNodeID, this.svgMode, true);
+                    this.colaGraph.selectNode(this.selectedNodeID, this.ignore3dControl, true);
 
 
                     var varNodeID = this.selectedNodeID;
                     if (this.networkType == "circular") {
-                        var varMouseOveredCircularLayout = (d) => { this.circularGraph.mouseOveredCircularLayout(d); }
-                    this.svgAllElements.selectAll(".nodeCircular")
+                        var varMouseOveredCircularLayout = (d) => { this.circularGraph.mouseOveredCircularLayout(d); };
+                        this.svgAllElements.selectAll(".nodeCircular")
                             .each(function (d) {
                                 if (varNodeID == d.id) varMouseOveredCircularLayout(d);
                             });
@@ -1901,10 +2022,21 @@ class Brain3DApp implements Application, Loopable {
                 //  http://marvl.infotech.monash.edu/webcola/examples/3dlayout.js
                 this.descent.rungeKutta(); // Do an iteration of the solver
             }
-            this.scene.updateMatrixWorld();     //TODO: Confirm that this change has no side effects
+            this.scene.updateMatrixWorld();
 
-            if (this.svgMode && this.svgNeedsUpdate) {
-                this.update2DGraph();
+            if (this.ignore3dControl && this.svgNeedsUpdate) {
+                if (this.networkType == '2D') {
+                    if (this.canvasGraph) {
+                        this.canvasGraph.updateInteractive();
+                    }
+                }
+                else if (this.networkType == 'circular') {
+                    if (this.circularGraph) {
+                        this.circularGraph.setColaGraph(this.physioGraph);
+                        this.circularGraph.update();
+                    }
+                }
+
                 this.svgNeedsUpdate = false;
             }
         }

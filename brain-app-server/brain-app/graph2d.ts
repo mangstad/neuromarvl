@@ -1,78 +1,543 @@
 ﻿
+
+declare var cytoscape;
+
 class Graph2D {
-    id: number;
-    jDiv;
-    dataSet: DataSet;
+    // UI
+    graph2DDotClass: string;
+    graph2DClass: string;
 
-    svg;
-    svgDefs;
-    svgNodeBundleArray;
-    svgAllElements;
+    // Options menu
+    scale: number = 5;
 
-    d3Zoom;
-
-    // Menu Options
-    graph2DClass;
-    graph2DDotClass;
-    isFlowLayoutOn;
-    edgeDirectionMode;
-    edgeColorMode;
-
-    mouseDownEventListenerAdded;
     groupNodesBy = "none";
-
-    // Data
-    commonData;
-
-
-    // Layout
-    cola2D
-
-    // edge 
-    isEdgeColorChanged: boolean = false;
     colorMode: string;
     directionMode: string;
-    edgeLengthScale;
-    edgeBaseLength;
+    mouseDownEventListenerAdded;
+    layout = "cola";
 
+    // Data
+    config;
 
     nodes: any[];
     links: any[];
 
-    constructor(id: number, jDiv, dataSet: DataSet, svg, svgDefs, svgGroup, d3Zoom, commonData) {
+    // Style constants
+    BASE_RADIUS = 5;
+    BASE_EDGE_WEIGHT = 1.5;
+    BASE_BORDER_WIDTH = 1;
+    BASE_LABEL_SIZE = 4;
 
+    cy;
 
+    constructor(
+        private id: number,
+        private jDiv,
+        private dataSet: DataSet,
+        private container,
+        private commonData: CommonData,
+        private saveObj: SaveFile,
+        private graph3d: Graph3D,
+        private camera: THREE.Camera,
+        complexity: number
+    ) {
+        this.nodes = [];
+        this.links = [];
+                
+        // Use nice layout by default, but switch to faster alternative if graph is too complex
+        if (complexity > 750) this.layout = "cose";
+    }
+    
+    updateGraph() {
+        CommonUtilities.launchAlertMessage(CommonUtilities.alertType.INFO, `Generating a 2D ${this.layout} layout...`);
+
+        // Use this.dataSet to build the elements for the cytoscape graph.
+        // Include default values that are input to style fuctions.
+        
         this.nodes = [];
         this.links = [];
 
-        this.svg = svg;
-        this.svgDefs = svgDefs;
-        this.svgAllElements = svgGroup;
+        let children = this.graph3d.nodeMeshes;
+        this.colorMode = this.graph3d.colorMode;
+        this.directionMode = this.graph3d.edgeDirectionMode;        
 
-        this.id = id;
-        this.jDiv = jDiv;
-        this.dataSet = dataSet;
+        // Figure out the grouping calculation to use for the chosen grouping attribute
+        let getGroup;
+        if (this.groupNodesBy !== "none") {
+            let colname = this.groupNodesBy;
+
+            //  Get domain of the attributes (assume all positive numbers in the array)
+            var columnIndex = this.dataSet.attributes.columnNames.indexOf(colname);
+
+            if (this.dataSet.attributes.info[colname].isDiscrete) {
+                // If the attribute is discrete then grouping is clear for simple values, but for multivalue attributes we get the position of the largest value
+                getGroup = value => {
+                    if (value.length > 1) {
+                        return value.indexOf(Math.max(...value));
+                    }
+                    else {
+                        return value[0];
+                    }
+                };
+
+            } else {
+                // If the attribute is continuous, split into 10 bands - TODO: could use user specified ranges
+                let min = this.dataSet.attributes.getMin(columnIndex);
+                let max = this.dataSet.attributes.getMax(columnIndex);
+                let bundleGroupMap = d3.scale.linear().domain([min, max]).range([0, 9.99]); // use 9.99 instead of 10 to avoid a group of a single element (that has the max attribute value)
+                getGroup = value => {
+                    let bundleGroup = bundleGroupMap(Math.max.apply(Math, value));
+                    return Math.floor(bundleGroup);
+                };
+            }
+        }
+
+
+        for (let i = 0; i < children.length; i++) {
+            let node = children[i];
+            let d = node.userData;
+
+            if (d.filtered) continue;
+
+            let nodeObject = new Object();
+            nodeObject["id"] = d.id;
+            nodeObject["color"] = "#".concat(node.material.color.getHexString());
+            nodeObject["radius"] = node.scale.x;
+            nodeObject["colors"] = d.colors;
+
+            // Use projection of colaGraph to screen space to initialise positions
+            let position = (new THREE.Vector3()).setFromMatrixPosition(node.matrixWorld);
+            position.project(this.camera);
+            nodeObject["x"] = $.isNumeric(position.x) ? position.x : 0;
+            nodeObject["y"] = $.isNumeric(position.y) ? position.y : 0;
+            
+            // Grouping
+            if (this.groupNodesBy !== "none") {
+                let value = this.dataSet.attributes.get(this.groupNodesBy)[d.id];
+                nodeObject['bundle'] = getGroup(value);
+            }
+
+            this.nodes.push(nodeObject);
+        }
+
+        // Add Edges to graph
+        for (var i = 0; i < this.graph3d.edgeList.length; i++) {
+            var edge = this.graph3d.edgeList[i];
+            // To ensure consistency between graphs, edge colour info can be taken from the 3D object uniforms.
+            // Uniform types are uniforms.(start/end)color: {type: "v4", value: THREE.Vector4 } and uniforms.(start/end)color: {type: "f", value: number}.
+            if (edge.visible) {
+                var linkObject = new Object();
+                linkObject["edgeListIndex"] = i;
+                if ((this.graph3d.colorMode === "weight") || (this.graph3d.colorMode === "none")) {
+                    linkObject["color"] = edge.color;
+                }
+                else {
+                    // "node"
+                    let colorVectorSource = edge.uniforms.startColor.value;
+                    linkObject["color"] = `rgb(${colorVectorSource.x * 255}, ${colorVectorSource.y * 255}, ${colorVectorSource.z * 255})`;
+                }
+
+                linkObject["width"] = edge.shape.scale.x;
+
+                for (var j = 0; j < this.nodes.length; j++) {
+                    if (this.nodes[j].id == edge.sourceNode.userData.id) {
+                        linkObject["source"] = this.nodes[j];
+                        linkObject["x1"] = this.nodes[j].x;
+                        linkObject["y1"] = this.nodes[j].y;
+                    }
+
+                    if (this.nodes[j].id == edge.targetNode.userData.id) {
+                        linkObject["target"] = this.nodes[j];
+                        linkObject["x2"] = this.nodes[j].x;
+                        linkObject["y2"] = this.nodes[j].y;
+                    }
+                }
+
+                this.links.push(linkObject);
+            }
+        }
         
-        this.d3Zoom = d3Zoom;
-        this.commonData = commonData;
-        this.edgeLengthScale = 3;
-        this.edgeBaseLength = 7;
-        this.mouseDownEventListenerAdded = false;
+
+        // Use saveObj and this.layout to create the layout and style options, then create the cytoscape graph
+        let container = this.container;
+        let colorAttribute = this.saveObj.nodeSettings.nodeColorAttribute;
+        
+        let nodes = this.nodes.map(d => {
+            return {
+                data: {
+                    id: "n_" + d.id,
+                    parent: "c_" + (d.bundle || ""),
+                    bundle: d.bundle,
+                    sourceId: d.id,
+                    color: d.color || "#cfcfcf",
+                    color0: d.colors[0] ? "#" + d.colors[0].color.toString(16) : "#bbbbbb",
+                    color1: d.colors[1] ? "#" + d.colors[1].color.toString(16) : "#bbbbbb",
+                    color2: d.colors[2] ? "#" + d.colors[2].color.toString(16) : "#bbbbbb",
+                    color3: d.colors[3] ? "#" + d.colors[3].color.toString(16) : "#bbbbbb",
+                    color4: d.colors[4] ? "#" + d.colors[4].color.toString(16) : "#bbbbbb",
+                    color5: d.colors[5] ? "#" + d.colors[5].color.toString(16) : "#bbbbbb",
+                    color6: d.colors[6] ? "#" + d.colors[6].color.toString(16) : "#bbbbbb",
+                    color7: d.colors[7] ? "#" + d.colors[7].color.toString(16) : "#bbbbbb",
+                    portion0: d.colors[0] ? d.colors[0].portion * 100 : 0,
+                    portion1: d.colors[1] ? d.colors[1].portion * 100 : 0,
+                    portion2: d.colors[2] ? d.colors[2].portion * 100 : 0,
+                    portion3: d.colors[3] ? d.colors[3].portion * 100 : 0,
+                    portion4: d.colors[4] ? d.colors[4].portion * 100 : 0,
+                    portion5: d.colors[5] ? d.colors[5].portion * 100 : 0,
+                    portion6: d.colors[6] ? d.colors[6].portion * 100 : 0,
+                    portion7: d.colors[7] ? d.colors[7].portion * 100 : 0,
+                    nodeRadius: d.radius,
+                    radius: d.radius * this.scale * this.BASE_RADIUS,
+                    border: d.radius * this.scale * this.BASE_BORDER_WIDTH,
+                    labelSize: d.radius * this.scale * this.BASE_LABEL_SIZE,
+                    label: this.dataSet.brainLabels[d.id] || d.id
+                },
+                position: {
+                    x: d.x,
+                    y: d.y
+                },
+                classes: "child"
+            };
+        });
+        let edges = this.links.map(d => ({
+            data: {
+                id: "e_" + d.edgeListIndex,
+                source: "n_" + d.source.id,
+                target: "n_" + d.target.id,
+                color: d.color,
+                highlight: false,
+                edgeWeight: d.width,
+                edgeListIndex: d.edgeListIndex,
+                weight: d.width * this.scale * this.BASE_EDGE_WEIGHT
+            }
+        }));
+        // Compound nodes for grouping - only for use with layouts that support it well
+        let compounds = [];
+        if (this.groupNodesBy !== "none") {
+            compounds = nodes
+                .reduce((acc, d) => {
+                    let i = acc.length;
+                    while (i--) if (acc[i] === d.data.parent) return acc;
+                    acc.push(d.data.parent);
+                    return acc;
+                }, [])
+                .map(d => ({
+                    data: {
+                        id: d,
+                        radius: 10,
+                        border: 2
+                    },
+                    classes: "cluster"
+                }))
+                ;
+        }
+        
+
+        let elements = nodes.concat(<any>edges).concat(<any>compounds);
+
+        // Default layout is simple and fast
+        let layoutOptions = <any>{
+            name: this.layout,
+            animate: false,
+            boundingBox: {
+                x1: 0,
+                y1: 0,
+                w: container.offsetWidth * 0.3,
+                h: container.offsetHeight * 0.5
+            }
+        }
+        switch (this.layout) {
+            case "cose":
+                // This layout gets something very wrong with the boundingBox, possibly ignoring node radii, so we need to compensate
+                layoutOptions.boundingBox.w *= this.BASE_RADIUS;
+                layoutOptions.boundingBox.h *= this.BASE_RADIUS;
+                layoutOptions.numIter = 100;
+                break;
+            case "cose-bilkent":
+                layoutOptions.numIter = 15;
+                break;
+            case "cola":
+                layoutOptions.fit = true;
+
+                // Options that may affect speed of layout
+                layoutOptions.ungrabifyWhileSimulating = true;
+                layoutOptions.maxSimulationTime = 4000;        // Only starts counting after the layout startup, which can take some time by itself. 0 actually works well.
+                layoutOptions.handleDisconnected = true;
+                layoutOptions.avoidOverlap = false;
+                
+                layoutOptions.unconstrIter = 15;
+                layoutOptions.userConstIter = 0;
+                layoutOptions.allConstIter = 5;
+
+                layoutOptions.flow = false;
+
+                break;
+            case "grid":
+                // Looks pretty messy with no sorting at all, so use colours if bundling is not set
+                layoutOptions.sort = (a, b) => {
+                    let valueA = a.data("bundle") || parseInt(a.data("color").substring(1), 16);
+                    let valueB = b.data("bundle") || parseInt(b.data("color").substring(1), 16);
+                    return valueA - valueB;
+                };
+                break;
+            case "concentric":
+                // Groups into arbitrary rings with no grouping defined, so use colours if bundling is not set.
+                // May be too many distinct colour values, so pool into 10 groups.
+                if (this.groupNodesBy === "none") {
+                    let minColor = 0xffffff;
+                    let maxColor = 0x000000;
+                    for (let node of children) {
+                        let color = node.material.color.getHex();
+                        minColor = Math.min(minColor, color);
+                        maxColor = Math.max(maxColor, color);
+                    }
+                    let f = d3.scale.linear().domain([minColor, maxColor]).range([0, 9.99]);
+                    layoutOptions.concentric = node => Math.floor(f(parseInt(node.data("color").substring(1), 16)));
+                }
+                else {
+                    layoutOptions.concentric = node => node.data("bundle");
+                }
+                layoutOptions.fit = true;
+                layoutOptions.padding = 500;
+                break;
+        }
+        
+
+        this.cy = cytoscape({
+            container,
+            elements,
+            style: [
+                {
+                    selector: "node.child",
+                    style: {
+                        "width": "data(radius)",
+                        "height": "data(radius)",
+                        "background-color": "data(color)",
+                        "background-opacity": 1,
+                        "border-width": "data(border)",
+                        "border-color": "black",
+                        "border-opacity": 0,
+                        "font-size": "data(labelSize)",
+                        "font-weight": "bold",
+                        "text-outline-color": "white",
+                        "text-outline-opacity": 0.5,
+                        "text-outline-width": "data(border)",
+                        "pie-size": "100%",
+                        "pie-1-background-color": "data(color0)",
+                        "pie-2-background-color": "data(color1)",
+                        "pie-3-background-color": "data(color2)",
+                        "pie-4-background-color": "data(color3)",
+                        "pie-5-background-color": "data(color4)",
+                        "pie-6-background-color": "data(color5)",
+                        "pie-7-background-color": "data(color6)",
+                        "pie-8-background-color": "data(color7)",
+                        "pie-1-background-size": "data(portion0)",
+                        "pie-2-background-size": "data(portion1)",
+                        "pie-3-background-size": "data(portion2)",
+                        "pie-4-background-size": "data(portion3)",
+                        "pie-5-background-size": "data(portion4)",
+                        "pie-6-background-size": "data(portion5)",
+                        "pie-7-background-size": "data(portion6)",
+                        "pie-8-background-size": "data(portion7)"
+                    } 
+                },
+                {
+                    selector: "node.cluster",
+                    style: {
+                        "background-opacity": 0.0,
+                        "border-width": 0
+                    }
+                },
+                {
+                    selector: "node.child.highlight",
+                    style: {
+                        'label': 'data(label)',
+                        "border-opacity": 0.5
+                    }
+                },
+                {
+                    selector: "node.select",
+                    style: {
+                        'label': 'data(label)',
+                        "border-opacity": 1.0
+                    }
+                },
+                {
+                    selector: "node.cluster.highlight",
+                    style: {
+                        "background-opacity": 0.5,
+                        "border-width": 1
+                    }
+                },
+                {
+                    selector: "edge",
+                    style: {
+                        "width": "data(weight)",
+                        "opacity": 0.5,
+                        'line-color': 'data(color)',
+                        'mid-target-arrow-color': 'data(color)',
+                    }
+                },
+                {
+                    selector: "edge.highlight",
+                    style: {
+                        "mid-target-arrow-shape": "triangle",
+                        opacity: 1
+                    }
+                }
+            ],
+            minZoom: 0.1,
+            maxZoom: 10,
+            wheelSensitivity: 0.2,
+            layout: layoutOptions
+        });
+
+        let commonData = this.commonData;
+        let cy = this.cy;
+        cy.on("mouseover", "node.cluster", function (e) {
+            this.addClass("highlight");
+        });
+        cy.on("mouseout", "node.cluster", function (e) {
+            this.removeClass("highlight");
+        });
+        cy.on("mouseover", "node.child", function (e) {
+            commonData.nodeIDUnderPointer[4] = this.data("sourceId");
+        });
+        cy.on("mouseout", "node.child", function (e) {
+            commonData.nodeIDUnderPointer[4] = -1;
+        });
+        cy.on("tap", "node.child", function (e) {
+            let oldSelected = commonData.selectedNode;
+            if (oldSelected > -1) {
+                cy.elements("node").removeClass("select");
+            }
+            let newSelected = this.data("sourceId");
+            this.addClass("select");
+        });
+        cy.on("layoutstop", e => {
+            // Some layouts need to pan/zoom after layout is done
+            cy.fit();
+            cy.pan({
+                x: container.offsetWidth * 0.5,
+                y: container.offsetHeight * 0.2
+            });
+            cy.zoom(cy.zoom() * 0.6);
+            CommonUtilities.launchAlertMessage(CommonUtilities.alertType.SUCCESS, `New 2D ${this.layout} layout created`);
+        });
+        cy.fit();
+        if (this.layout === "concentric") {
+            // This layout tends to centre near the upper-left corner
+            cy.pan({
+                x: container.offsetWidth * 0.6,
+                y: container.offsetHeight * 0.3
+            });
+        }
+        else {
+            cy.pan({
+                x: container.offsetWidth * 0.5,
+                y: container.offsetHeight * 0.2
+            });
+        }
+        cy.zoom(cy.zoom() * 0.7);
+
     }
-    toggleDirectionArrow(isShown: boolean) {
-        if (isShown) {
-            this.svgAllElements.selectAll(".link")
-                .style("marker-end", "url(#arrowhead-2d)");
-        } else {
-            this.svgAllElements.selectAll(".link")
-                .style("marker-end", "none");
+
+    updateInteractive() {
+        // Minor update, no layout recalculation but will have redraw, e.g. for selected node change
+        this.cy.batch(() => {
+            // Hover and selection
+            this.cy.elements(".highlight").removeClass("highlight");
+            this.cy.elements("node.select").removeClass("select");
+            this.cy.elements(`node[sourceId=${this.commonData.nodeIDUnderPointer[0]}]`)
+                .addClass("highlight")
+                .neighborhood()
+                .addClass("highlight")
+                ;
+            this.cy.elements(`node[sourceId=${this.commonData.nodeIDUnderPointer[4]}]`)
+                .addClass("highlight")
+                .neighborhood()
+                .addClass("highlight")
+                ;
+
+            this.cy.elements(`node[sourceId=${this.commonData.selectedNode}]`).addClass("select");
+
+            // Edge colour setting changes
+            if ((this.graph3d.colorMode === "weight") || (this.graph3d.colorMode === "none")) {
+                this.cy.elements("edge").each((i, e) => {
+                    let edge = this.graph3d.edgeList[e.data("edgeListIndex")];
+                    e.data("color", edge.color);
+                });
+            }
+            else {
+                // "node"
+                this.cy.elements("edge").each((i, e) => {
+                    let colorVectorSource = this.graph3d.edgeList[e.data("edgeListIndex")].uniforms.startColor.value;
+                    let color = `rgb(${colorVectorSource.x * 255}, ${colorVectorSource.y * 255}, ${colorVectorSource.z * 255})`;
+                    e.data("color", color);
+                });
+            }
+
+            // Node size/colour changes - TODO: colour
+            let nodes = this.graph3d.nodeMeshes;
+            this.cy.elements("node.child").each((i, e) => {
+                // Size
+                let node = nodes[e.data("sourceId")];
+                let radius = node.scale.x * this.scale * this.BASE_RADIUS
+                e.data("radius", radius);
+
+                //Colour
+                let d = node.userData;
+                e.data("color0", d.colors[0] ? "#" + d.colors[0].color.toString(16) : "black");
+                e.data("color1", d.colors[1] ? "#" + d.colors[1].color.toString(16) : "black");
+                e.data("color2", d.colors[2] ? "#" + d.colors[2].color.toString(16) : "black");
+                e.data("color3", d.colors[3] ? "#" + d.colors[3].color.toString(16) : "black");
+                e.data("color4", d.colors[4] ? "#" + d.colors[4].color.toString(16) : "black");
+                e.data("color5", d.colors[5] ? "#" + d.colors[5].color.toString(16) : "black");
+                e.data("color6", d.colors[6] ? "#" + d.colors[6].color.toString(16) : "black");
+                e.data("color7", d.colors[7] ? "#" + d.colors[7].color.toString(16) : "black");
+                e.data("portion0", d.colors[0] ? d.colors[0].portion * 100 : 0);
+                e.data("portion1", d.colors[1] ? d.colors[1].portion * 100 : 0);
+                e.data("portion2", d.colors[2] ? d.colors[2].portion * 100 : 0);
+                e.data("portion3", d.colors[3] ? d.colors[3].portion * 100 : 0);
+                e.data("portion4", d.colors[4] ? d.colors[4].portion * 100 : 0);
+                e.data("portion5", d.colors[5] ? d.colors[5].portion * 100 : 0);
+                e.data("portion6", d.colors[6] ? d.colors[6].portion * 100 : 0);
+                e.data("portion7", d.colors[7] ? d.colors[7].portion * 100 : 0);
+            });
+        });
+    }
+    
+    setUserControl(isOn: boolean) {
+        if (this.cy) {
+            this.cy.userPanningEnabled(isOn);
+            this.cy.userZoomingEnabled(isOn);
+            this.cy.boxSelectionEnabled(isOn);
         }
     }
+
+
+    /*
+        Menu
+    */
+
+    settingOnChange() {
+        // Styling changes not affecting layout, triggered by 2d settings
+        this.cy.batch(() => {
+            this.cy.elements("node.child")
+                .data("border", this.scale * this.BASE_BORDER_WIDTH)
+                .data("labelSize", this.scale * this.BASE_LABEL_SIZE)
+                .each((i, e) => e.data("radius", e.data("nodeRadius") * this.scale * this.BASE_RADIUS))
+                ;
+            this.cy.elements("edge")
+                .each((i, e) => e.data("weight", e.data("edgeWeight") * this.scale * this.BASE_EDGE_WEIGHT))
+                ;
+        });
+    }
+
     menuButtonOnClick() {
         var l = $('#button-graph2d-option-menu-' + this.id).position().left + 5;
         var t = $('#button-graph2d-option-menu-' + this.id).position().top - $('#div-graph2d-layout-menu-' + this.id).height() - 15;
-
-
+        
         $('#div-graph2d-layout-menu-' + this.id).zIndex(1000);
         $('#div-graph2d-layout-menu-' + this.id).css({ left: l, top: t, height: 'auto' });
         $('#div-graph2d-layout-menu-' + this.id).fadeToggle('fast');
@@ -87,31 +552,28 @@ class Graph2D {
         $("button").remove(this.graph2DDotClass);
         $("div").remove(this.graph2DDotClass);
 
-        // Default Setting
-        this.isFlowLayoutOn = false;
-
         // Function variables response to changes in settings
-        var varLayoutOnChange = (isOn) => {
-            this.isFlowLayoutOn = isOn;
-            this.settingOnChange();
-        };
         var varEdgeLengthOnChange = () => {
-            var edgeLengthScale = $("#div-edge-length-slider-" + this.id)['bootstrapSlider']().data('bootstrapSlider').getValue();
-            this.edgeLengthScale = edgeLengthScale;
+            this.scale = $("#div-scale-slider-alt-" + this.id)['bootstrapSlider']().data('bootstrapSlider').getValue();
             this.settingOnChange();
         };
 
-        var varGroupNodesOnChange = (groupBy) => {
+        var varGroupNodesOnChange = groupBy => {
             this.groupNodesBy = groupBy;
-            this.settingOnChange();
+            this.updateGraph();
         }
 
         var varMenuButtonOnClick = () => { this.menuButtonOnClick(); };
 
+        var changeLayout = layout => {
+            this.layout = layout;
+            this.updateGraph();
+        }
+
         // Setting Options
         // option button
         this.jDiv.append($('<button id="button-graph2d-option-menu-' + this.id + '" class="' + this.graph2DClass + ' btn  btn-sm btn-primary" ' +
-                'data-toggle="tooltip" data-placement="top" title="Show side-by-side graph representation">Options</button>')
+            'data-toggle="tooltip" data-placement="top" title="Show side-by-side graph representation">Options</button>')
             .css({ 'position': 'relative', 'margin-left': '5px', 'font-size': '12px', 'z-index': 1000 })
             .click(function () { varMenuButtonOnClick(); }));
 
@@ -128,23 +590,15 @@ class Graph2D {
             }));
 
         //------------------------------------------------------------------------
-        // menu - edge length
-        $('#div-graph2d-layout-menu-' + this.id).append('<div>Edge Length<div/>');
-        $('#div-graph2d-layout-menu-' + this.id).append($('<input id="div-edge-length-slider-' + this.id + '" class=' + this.graph2DClass + 'data-slider-id="surface-opacity-slider" type="text"' +
-            'data-slider-min="3" data-slider-max="10" data-slider-step="0.5" data-slider-value="1" />')
+        // menu - scale
+        $('#div-graph2d-layout-menu-' + this.id).append('<div>Scale elements<div/>');
+        $('#div-graph2d-layout-menu-' + this.id).append($('<input id="div-scale-slider-alt-' + this.id + '" class=' + this.graph2DClass + 'data-slider-id="surface-opacity-slider" type="text"' +
+            'data-slider-min="1" data-slider-max="10" data-slider-step="0.5" data-slider-value="5" />')
             .css({ 'position': 'relative', 'width': '150px' }));
 
-        $("#div-edge-length-slider-" + this.id)['bootstrapSlider']();
-        $("#div-edge-length-slider-" + this.id)['bootstrapSlider']().on('change', varEdgeLengthOnChange);
-
-        // menu - flow
-        $('#div-graph2d-layout-menu-' + this.id).append('<div id="div-graph2d-flow-' + this.id + '"></div>');
-        $('#div-graph2d-flow-' + this.id).append($('<input type="checkbox" id="checkbox-graph2d-flow-layout-' + this.id + '" class=' + this.graph2DClass + '>')
-            .css({ 'position': 'relative', 'width': '20px' })
-            .on("change", function () { varLayoutOnChange($(this).is(":checked")); }));
-        $('#div-graph2d-flow-' + this.id).append('Enable Flow Layout');
-
-       
+        $("#div-scale-slider-alt-" + this.id)['bootstrapSlider']();
+        $("#div-scale-slider-alt-" + this.id)['bootstrapSlider']().on('change', varEdgeLengthOnChange);
+        
 
         // menu - group nodes
         $('#div-graph2d-layout-menu-' + this.id).append('<div id="div-graph2d-group-' + this.id + '">bundle: </div>');
@@ -165,1097 +619,36 @@ class Graph2D {
             if (this.dataSet.attributes.info[columnName].isDiscrete) {
                 $('#select-graph2d-group-' + this.id).append('<option value = "' + columnName + '">' + columnName + '</option>');
             }
-            
+
         }
+        
+        // menu - layouts
+        $('#div-graph2d-layout-menu-' + this.id).append('<div id="div-graph2d-layout-' + this.id + '">layout: </div>');
+        $('#div-graph2d-layout-' + this.id).append($('<select id="select-graph2d-layout-' + this.id + '" class=' + this.graph2DClass + '></select>')
+            .css({ 'margin-left': '5px', 'margin-bottom': '5px', 'font-size': '12px', 'width': '80px', 'background-color': '#feeebd' })
+            .on("change", function () { changeLayout($(this).val()); }));
 
-        var varClass = this.graph2DClass;
+        $('#select-graph2d-layout-' + this.id).empty();
 
-        if (this.mouseDownEventListenerAdded == false) {
+        // Full layout options: ["cose", "cose-bilkent", "cola", "cola-flow", "grid", "circle", "concentric", "breadthfirst", "random"]
+        for (let layout of ["cola", "cose", "cose-bilkent", "grid", "concentric"]) {
+            var option = document.createElement('option');
+            option.text = layout;
+            option.value = layout;
+            $('#select-graph2d-layout-' + this.id).append(option);
+        }
+        (<any>document.getElementById("select-graph2d-layout-" + this.id)).value = this.layout;
+
+        let targetClass = this.graph2DClass;
+        if (!this.mouseDownEventListenerAdded) {
             this.mouseDownEventListenerAdded = true;
             document.addEventListener('mouseup', (event) => {
-                if ((!$(event.target).hasClass(varClass))) {
+                if ((!$(event.target).hasClass(targetClass))) {
                     $('#div-graph2d-layout-menu-' + this.id).hide();
-
                 }
             }, false);
         }
+                
     }
 
-    // Convert dataset to D3-compatible format
-    initSVGGraph(colaGraph: Graph3D, camera) {
-        this.colorMode = colaGraph.colorMode;
-        this.directionMode = colaGraph.edgeDirectionMode;
-        var width = this.jDiv.width();
-        var height = this.jDiv.height() - sliderSpace;
-        var widthHalf = width / 2;
-        var heightHalf = height / 2;
-        var screenCoords = new THREE.Vector3();
-        var unitRadius = 5;
-
-        // Reset nodes and links
-        this.nodes.splice(0, this.nodes.length);
-        this.links.splice(0, this.links.length);
-
-        var children = colaGraph.nodeMeshes;
-
-        // Add Nodes to SVG graph (Positions are based on the projected position of the 3D graphs
-        for (var i = 0; i < children.length; i++) {
-            var obj = children[i];
-            var d = obj.userData;
-
-            var nodeObject = new Object();
-            nodeObject["id"] = d.id;
-            if (this.dataSet.brainLabels) {
-                nodeObject["label"] = this.dataSet.brainLabels[d.id];
-            }
-            nodeObject["color"] = "#".concat(colaGraph.nodeMeshes[d.id].material.color.getHexString());
-            nodeObject["radius"] = colaGraph.nodeMeshes[d.id].scale.x * unitRadius;
-
-            // for every attributes
-            for (var j = 0; j < this.dataSet.attributes.columnNames.length; j++) {
-
-                var colname = this.dataSet.attributes.columnNames[j];
-                var value = this.dataSet.attributes.get(colname)[d.id];
-                nodeObject[colname] = value;
-
-                // add a special property for module id
-                if (colname == 'module_id') {
-                    nodeObject['moduleID'] = this.dataSet.attributes.get(colname)[d.id];
-                }
-
-                //  Get domain of the attributes (assume all positive numbers in the array)
-                var columnIndex = this.dataSet.attributes.columnNames.indexOf(colname);
-                var min = this.dataSet.attributes.getMin(columnIndex);
-                var max = this.dataSet.attributes.getMax(columnIndex);
-
-                // Scale value to between 0.05 to 1 
-                var attrMap = d3.scale.linear().domain([min, max]).range([0.05, 1]);
-                var scalevalue = attrMap(Math.max.apply(Math, value));
-                nodeObject['scale_' + colname] = scalevalue;
-
-                if (dataSet.attributes.info[colname].isDiscrete) { // if the attribute is discrete
-                    // Scale to group attirbutes 
-                    var values = this.dataSet.attributes.info[colname].distinctValues;
-                    nodeObject['bundle_group_' + colname] = values.indexOf(value.indexOf(Math.max.apply(Math, value)));
-
-                } else { // if the attribute is continuous
-                    // Scale to group attirbutes 
-                    var bundleGroupMap = d3.scale.linear().domain([min, max]).range([0, 9.99]); // use 9.99 instead of 10 to avoid a group of a single element (that has the max attribute value)
-                    var bundleGroup = bundleGroupMap(Math.max.apply(Math, value)); // group
-                    bundleGroup = Math.floor(bundleGroup);
-                    nodeObject['bundle_group_' + colname] = bundleGroup;
-                }
-            }
-            (<any>screenCoords).setFromMatrixPosition(obj.matrixWorld);
-            screenCoords.project(camera);
-
-            screenCoords.x = (screenCoords.x * widthHalf) + widthHalf;
-            screenCoords.y = - (screenCoords.y * heightHalf) + heightHalf;
-            nodeObject["x"] = screenCoords.x;
-            nodeObject["y"] = screenCoords.y;
-
-            this.nodes.push(nodeObject);
-        }
-
-        // Add Edges to SVG graph
-        for (var i = 0; i < colaGraph.edgeList.length; i++) {
-            var edge = colaGraph.edgeList[i];
-            if (edge.visible) {
-                var linkObject = new Object();
-                linkObject["colaGraphEdgeListIndex"] = i;
-                linkObject["color"] = edge.color;
-                linkObject["width"] = edge.shape.scale.x;
-
-                for (var j = 0; j < this.nodes.length; j++) {
-                    if (this.nodes[j].id == edge.sourceNode.userData.id) {
-                        linkObject["source"] = this.nodes[j];
-                        linkObject["x1"] = this.nodes[j].x;
-                        linkObject["y1"] = this.nodes[j].y;
-                    }
-                    if (this.nodes[j].id == edge.targetNode.userData.id) {
-                        linkObject["target"] = this.nodes[j];
-                        linkObject["x2"] = this.nodes[j].x;
-                        linkObject["y2"] = this.nodes[j].y;
-                    }
-                }
-
-                this.links.push(linkObject);
-            }
-        }
-
-
-        this.initSVGElements();
-        // Update graph layout position with animation
-        this.calculateLayout();
-        this.transitionalUpdate();
-    }
-
-    initSVGElements() {
-        var edgeDirectionMode = this.edgeDirectionMode;
-        var edgeColorMode = this.edgeColorMode;
-        var varDefs = this.svgDefs;
-        var varSvg = this.svg[0];
-        var varNS = varSvg[0].namespaceURI;
-        var varDefs = this.svgDefs;
-        
-        var link = this.svgAllElements.selectAll(".link")
-            .data(this.links)
-            .enter().append("line")
-            .attr("class", "link")
-            .attr("x1", function (d) { return d.x1; })
-            .attr("y1", function (d) { return d.y1; })
-            .attr("x2", function (d) { return d.x2; })
-            .attr("y2", function (d) { return d.y2; })
-            .style("stroke-width", function (d) { return d.width; })
-            .style("stroke", function (l) {
-                var sourceOpacity = 1, targetOpacity = 1;
-                var id = 'gradient_' + l.source.id + '_' + l.target.id;
-
-                if (edgeDirectionMode !== "opacity" && edgeDirectionMode !== "gradient" && edgeColorMode != "node") {
-                    return l.color;
-                } else if (l.source.color === l.target.color && edgeDirectionMode !== "opacity" && edgeDirectionMode !== "gradient" && edgeColorMode === "node") {
-                    return l.color = l.source.color;
-                }
-
-                if (edgeDirectionMode === "opacity") {
-                    sourceOpacity = 0;
-                    targetOpacity = 1;
-                }
-
-                if (edgeDirectionMode === "gradient") {
-                    var sourceColor = (String)(saveObj.edgeSettings.directionStartColor);
-                    var targetColor = (String)(saveObj.edgeSettings.directionEndColor);
-                } else if (edgeColorMode === "node") {
-                    var sourceColor = String(l.source.color);
-                    var targetColor = String(l.target.color);
-                } else {
-                    var sourceColor = String(l.color);
-                    var targetColor = String(l.color);
-                }
-
-                var sourceColorRGBA = CommonUtilities.hexToRgb(sourceColor, sourceOpacity).toString();
-                var targetColorRGBA = CommonUtilities.hexToRgb(targetColor, targetOpacity).toString();
-
-                var stops = [
-                    { 'stop-color': sourceColorRGBA },
-                    { offset: '100%', 'stop-color': targetColorRGBA }
-                ];
-
-
-                // Calculate Gradient Direction
-                var box = this.getBBox();
-
-                if (box.width > 5) {
-                    var x1 = (Number((this.getAttribute("x1")) - box.x) / box.width) * 100 + "%";
-                    var x2 = (Number((this.getAttribute("x2")) - box.x) / box.width) * 100 + "%";
-                } else {
-                    var x1 = "0%";
-                    var x2 = "0%";
-                }
-
-                if (box.height > 5) {
-                    var y1 = (Number((this.getAttribute("y1")) - box.y) / box.height) * 100 + "%";
-                    var y2 = (Number((this.getAttribute("y2")) - box.y) / box.height) * 100 + "%";
-                } else {
-                    var y1 = "0%";
-                    var y2 = "0%";
-                }
-
-
-                if ($("#" + id)[0]) $("#" + id)[0]["remove"]();
-                var grad = document.createElementNS(varNS, 'linearGradient');
-                grad.setAttribute('id', id);
-                grad.setAttribute('x1', x1);
-                grad.setAttribute('x2', x2);
-                grad.setAttribute('y1', y1);
-                grad.setAttribute('y2', y2);
-
-                for (var i = 0; i < stops.length; i++) {
-                    var attrs = stops[i];
-                    var stop = document.createElementNS(varNS, 'stop');
-                    for (var attr in attrs) {
-                        if (attrs.hasOwnProperty(attr)) stop.setAttribute(attr, attrs[attr]);
-                    }
-                    grad.appendChild(stop);
-                }
-                varDefs.appendChild(grad);
-
-                var gID = 'url(#' + id + ')';
-                l['gradientID'] = gID;
-                l.color = gID;
-
-                return l.color;
-            });
-
-        var varMouseOveredSetNodeID = (id) => { this.mouseOveredSetNodeID(id); }
-        var varMouseOutedSetNodeID = () => { this.mouseOutedSetNodeID(); }
-
-        var varMouseOveredNode = (d) => { this.mouseOveredNode(d); }
-        var varMouseOutedNode = (d) => { this.mouseOutedNode(d); }
-
-        // Node pie chart
-        var pie = d3.layout.pie();
-        var dot = d3.svg.arc()
-            .innerRadius(0)
-            .outerRadius(5);
-
-        var node = this.svgAllElements.selectAll(".node")
-            .data(this.nodes)
-            .enter().append("g")
-            .attr("class", "node")
-        //.attr("r", function (d) { return d.radius; })
-            .attr("transform", function (d) { return "translate(" + d.x + "," + d.y + " )"; })
-        //.style("fill", function (d) { return d.color; })
-            .on("mouseover", function (d) { varMouseOveredNode(d); varMouseOveredSetNodeID(d.id); })
-            .on("mouseout", function (d) { varMouseOutedNode(d); varMouseOutedSetNodeID(); })
-            .each(function (chartData) {
-                var colorAttr = saveObj.nodeSettings.nodeColorAttribute;
-                var attrArray = dataSet.attributes.get(colorAttr);
-                var group = d3.select(this);
-                group.selectAll("path").remove();
-                if (colorAttr === "" || colorAttr === "none") {
-                    group.selectAll(".path")
-                        .data(pie([1]))
-                        .enter().append('path')
-                        .attr("fill", function (d, i) { return "#d3d3d3"; })
-                        .attr("d", d3.svg.arc()
-                            .innerRadius(0)
-                            .outerRadius(chartData.radius));
-                } else {
-                    if (saveObj.nodeSettings.nodeColorMode === "discrete") {
-                        var distincts = dataSet.attributes.info[colorAttr].distinctValues;
-                        var colorMap = d3.scale.ordinal().domain(distincts).range(saveObj.nodeSettings.nodeColorDiscrete);
-                    } else {
-                        var columnIndex = dataSet.attributes.columnNames.indexOf(colorAttr);
-                        var min = dataSet.attributes.getMin(columnIndex);
-                        var max = dataSet.attributes.getMax(columnIndex);
-                        var minColor = saveObj.nodeSettings.nodeColorContinuousMin;
-                        var maxColor = saveObj.nodeSettings.nodeColorContinuousMax;
-                        var colorMap = d3.scale.linear().domain([min, max]).range([minColor, maxColor]);
-                    }
-                    if (dataSet.attributes.info[colorAttr].numElements === 1) {
-                        var color = chartData[colorAttr].map(function (val) {
-                            return colorMap(val).replace("0x", "#");
-                        });
-                    } else {
-                        var color = chartData[colorAttr].map(function (val, i) {
-                            return colorMap(i).replace("0x", "#");
-                        });
-                    }
-
-                    group.selectAll(".path")
-                        .data(function () {
-                            var tmp = chartData[colorAttr].map(function (val) { return val; });
-                            if (tmp.length === 1 && tmp[0] === 0) {
-                                return pie([1]);
-                            } else {
-                                return pie(tmp);
-                            }
-                        })
-                        .enter().append('path')
-                        .attr("fill", function (d, i) { return color[i]; })
-                        .style("stroke-width", 0)
-                        .attr("d", dot);
-                }
-
-            });
-
-        node.append("title")
-            .text(function (d) { return d.id; });
-
-        node.each(d=> d.width = d.height = d.radius * 2);
-
-        this.svgAllElements.attr("transform", "translate(0,0)");
-        this.d3Zoom.scale(1);
-        this.d3Zoom.translate([0, 0]);
-
-        
-    }
-
-    initSVGGraphWithoutCola(colaGraph: Graph3D) {
-        this.colorMode = colaGraph.colorMode;
-        this.directionMode = colaGraph.edgeDirectionMode;
-        var width = this.jDiv.width();
-        var height = this.jDiv.height() - sliderSpace;
-        var widthHalf = width / 2;
-        var heightHalf = height / 2;
-        var offsetx = 250;
-        var offsety = 0;
-        var initX = 3 / 5 * width;
-        var initY = 1 / 2 * height;
-
-        var unitRadius = 5;
-
-        this.nodes.splice(0, this.nodes.length);
-        this.links.splice(0, this.links.length);
-
-        var children = colaGraph.nodeMeshes;
-
-        // Add Nodes to SVG graph (Positions are based on the projected position of the 3D graphs
-        for (var i = 0; i < children.length; i++) {
-            var d = children[i].userData;
-
-            var nodeObject = new Object();
-            nodeObject["id"] = d.id;
-            nodeObject["color"] = "#".concat(colaGraph.nodeMeshes[d.id].material.color.getHexString());
-            nodeObject["radius"] = colaGraph.nodeMeshes[d.id].scale.x * unitRadius;
-
-            // for every attributes
-            for (var j = 0; j < this.dataSet.attributes.columnNames.length; j++) {
-
-                var colname = this.dataSet.attributes.columnNames[j];
-                var value = this.dataSet.attributes.get(colname)[d.id];
-                nodeObject[colname] = value;
-
-                // add a special property for module id
-                if (colname == 'module_id') {
-                    nodeObject['moduleID'] = this.dataSet.attributes.get(colname)[d.id];
-                }
-
-                //  Get domain of the attributes (assume all positive numbers in the array)
-                var columnIndex = this.dataSet.attributes.columnNames.indexOf(colname);
-                var min = this.dataSet.attributes.getMin(columnIndex);
-                var max = this.dataSet.attributes.getMax(columnIndex);
-
-                // Scale value to between 0.05 to 1 
-                var attrMap = d3.scale.linear().domain([min, max]).range([0.05, 1]);
-                var scalevalue = attrMap(Math.max.apply(Math, value));
-                nodeObject['scale_' + colname] = scalevalue;
-
-                if (this.dataSet.attributes.info[colname].isDiscrete) { // if the attribute is discrete
-                    // Scale to group attirbutes 
-                    var values = this.dataSet.attributes.info[colname].distinctValues;
-                    nodeObject['bundle_group_' + colname] = values.indexOf(value.indexOf(Math.max.apply(Math, value)));
-
-                } else { // if the attribute is continuous
-                    // Scale to group attirbutes 
-                    var bundleGroupMap = d3.scale.linear().domain([min, max]).range([0, 9.99]); // use 9.99 instead of 10 to avoid a group of a single element (that has the max attribute value)
-                    var bundleGroup = bundleGroupMap(Math.max.apply(Math, value)); // group
-                    bundleGroup = Math.floor(bundleGroup);
-                    nodeObject['bundle_group_' + colname] = bundleGroup;
-                }
-            }
-            nodeObject["x"] = initX;
-            nodeObject["y"] = initY;
-
-            this.nodes.push(nodeObject);
-        }
-
-        // Add Edges to SVG graph
-        for (var i = 0; i < colaGraph.edgeList.length; i++) {
-            var edge = colaGraph.edgeList[i];
-            if (edge.visible) {
-                var linkObject = new Object();
-                linkObject["colaGraphEdgeListIndex"] = i;
-                linkObject["color"] = edge.color;
-                linkObject["width"] = edge.shape.scale.x;
-
-                for (var j = 0; j < this.nodes.length; j++) {
-                    if (this.nodes[j].id == edge.sourceNode.userData.id) {
-                        linkObject["source"] = this.nodes[j];
-                        linkObject["x1"] = this.nodes[j].x;
-                        linkObject["y1"] = this.nodes[j].y;
-                    }
-
-                    if (this.nodes[j].id == edge.targetNode.userData.id) {
-                        linkObject["target"] = this.nodes[j];
-                        linkObject["x2"] = this.nodes[j].x;
-                        linkObject["y2"] = this.nodes[j].y;
-                    }
-                }
-
-                this.links.push(linkObject);
-            }
-        }
-
-
-        this.initSVGElements();
-        // Update graph layout position with animation
-        this.calculateLayout();
-        this.transitionalUpdate();
-
-    }
-
-    calculateLayout() {
-        var calDiameter = function (x) {
-            // Solve triangle number for n (hexagon diameter)
-            return Math.floor((-1 + Math.sqrt(1 + 8*x))/2)
-        }
-        var radius = 10;
-        var baseLength = this.edgeBaseLength;
-        var lengthScale = this.edgeLengthScale;
-        var groupBy = this.groupNodesBy;
-
-        // calculate packing layout
-        if (groupBy !== "none") {
-            var circlePacking = d3.layout.pack()
-                .sort(null)
-                .radius(radius)
-                .padding(1.5)
-                //.margin(10);
-
-            // Group nodes according to attribute
-            var groupMap = {};
-            var groupJson = [];
-            var groupLinkJson = [];
-
-            this.nodes.forEach(function (v, i) {
-                var values = v[groupBy];
-                var group = "";
-                var attrCount = 0;
-                var isSingle = true;
-
-                // define groups
-                if (values.length === 1) {
-                    group += values[0];
-                    attrCount++;
-                } else {
-                    values.forEach(function (v, i) {
-                        if (v > 0) {
-                            attrCount++;
-                            group += i + "-";
-                        }
-                    });
-
-                    group = group.substring(0, group.length - 1);
-                }
-
-                isSingle = (attrCount === 1);
-
-                if (typeof groupMap[group] == 'undefined') {
-                    groupMap[group] = { children: [], isSingle: isSingle};
-                }
-
-                // Add node to the group
-                v.value = 5; // value attribute is required by circle packing layout
-                groupMap[group].children.push(v);
-            });
-
-            // Add every groups into an array
-            var counter = 0;
-            for (var g in groupMap) {
-                groupJson.push({
-                    id: counter,
-                    width: (calDiameter(groupMap[g].children.length) + 1) * radius * 2,
-                    height: (calDiameter(groupMap[g].children.length) + 1) * radius * 2,
-                    name: groupMap[g].name
-                });
-                groupMap[g].index = counter;
-
-                groupMap[g].children.forEach(function (v, i) {
-                    v.groupID = counter;
-                    v.isSingle = groupMap[g].isSingle;
-                });
-                // Calculate node's poitions for each group
-                circlePacking.nodes(groupMap[g]);
-
-                counter++;
-            }
-
-            // Find connections between modules. 
-            
-            for (var g in groupMap) {
-                var relatedGroups = g.split("-");
-
-                if (relatedGroups.length !== 1) {
-                    relatedGroups.forEach(function (rg) {
-                        if (typeof groupMap[rg] === "undefined") return;
-                        groupLinkJson.push({
-                            source: groupMap[g].index,
-                            target: groupMap[rg].index,
-                            value: 1
-                        })
-                    });
-                    
-                }
-            }
-            if (groupLinkJson.length === 0) {
-                var linkMap = {};
-                var nodes = this.nodes;
-                this.links.forEach(function (v, i) {
-                    if (v.source.groupID === v.target.groupID) return;
-
-                    var linkID = "";
-                    if (v.source.groupID > v.target.groupID) {
-                        linkID = v.source.groupID + "-" + v.target.groupID;
-                    } else {
-                        linkID = v.target.groupID + "-" + v.source.groupID;
-                    }
-
-                    if (typeof linkMap[linkID] === "undefined") {
-                        linkMap[linkID] = {
-                            source: v.source.groupID,
-                            target: v.target.groupID,
-                            value: 1
-                        }
-                } else {
-                        linkMap[linkID].value++;
-                    }
-                });
-
-                for (var l in linkMap) {
-                    groupLinkJson.push(linkMap[l]);
-                }
-            }
-
-            var cola2D = colans.d3adaptor()
-                .size([this.jDiv.width(), this.jDiv.height() - sliderSpace]);
-
-            cola2D
-                .handleDisconnected(true)
-                .avoidOverlaps(true)
-                .nodes(groupJson)
-                .links(groupLinkJson)
-                .linkDistance(function (l) {
-                    return baseLength * lengthScale * 5;
-                })
-            cola2D.start(30, 0, 30);
-
-            // Translate Nodes to perspective group
-            this.nodes.forEach(function (v, i) {
-                v.x += groupJson[v.groupID].x;
-                v.y += groupJson[v.groupID].y;
-            });
-        } else {
-
-            var cola2D = colans.d3adaptor()
-                .size([this.jDiv.width(), this.jDiv.height() - sliderSpace]);
-
-            cola2D
-                .handleDisconnected(true)
-                .avoidOverlaps(true)
-                .nodes(this.nodes)
-                .links(this.links)
-                .linkDistance(function () {
-                    return lengthScale * baseLength;
-                })
-
-            if (this.isFlowLayoutOn) {
-                    cola2D
-                        .flowLayout('y', 10)
-            }
-
-            cola2D.start(30, 0, 30);
-
-        }
-    }
-
-    settingOnChange() {
-        var lengthScale = this.edgeLengthScale
-        var baseLength = this.edgeBaseLength;
-        var isOn = this.isFlowLayoutOn;
-        var groupBy = this.groupNodesBy;
-
-        var width = this.jDiv.width();
-        var height = this.jDiv.height() - sliderSpace;
-        var widthHalf = width / 2;
-        var heightHalf = height / 2;
-        var screenCoords = new THREE.Vector3();
-        var unitRadius = 5;
-
-        var edgeColorMode = this.colorMode;
-        var edgeDirectionMode = this.directionMode;
-        var varSvg = this.svg[0];
-        var varNS = varSvg[0].namespaceURI;
-        var varDefs = this.svgDefs;
-
-      
-
-        // Update data of the visualisation
-
-
-        // Cola require width and height of each element 
-        this.nodes.forEach(function (e) {
-            e.width = e.height = e.radius * 2;
-            e.r = e.radius;
-        });
-
-        this.svgAllElements.attr("transform", "translate(0,0)");
-        this.d3Zoom.scale(1);
-        this.d3Zoom.translate([0, 0]);
-
-        this.calculateLayout();
-        this.transitionalUpdate();
-    }
-
-    updateLabels(isShownLabel: boolean) {
-        if (isShownLabel) {
-            this.svgAllElements.selectAll(".nodeLabel")
-                .style("visibility", "visible");
-        }
-        else {
-            this.svgAllElements.selectAll(".nodeLabel")
-                .style("visibility", "hidden");
-        }
-    }
-
-    mouseOveredSetNodeID(id) {
-        this.commonData.nodeIDUnderPointer[4] = id;
-    }
-
-    
-
-    mouseOutedSetNodeID() {
-        this.commonData.nodeIDUnderPointer[4] = -1;
-    }
-
-    mouseOutedNode(d) {
-        var selectedID = this.commonData.selectedNode;
-        if (selectedID == -1) {
-            this.svgAllElements.selectAll(".link")
-                .style("stroke-width", "1px")
-                .style("stroke-opacity", 1);
-
-            this.svgAllElements.selectAll(".node")
-                .style("opacity", 1);
-
-        } else {
-            // Reseting All nodes source and target
-            this.svgAllElements.selectAll(".node")
-                .each(function (n) { n.target = n.source = false; }); // For every node in the graph
-
-            var varEdgeColorMode = this.edgeColorMode;
-            this.svgAllElements.selectAll(".link")
-                .style("stroke-width", function (l) {
-                    // if the link is associated with the selected node in anyway (source or target)
-                    if (l.source.id === selectedID) { l.source.source = true; l.target.target = true; }
-                    if (l.target.id === selectedID) { l.source.source = true; l.target.target = true; }
-
-                    // Reassign line width to all links base on the given information
-                    if (l.source.id == selectedID || l.target.id == selectedID) {
-                        return "3px";
-                    }
-                    else {
-                        return "1px";
-                    }
-                })
-                .style("stroke-opacity", function (l) {
-                    if (l.source.id == selectedID || l.target.id == selectedID) {
-                        return 1;
-                    } else {
-                        return 0.2;
-                    }
-                });
-
-           
-            this.svgAllElements.selectAll(".node")
-                .style("opacity", function (n) {
-                    if (n.target || n.source) {
-                        return 1;
-                    } else {
-                        return 0.2;
-                    }
-                });;
-
-        }
-
-    }
-
-    mouseOveredNode(d) { // d: contain the node's info 
-
-        var selectedID = this.commonData.selectedNode;
-
-        // Reseting All nodes source and target
-        this.svgAllElements.selectAll(".node")
-            .each(function (n,i) {
-                n.index = i;
-                n.target = n.source = false;
-            }); // For every node in the graph
-
-        var varEdgeColorMode = this.edgeColorMode;
-        this.svgAllElements.selectAll(".link")
-            .style("stroke-width", function (l) {
-                // if the link is associated with the selected node in anyway (source or target)
-                if (l.target.id === d.id) { l.target.source = true; l.source.target = true; }
-                if (l.source.id === d.id) { l.source.source = true; l.target.target = true; }
-                if (l.source.id === selectedID) { l.source.source = true; l.target.target = true; }
-                if (l.target.id === selectedID) { l.source.source = true; l.target.target = true; }
-
-                // Reassign line width to all links base on the given information
-                if (l.target === d || l.source === d || l.source.id === selectedID || l.target.id === selectedID) {
-                    return "3px";
-                }
-                else {
-                    return "1px";
-                }
-            })
-            .style("stroke-opacity", function (l) {
-                if (l.target === d || l.source === d || l.source.id === selectedID || l.target.id === selectedID) {
-                    return 1;
-                } else {
-                    return 0.2;
-                }
-            });
-
-        this.svgAllElements.selectAll(".node")
-            .style("opacity", function (n) {
-                if (n.target || n.source) {
-                    return 1;
-                } else {
-                    return 0.2;
-                }
-            });
-        }
-
-
-    clear() {
-        this.nodes = [];
-        this.links = [];
-        var node = this.svgAllElements.selectAll(".node").data(new Array());
-        var link = this.svgAllElements.selectAll(".link").data(new Array());
-        var nodeLabel = this.svgAllElements.selectAll(".nodeLabel").data(new Array());
-        var groupRect = this.svgAllElements.selectAll(".group").data(new Array());
-
-        node.exit().remove();
-        link.exit().remove();
-        nodeLabel.exit().remove();
-        groupRect.exit().remove();
-    }
-
-    updateEdgeColorMode(colorMode: string) {
-        this.isEdgeColorChanged = true;
-        this.colorMode = colorMode;
-    }
-
-
-    updateEdgeDirectionMode(directionMode: string) {
-        if (this.directionMode === directionMode) return;
-        // remove old direction mode 
-        if (this.directionMode === "arrow") {
-            this.toggleDirectionArrow(false);
-        } else if (this.directionMode === "ansimation") {
-            // ignore
-        } else if (this.directionMode === "opacity") {
-            // ignore (handled by update method)
-        }
-
-        // Apply new direction mode
-        if (directionMode === "arrow") {
-            this.toggleDirectionArrow(true);
-        } else if (directionMode === "animation") {
-            // ignore
-        } else if (directionMode === "opacity") {
-            // ignore (handled by update method)
-        }
-
-        this.directionMode = directionMode;
-        this.isEdgeColorChanged = true;
-    }
-
-    updateEdgeColor() {
-        var edgeColorMode = this.colorMode;
-        var edgeDirectionMode = this.directionMode;
-        var varSvg = this.svg[0];
-        var varNS = varSvg[0].namespaceURI;
-        var varDefs = this.svgDefs;
-
-        var link = this.svgAllElements.selectAll(".link")
-            .style("stroke", function (l) {
-
-                var sourceOpacity = 1, targetOpacity = 1;
-                var id = 'gradient_' + l.source.id + '_' + l.target.id;
-
-                if (edgeDirectionMode !== "opacity" && edgeDirectionMode !== "gradient" && edgeColorMode != "node") {
-                    return l.color;
-                } else if (l.source.color === l.target.color && edgeDirectionMode !== "opacity" && edgeDirectionMode !== "gradient" && edgeColorMode === "node") {
-                    return l.color = l.source.color;
-                }
-
-                if (edgeDirectionMode === "opacity") {
-                    sourceOpacity = 0;
-                    targetOpacity = 1;
-                }
-
-                if (edgeDirectionMode === "gradient") {
-                    var sourceColor = (String)(saveObj.edgeSettings.directionStartColor);
-                    var targetColor = (String)(saveObj.edgeSettings.directionEndColor);
-                } else if (edgeColorMode === "node") {
-                    var sourceColor = String(l.source.color);
-                    var targetColor = String(l.target.color);
-                } else {
-                    var sourceColor = String(l.color);
-                    var targetColor = String(l.color);
-                }
-
-                var sourceColorRGBA = CommonUtilities.hexToRgb(sourceColor, sourceOpacity).toString();
-                var targetColorRGBA = CommonUtilities.hexToRgb(targetColor, targetOpacity).toString();
-                var stops = [
-                    { offset: '0%', 'stop-color': sourceColorRGBA },
-                    { offset: '100%', 'stop-color': targetColorRGBA }
-                ];
-
-                // Calculate Gradient Direction
-                var box = this.getBBox();
-
-                if (box.width > 5) {
-                    var x1 = (Number((this.getAttribute("x1")) - box.x) / box.width) * 100 + "%";
-                    var x2 = (Number((this.getAttribute("x2")) - box.x) / box.width) * 100 + "%";
-                } else {
-                    var x1 = "0%";
-                    var x2 = "0%";
-                }
-
-                if (box.height > 5) {
-                    var y1 = (Number((this.getAttribute("y1")) - box.y) / box.height) * 100 + "%";
-                    var y2 = (Number((this.getAttribute("y2")) - box.y) / box.height) * 100 + "%";
-                } else {
-                    var y1 = "0%";
-                    var y2 = "0%";
-                }
-
-
-                if ($("#" + id)[0]) $("#" + id)[0]["remove"]();
-                var grad = document.createElementNS(varNS, 'linearGradient');
-                grad.setAttribute('id', id);
-                grad.setAttribute('x1', x1);
-                grad.setAttribute('x2', x2);
-                grad.setAttribute('y1', y1);
-                grad.setAttribute('y2', y2);
-
-                for (var i = 0; i < stops.length; i++) {
-                    var attrs = stops[i];
-                    var stop = document.createElementNS(varNS, 'stop');
-                    for (var attr in attrs) {
-                        if (attrs.hasOwnProperty(attr)) stop.setAttribute(attr, attrs[attr]);
-                    }
-                    grad.appendChild(stop);
-                }
-                varDefs.appendChild(grad);
-
-                var gID = 'url(#' + id + ')';
-                l['gradientID'] = gID;
-                l.color = gID;
-
-                return l.color;
-            });
-
-        this.isEdgeColorChanged = false;
-    }
-
-    // NOTE: THIS USED TO BE ANIMATED. WE REMOVED THE ANIMATION SO THE "TRANSITION" CODE IS A KINDA POINTLESS ZERO DURATION ONE.
-    transitionalUpdate() {
-
-        var offsetx = 250;
-        var offsety = 0;
-
-        var node = this.svgAllElements.selectAll(".node").data(this.nodes);
-        this.nodes.forEach(d=> {
-        });
-        node.each(d=> {
-            d.x += offsetx;
-            d.y += offsety;
-        });
-        node.each(d=> d.width = d.height = d.radius * 2);
-        node.transition().duration(0) // zero duration; don't animate
-            .attr("transform", function (d) { return "translate(" + d.x + "," + d.y + " )"; });
-
-        var link = this.svgAllElements.selectAll(".link").data(this.links)
-        var nodes = this.nodes;
-        link.transition().duration(0)
-            .attr("x1", function (d) {
-                if (typeof d.source === "object") {
-                    return d.source.x;
-                } else {
-                    return nodes[d.source].x;
-                }
-            })
-            .attr("y1", function (d) {
-                if (typeof d.source === "object") {
-                    return d.source.y;
-                } else {
-                    return nodes[d.source].y;
-                }
-            })
-            .attr("x2", function (d) {
-                if (typeof d.target === "object") {
-                    return d.target.x;
-                } else {
-                    return nodes[d.target].x;
-                }
-            })
-            .attr("y2", function (d) {
-                if (typeof d.target === "object") {
-                    return d.target.y;
-                } else {
-                    return nodes[d.target].y;
-                }
-            });
-
-        // update the this.svgNodeArray
-        var colaNodeData = this.svgAllElements.selectAll(".node").data();
-        for (var i = 0; i < colaNodeData.length; i++) {
-            this.nodes[i].x = colaNodeData[i].x;
-            this.nodes[i].y = colaNodeData[i].y;
-        }
-
-        // node label
-        var svgLabelArray = [];
-        var colaNodeData = this.svgAllElements.selectAll(".node").data();
-        for (var i = 0; i < colaNodeData.length; i++) {
-            var labelObject = new Object();
-            labelObject["x"] = colaNodeData[i].x;
-            labelObject["y"] = colaNodeData[i].y;
-            labelObject["id"] = colaNodeData[i].id;
-            labelObject["label"] = colaNodeData[i].label;
-            labelObject["node_radius"] = colaNodeData[i].radius;
-            svgLabelArray.push(labelObject);
-        }
-
-        var labelJson = JSON.parse(JSON.stringify(svgLabelArray));
-
-        var nodeLable = this.svgAllElements.selectAll(".nodeLabel")
-            .data(labelJson)
-            .enter().append("text")
-            .attr("class", "nodeLabel")
-            .attr("x", function (d) { return d.x + 3.5; })
-            .attr("y", function (d) { return d.y - 3.5; })
-            .text(function (d) { return d.label; })
-            .style("visibility", "hidden");
-    }
-
-    update(colaGraph: Graph3D, isShownLabel: boolean) {
-
-        var unitRadius = 5;
-
-        for (var i = 0; i < this.nodes.length; i++) {
-            var id = this.nodes[i].id;
-            this.nodes[i].color = "#".concat(colaGraph.nodeMeshes[id].material.color.getHexString());
-            this.nodes[i].radius = colaGraph.nodeMeshes[id].scale.x * unitRadius;
-        }
-
-        for (var i = 0; i < this.links.length; i++) {
-            var index = this.links[i].colaGraphEdgeListIndex;
-            var edge = colaGraph.edgeList[index];
-            this.links[i].color = edge.color;
-            this.links[i].width = edge.shape.scale.x;
-        }
-
-
-        var link = this.svgAllElements.selectAll(".link")
-            .data(this.links)
-            .style("stroke-width", function (d) { return d.width; });
-
-        if (this.isEdgeColorChanged) {
-            this.updateEdgeColor();
-        }
-
-        // Node pie chart
-        var pie = d3.layout.pie();
-        var dot = d3.svg.arc()
-            .innerRadius(0)
-            .outerRadius(5);
-
-        var node = this.svgAllElements.selectAll(".node")
-            .data(this.nodes)
-            .attr("r", function (d) { return d.radius; })
-            .each(function (chartData) {
-                var colorAttr = saveObj.nodeSettings.nodeColorAttribute;
-                var attrArray = dataSet.attributes.get(colorAttr);
-                var group = d3.select(this);
-                group.selectAll("path").remove();
-                if (colorAttr === "" || colorAttr === "none") {
-                    group.selectAll(".path")
-                        .data(pie([1]))
-                        .enter().append('path')
-                        .attr("fill", function (d, i) { return "#d3d3d3"; })
-                        .attr("id", "testing")
-                        .attr("d", d3.svg.arc()
-                            .innerRadius(0)
-                            .outerRadius(chartData.radius));
-
-                } else {
-
-                    if (saveObj.nodeSettings.nodeColorMode === "discrete") {
-                        var distincts = dataSet.attributes.info[colorAttr].distinctValues;
-                        var colorMap = d3.scale.ordinal().domain(distincts).range(saveObj.nodeSettings.nodeColorDiscrete);
-                    } else {
-                        var columnIndex = dataSet.attributes.columnNames.indexOf(colorAttr);
-                        var min = dataSet.attributes.getMin(columnIndex);
-                        var max = dataSet.attributes.getMax(columnIndex);
-                        var minColor = saveObj.nodeSettings.nodeColorContinuousMin;
-                        var maxColor = saveObj.nodeSettings.nodeColorContinuousMax;
-                        var colorMap = d3.scale.linear().domain([min, max]).range([minColor, maxColor]);
-                    }
-                    if (dataSet.attributes.info[colorAttr].numElements === 1) {
-                        var color = chartData[colorAttr].map(function (val) {
-                            return colorMap(val).replace("0x", "#");
-                        });
-                    } else {
-                        var color = chartData[colorAttr].map(function (val, i) {
-                            return colorMap(i).replace("0x", "#");
-                        });
-                    }
-
-                    group.selectAll(".path")
-                        .data(function () {
-                            var tmp = chartData[colorAttr].map(function (val) { return val; });
-                            if (tmp.length === 1 && tmp[0] === 0) {
-                                return pie([1]);
-                            } else {
-                                return pie(tmp);
-                            }   
-                        })
-                        .enter().append('path')
-                        .attr("fill", function (d, i) { return color[i]; })
-                        .style("stroke-width", 0)
-                        .attr("d", d3.svg.arc()
-                            .innerRadius(0)
-                            .outerRadius(chartData.radius));
-                }
-            });
-
-        // node labels
-        if (isShownLabel) {
-            this.svgAllElements.selectAll(".nodeLabel")
-                .style("visibility", "visible");
-        }
-        else {
-            this.svgAllElements.selectAll(".nodeLabel")
-                .style("visibility", "hidden");
-        }
-
-        var svgLabelArray = [];
-        var colaNodeData = this.svgAllElements.selectAll(".node").data();
-        for (var i = 0; i < colaNodeData.length; i++) {
-            var labelObject = new Object();
-            labelObject["x"] = colaNodeData[i].x;
-            labelObject["y"] = colaNodeData[i].y;
-            labelObject["id"] = colaNodeData[i].id;
-            labelObject["label"] = colaNodeData[i].label;
-            labelObject["node_radius"] = colaNodeData[i].radius;
-            svgLabelArray.push(labelObject);
-        }
-
-        var labelJson = JSON.parse(JSON.stringify(svgLabelArray));
-
-        var scale = this.d3Zoom.scale();
-        var defaultFontSize = 10;
-        var fontSize = defaultFontSize;
-        if (scale >= 1) {
-            fontSize = Math.ceil(defaultFontSize / scale);
-        }
-
-        var nodeLable = this.svgAllElements.selectAll(".nodeLabel")
-            .data(labelJson)
-            .style("font-size", fontSize + 'px');
-
-        nodeLable.each(function (d) {
-            var box = this.getBBox();
-            var width = box.width;
-            var height = box.height;
-
-            if ((box.width <= d.node_radius * 2) && (box.height <= d.node_radius * 2)) {
-                d.x -= box.width / 2;
-                d.y += (box.height / 2 - 1);
-            }
-            else {
-                d.x += 3.5;
-                d.y -= 3.5;
-            }
-        });
-
-        nodeLable
-            .attr("x", function (d) { return d.x; })
-            .attr("y", function (d) { return d.y; });
-    }
 }
