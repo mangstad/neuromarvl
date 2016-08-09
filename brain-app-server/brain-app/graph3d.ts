@@ -116,6 +116,8 @@ class Graph3D {
         if (len > 0) adjMatrix[len - 1][len - 1] = null;
 
         this.edgeMatrix = adjMatrix;
+
+        console.log("Graph3D", this.parentObject.id, this);
     }
 
     
@@ -135,6 +137,7 @@ class Graph3D {
 
 
     generateSprite(nodeColouring: number) {
+        // TODO: This isn't currently being used, but could be useful if using sprites for nodes, so multimodule pies are possible
         var canvas = document.createElement('canvas');
         canvas.width = 64;
         canvas.height = 64;
@@ -501,22 +504,18 @@ class Graph3D {
 
             }
         } else if (colorMode === "node") {
-
             for (var i = 0; i < this.edgeList.length; i++) {
                 var edge = this.edgeList[i];
                 edge.colorMode = colorMode;
                 edge.isColorChanged = true;
             }
-        } else if (colorMode === "none") {
+        } else {        // (colorMode === "none")
             for (var i = 0; i < this.edgeList.length; i++) {
                 var edge = this.edgeList[i];
                 edge.colorMode = colorMode;
                 edge.isColorChanged = true;
             }
         }
-
-
-
     }
 
 
@@ -532,14 +531,12 @@ class Graph3D {
         }
         // reset Edges' Visibilities 
         for (var i = 0; i < len - 1; ++i) {
-
             for (var j = i + 1; j < len; ++j) {
                 if (this.edgeMatrix[i][j] || this.edgeMatrix[j][i]) {
                     var edge = (this.edgeMatrix[i][j]) ? this.edgeMatrix[i][j] : this.edgeMatrix[j][i];
 
                     if (this.filteredNodeIDs && ((this.filteredNodeIDs.indexOf(i) == -1) || (this.filteredNodeIDs.indexOf(j) == -1))) {
                         edge.setVisible(false);
-
                     } else if (visMatrix[i][j] === 1 || visMatrix[j][i] === 1) {
                         this.nodeMeshes[i].userData.hasVisibleEdges = true;
                         this.nodeMeshes[j].userData.hasVisibleEdges = true;
@@ -562,10 +559,8 @@ class Graph3D {
         }
 
         if (this.colorMode === "weight") {
-
             // update edges' color map
             this.setEdgeColorConfig(this.colorMode, this.edgeColorConfig);
-
         } else {
             this.setEdgeColorConfig(this.colorMode);
         }
@@ -637,13 +632,10 @@ class Graph3D {
         if (colorArray.length != this.nodeMeshes.length) {
             throw "ERROR: ColorArray (" + colorArray.length + ") and NodeMeshes (" + this.nodeMeshes.length + ") do not match";
         }
-        //this.nodeCurrentColor = colorArray.slice(0); // clone the array
         this.nodeCurrentColor = colorArray.map(a => this.averageColor(a)); // Use average colour
 
         for (var i = 0; i < this.nodeMeshes.length; ++i) {
-            //this.nodeMeshes[i].material.color.setHex(colorArray[i]);
             this.nodeMeshes[i].material.color.set(this.nodeCurrentColor[i]);
-            //this.nodeMeshes[i].userData.colors = [{ color: colorArray[i], portion: 1 }];
             this.nodeMeshes[i].userData.colors = colorArray[i];
         }
 
@@ -728,7 +720,7 @@ class Graph3D {
 
     update() {
         var weightEdges = this.edgeThicknessByWeight;
-        this.edgeList.forEach(function (edge) {
+        this.edgeList.forEach(edge => {
             edge.update(weightEdges);
         });
     }
@@ -861,8 +853,7 @@ class Edge {
     }
 
 
-    initializeCylinder() {
-
+    initializeCylinder() {        
         this.geometry = new THREE.CylinderGeometry(this.unitRadius, this.unitRadius, this.unitLength, 12);
         this.cone = new THREE.CylinderGeometry(this.unitRadius, this.unitRadius * 3, this.unitLength / 5, 12);
         // Material 
@@ -890,6 +881,7 @@ class Edge {
         this.shape.add(this.pointer);
 
     }
+
     initializeLine() {
         this.geometry = new THREE.Geometry();
         this.geometry.vertices.push(
@@ -922,6 +914,7 @@ class Edge {
         this.shape.add(this.pointer);
 
     }
+
     setOpacity(startOpacity, endOpacity) {
         this.uniforms.startOpacity.value = startOpacity;
         this.uniforms.endOpacity.value = endOpacity;
@@ -1021,10 +1014,10 @@ class Edge {
      
         var length = targetVec.length();
 
-        if (length === 0) {
-            this.parentObject.remove(this.shape);
-            return;
-        }
+        //if (length === 0) {
+        //    this.parentObject.remove(this.shape);
+        //    return;
+        //}
 
         this.shape.scale.set(scale, length / this.unitLength, scale);
         targetVec.normalize();

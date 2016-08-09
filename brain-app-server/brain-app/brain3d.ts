@@ -422,7 +422,7 @@ class Brain3DApp implements Application, Loopable {
             )
 
             // Show Network button
-            .append($('<button id="button-show-network-' + this.id + ' data-toggle="tooltip" data-placement="top" title="Show side-by-side graph representation">Show Network</button>')
+            .append($('<button id="button-show-network-' + this.id + ' data-toggle="tooltip" data-placement="top" title="Show or update the side-by-side graph representation">Show/Update Network</button>')
                 .css({ 'margin-left': '10px', 'font-size': '12px', 'position': 'relative', 'z-index': 1000 })
                 .click(function () { varShowNetwork(false); })
             )
