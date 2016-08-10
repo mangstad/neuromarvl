@@ -535,11 +535,13 @@ class Graph2D {
     }
 
     menuButtonOnClick() {
-        var l = $('#button-graph2d-option-menu-' + this.id).position().left + 5;
-        var t = $('#button-graph2d-option-menu-' + this.id).position().top - $('#div-graph2d-layout-menu-' + this.id).height() - 15;
+        let l = $('#button-graph2d-option-menu-' + this.id).position().left + 5;
+        //var t = $('#button-graph2d-option-menu-' + this.id).position().top - $('#div-graph2d-layout-menu-' + this.id).height() - 15;
+        let b = $('#button-graph2d-option-menu-' + this.id).outerHeight();
         
         $('#div-graph2d-layout-menu-' + this.id).zIndex(1000);
-        $('#div-graph2d-layout-menu-' + this.id).css({ left: l, top: t, height: 'auto' });
+        //$('#div-graph2d-layout-menu-' + this.id).css({ left: l, top: t, height: 'auto' });
+        $('#div-graph2d-layout-menu-' + this.id).css({ left: l, bottom: b, height: 'auto' });
         $('#div-graph2d-layout-menu-' + this.id).fadeToggle('fast');
     }
 
@@ -590,38 +592,6 @@ class Graph2D {
             }));
 
         //------------------------------------------------------------------------
-        // menu - scale
-        $('#div-graph2d-layout-menu-' + this.id).append('<div>Scale elements<div/>');
-        $('#div-graph2d-layout-menu-' + this.id).append($('<input id="div-scale-slider-alt-' + this.id + '" class=' + this.graph2DClass + 'data-slider-id="surface-opacity-slider" type="text"' +
-            'data-slider-min="1" data-slider-max="10" data-slider-step="0.5" data-slider-value="5" />')
-            .css({ 'position': 'relative', 'width': '150px' }));
-
-        $("#div-scale-slider-alt-" + this.id)['bootstrapSlider']();
-        $("#div-scale-slider-alt-" + this.id)['bootstrapSlider']().on('change', varEdgeLengthOnChange);
-        
-
-        // menu - group nodes
-        $('#div-graph2d-layout-menu-' + this.id).append('<div id="div-graph2d-group-' + this.id + '">bundle: </div>');
-        $('#div-graph2d-group-' + this.id).append($('<select id="select-graph2d-group-' + this.id + '" class=' + this.graph2DClass + '></select>')
-            .css({ 'margin-left': '5px', 'margin-bottom': '5px', 'font-size': '12px', 'width': '80px', 'background-color': '#feeebd' })
-            .on("change", function () { varGroupNodesOnChange($(this).val()); }));
-
-        $('#select-graph2d-group-' + this.id).empty();
-
-        var option = document.createElement('option');
-        option.text = 'none';
-        option.value = 'none';
-        $('#select-graph2d-group-' + this.id).append(option);
-
-        // Add descrete attribute to list
-        for (var i = 0; i < this.dataSet.attributes.columnNames.length; ++i) {
-            var columnName = this.dataSet.attributes.columnNames[i];
-            if (this.dataSet.attributes.info[columnName].isDiscrete) {
-                $('#select-graph2d-group-' + this.id).append('<option value = "' + columnName + '">' + columnName + '</option>');
-            }
-
-        }
-        
         // menu - layouts
         $('#div-graph2d-layout-menu-' + this.id).append('<div id="div-graph2d-layout-' + this.id + '">layout: </div>');
         $('#div-graph2d-layout-' + this.id).append($('<select id="select-graph2d-layout-' + this.id + '" class=' + this.graph2DClass + '></select>')
@@ -638,6 +608,43 @@ class Graph2D {
             $('#select-graph2d-layout-' + this.id).append(option);
         }
         (<any>document.getElementById("select-graph2d-layout-" + this.id)).value = this.layout;
+
+
+        // menu - group nodes
+        $('#div-graph2d-layout-menu-' + this.id).append('<div id="div-graph2d-group-' + this.id + '">bundle: </div>');
+        $('#div-graph2d-group-' + this.id).append(
+            $('<select id="select-graph2d-group-' + this.id + '" class=' + this.graph2DClass + '></select>')
+                .css({ 'margin-left': '5px', 'margin-bottom': '5px', 'font-size': '12px', 'width': '80px', 'background-color': '#feeebd' })
+                .on("change", function () { varGroupNodesOnChange($(this).val()); })
+        );
+
+        $('#select-graph2d-group-' + this.id).empty();
+
+        var option = document.createElement('option');
+        option.text = 'none';
+        option.value = 'none';
+        $('#select-graph2d-group-' + this.id).append(option);
+
+        // Add descrete attribute to list
+        for (var i = 0; i < this.dataSet.attributes.columnNames.length; ++i) {
+            var columnName = this.dataSet.attributes.columnNames[i];
+            if (this.dataSet.attributes.info[columnName].isDiscrete) {
+                $('#select-graph2d-group-' + this.id).append('<option value = "' + columnName + '">' + columnName + '</option>');
+            }
+
+        }
+
+
+        // menu - scale
+        $('#div-graph2d-layout-menu-' + this.id).append('<div>Scale elements<div/>');
+        $('#div-graph2d-layout-menu-' + this.id).append($('<input id="div-scale-slider-alt-' + this.id + '" class=' + this.graph2DClass + 'data-slider-id="surface-opacity-slider" type="text"' +
+            'data-slider-min="1" data-slider-max="10" data-slider-step="0.5" data-slider-value="5" />')
+            .css({ 'position': 'relative', 'width': '150px' }));
+
+        $("#div-scale-slider-alt-" + this.id)['bootstrapSlider']({ tooltip_position: "bottom" });
+        $("#div-scale-slider-alt-" + this.id)['bootstrapSlider']().on('change', varEdgeLengthOnChange);
+
+
 
         let targetClass = this.graph2DClass;
         if (!this.mouseDownEventListenerAdded) {

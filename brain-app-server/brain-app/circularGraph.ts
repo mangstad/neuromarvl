@@ -931,10 +931,10 @@ class CircularGraph {
             .on("mouseout", function (d) { varMouseOutedCircularLayout(d); varMouseOutedSetNodeID(); });
 
         // Rearange the menu layout
-        var l = $('#button-circular-layout-histogram-' + this.id).position().left + 5;
-        var t = $('#button-circular-layout-histogram-' + this.id).position().top - $('#div-circular-layout-menu-' + this.id).height() - 15;
-        $('#div-circular-layout-menu-' + this.id).zIndex(1000);
-        $('#div-circular-layout-menu-' + this.id).css({ left: l, top: t, height: 'auto' });
+        //var l = $('#button-circular-layout-histogram-' + this.id).position().left + 5;
+        //var t = $('#button-circular-layout-histogram-' + this.id).position().top - $('#div-circular-layout-menu-' + this.id).height() - 15;
+        //$('#div-circular-layout-menu-' + this.id).zIndex(1000);
+        //$('#div-circular-layout-menu-' + this.id).css({ left: l, top: t, height: 'auto' });
 
         //------------------------------------------------------------------------------------------------------------
         // Add control options for new bar
@@ -953,7 +953,9 @@ class CircularGraph {
                 `)
         );
         let $pickerDiv = (<any>$(`#input-circular-layout-bar${bar.id}-color`));
-        $pickerDiv.colorpicker();
+        $pickerDiv.colorpicker({
+            format: "hex"
+        });
         $pickerDiv.on("changeColor", e => varUpdateCircularBarColor(bar.id, (<any>e).color.toHex()));
 
 
@@ -1226,7 +1228,8 @@ class CircularGraph {
     // Handle click on the Options
     circularLayoutHistogramButtonOnClick() {
         var l = $('#button-circular-layout-histogram-' + this.id).position().left + 5;
-        var t = $('#button-circular-layout-histogram-' + this.id).position().top - $('#div-circular-layout-menu-' + this.id).height() - 15;
+        //var t = $('#button-circular-layout-histogram-' + this.id).position().top - $('#div-circular-layout-menu-' + this.id).height() - 15;
+        let b = $('#button-circular-layout-histogram-' + this.id).outerHeight();
 
         for (var barIndex in this.attributeBars) {
             var bar = this.attributeBars[barIndex];
@@ -1239,7 +1242,8 @@ class CircularGraph {
             //$(bar.colorPicker).insertAfter('#select-circular-layout-attribute-'+ bar.id +'-' + this.id);
         }
         $('#div-circular-layout-menu-' + this.id).zIndex(1000);
-        $('#div-circular-layout-menu-' + this.id).css({ left: l, top: t, height: 'auto' });
+        //$('#div-circular-layout-menu-' + this.id).css({ left: l, top: t, height: 'auto' });
+        $('#div-circular-layout-menu-' + this.id).css({ left: l, bottom: b, height: 'auto' });
         $('#div-circular-layout-menu-' + this.id).fadeToggle('fast');
     }
 

@@ -284,21 +284,21 @@ class NeuroMarvl {
         $("#control-panel-bottom-close").click(this.toggleSplashPage);
 
         // Create color pickers
-        (<any>$("#input-node-color")).colorpicker();
-        (<any>$("#input-surface-color")).colorpicker();
-        (<any>$("#input-min-color")).colorpicker();
-        (<any>$("#input-max-color")).colorpicker();
-        (<any>$("#input-edge-start-color")).colorpicker();
-        (<any>$("#input-edge-end-color")).colorpicker();
-        (<any>$("#input-edge-discretized-0-color")).colorpicker();
-        (<any>$("#input-edge-discretized-1-color")).colorpicker();
-        (<any>$("#input-edge-discretized-2-color")).colorpicker();
-        (<any>$("#input-edge-discretized-3-color")).colorpicker();
-        (<any>$("#input-edge-discretized-4-color")).colorpicker();
-        (<any>$("#input-edge-min-color")).colorpicker();
-        (<any>$("#input-edge-max-color")).colorpicker();
-        (<any>$("#input-edge-color")).colorpicker();
-        (<any>$("#input-context-menu-node-color")).colorpicker();
+        (<any>$("#input-node-color")).colorpicker({ format: "hex" });
+        (<any>$("#input-surface-color")).colorpicker({ format: "hex" });
+        (<any>$("#input-min-color")).colorpicker({ format: "hex" });
+        (<any>$("#input-max-color")).colorpicker({ format: "hex" });
+        (<any>$("#input-edge-start-color")).colorpicker({ format: "hex" });
+        (<any>$("#input-edge-end-color")).colorpicker({ format: "hex" });
+        (<any>$("#input-edge-discretized-0-color")).colorpicker({ format: "hex" });
+        (<any>$("#input-edge-discretized-1-color")).colorpicker({ format: "hex" });
+        (<any>$("#input-edge-discretized-2-color")).colorpicker({ format: "hex" });
+        (<any>$("#input-edge-discretized-3-color")).colorpicker({ format: "hex" });
+        (<any>$("#input-edge-discretized-4-color")).colorpicker({ format: "hex" });
+        (<any>$("#input-edge-min-color")).colorpicker({ format: "hex" });
+        (<any>$("#input-edge-max-color")).colorpicker({ format: "hex" });
+        (<any>$("#input-edge-color")).colorpicker({ format: "hex" });
+        (<any>$("#input-context-menu-node-color")).colorpicker({ format: "hex" });
     }
 
     start = () => {
