@@ -742,8 +742,33 @@ class NeuroMarvl {
 
     }
 
+
+    setupAttributeNodeControls = () => {
+        let sizeOrColor = $('#select-node-size-color').val();
+        let attribute = $('#select-attribute').val();
+
+        if (sizeOrColor == "node-size") {
+            this.setupNodeSizeRangeSlider(attribute);
+        }
+        if (sizeOrColor == "node-color") {
+            if (this.referenceDataSet.attributes.info[attribute].isDiscrete) {
+                $('#div-node-color-mode').show();
+                $('#checkbox-node-color-continuous').prop('checked', false);
+                this.setupColorPickerDiscrete(attribute);
+            }
+            else {
+                $('#div-node-color-mode').hide();
+                this.setupColorPicker();
+            }
+        }
+
+        this.setNodeSizeOrColor();
+    }
+
+
     setupAttributeTab = () => {
         if (this.referenceDataSet && this.referenceDataSet.attributes) {
+
             let $selectAttribute = $('#select-attribute');
 
             let oldAttributeValue = $selectAttribute.val();
@@ -758,11 +783,9 @@ class NeuroMarvl {
             if (gotOldValue) $selectAttribute.val(oldAttributeValue);
 
             $('#div-set-node-scale').show();
-
-            $('#div-node-size').hide();
-            $('#div-node-color-pickers').hide();
-            $('#div-node-color-pickers-discrete').hide();
-
+            
+            this.setupAttributeNodeControls();
+            
             this.setupCrossFilter(this.referenceDataSet.attributes);
         }
     }
@@ -1010,6 +1033,11 @@ class NeuroMarvl {
             if (this.apps[1]) this.apps[1].setNodeDefaultSizeColor();
             if (this.apps[2]) this.apps[2].setNodeDefaultSizeColor();
             if (this.apps[3]) this.apps[3].setNodeDefaultSizeColor();
+
+            // Edge will also need updating if they are set to "node"
+            if (this.commonData.edgeColorMode === "node") {
+                this.setEdgeColorByNode();
+            }
         }
 
         this.saveObj.nodeSettings.nodeSizeOrColor = sizeOrColor;
@@ -1313,27 +1341,24 @@ class NeuroMarvl {
         $('#div-node-color-pickers').hide();
         $('#div-node-color-pickers-discrete').hide();
         $("#div-node-size").show();
-
+        
         var scaleArray = this.getNodeScaleArray(attribute);
         if (!scaleArray) return;
-
-        var minScale = Math.min.apply(Math, scaleArray);
-        var maxScale = Math.max.apply(Math, scaleArray);
-        //TODO: Do we really need to call setNodeSizeOrColor for all these events?
+        
+        var minScale = this.saveObj.nodeSettings.nodeSizeMin || Math.min.apply(Math, scaleArray);
+        var maxScale = this.saveObj.nodeSettings.nodeSizeMax || Math.max.apply(Math, scaleArray);
         var slider = $("#div-node-size-slider")['bootstrapSlider']({
             range: true,
             min: 0.1,
             max: 10,
             step: 0.1,
-            value: [minScale, maxScale],
-            change: this.setNodeSizeOrColor,
+            value: [minScale, maxScale]
         });
         slider.on("slide", () => {
             var values = $("#div-node-size-slider")['bootstrapSlider']().data('bootstrapSlider').getValue();
             $("#label_node_size_range").text(values[0] + " - " + values[1]);
             this.setNodeSizeOrColor();
         });
-        slider.on("change", this.setNodeSizeOrColor);
         $("#label_node_size_range").text(minScale + " - " + maxScale);
     }
 
@@ -1885,6 +1910,7 @@ class NeuroMarvl {
         if (this.apps[3]) this.apps[3].setSurfaceColor(color);
     }
 
+
     // Load the similarity matrix for the specified dataSet
     //TODO: Move into DataSet class
     loadSimilarityMatrix = (file, dataSet: DataSet) => {
@@ -2184,39 +2210,19 @@ class NeuroMarvl {
             this.setNodeSizeOrColor();
         });
 
-        $('#select-attribute').on('change', () => {
-            var sizeOrColor = $('#select-node-size-color').val();
-            var attribute = $('#select-attribute').val();
-
-            if (sizeOrColor == "node-size") {
-                this.setupNodeSizeRangeSlider(attribute);
-            }
-            if (sizeOrColor == "node-color") {
-                if (this.referenceDataSet.attributes.info[attribute].isDiscrete) {
-                    $('#div-node-color-mode').show();
-                    $('#checkbox-node-color-continuous').prop('checked', false);
-                    this.setupColorPickerDiscrete(attribute);
-                }
-                else {
-                    $('#div-node-color-mode').hide();
-                    this.setupColorPicker();
-                }
-            }
-
-            this.setNodeSizeOrColor();
-        });
+        $('#select-attribute').on('change', this.setupAttributeNodeControls);
 
         $('#select-node-key').on('change', () => {
             var key = $('#select-node-key').val();
 
             var keySelection = <any>document.getElementById('select-node-key');
-
+            
             for (var i = 0; i < keySelection.length; i++) {
                 if (keySelection.options[i].value == key) {
                     var color = keySelection.options[i].style.backgroundColor;
                     var hex = this.colorToHex(color);
                     (<any>$("#input-node-color")).colorpicker("setValue", hex);
-
+                    
                     break;
                 }
             }

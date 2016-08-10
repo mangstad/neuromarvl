@@ -11,7 +11,7 @@ class Graph3D {
     nodeMeshes: any[];
     nodePositions: number[][];
     nodeInfo: any[];
-    nodeDefaultColor: number[];
+    //nodeDefaultColor: number[];
     nodeCurrentColor: number[];
 
     // Edges
@@ -53,15 +53,17 @@ class Graph3D {
             };
         })
         
-        this.nodeDefaultColor = nodeColorings.map(a => this.averageColor(a)); // Use average colour
-        this.nodeCurrentColor = this.nodeDefaultColor.slice(0); // clone the array
+        //this.nodeDefaultColor = nodeColorings.map(a => this.averageColor(a)); // Use average colour
+        //this.nodeCurrentColor = this.nodeDefaultColor.slice(0); // clone the array
+        this.nodeCurrentColor = nodeColorings.map(a => this.averageColor(a)); // Use average colour for base, used generally and when restoring from highlights
 
         for (var i = 0; i < adjMatrix.length; ++i) {
             //TODO: Originally using spheres, but can switch to sprites for pie chart representations
             var nodeObject = this.nodeMeshes[i] = new THREE.Mesh(
                 this._sphereGeometry,
                 new THREE.MeshLambertMaterial({
-                    color: this.nodeDefaultColor[i],       // Average colour value needed for material
+                    //color: this.nodeDefaultColor[i],       // Average colour value needed for material
+                    color: this.nodeCurrentColor[i],
                     transparent: true       // Not actually transparent, but need this or three.js will render it before the brain surface
                 })
             );
@@ -348,10 +350,21 @@ class Graph3D {
     }
 
     setDefaultNodeColor() {
-        this.nodeCurrentColor = this.nodeDefaultColor.slice(0);
-
+        const DEFAULT_COLOR = {
+            color: 0xcfcfcf,
+            portion: 1
+        };
         for (var i = 0; i < this.nodeMeshes.length; ++i) {
-            this.nodeMeshes[i].material.color.setHex(this.nodeDefaultColor[i]);
+            this.nodeCurrentColor[i] = DEFAULT_COLOR.color;
+            this.nodeMeshes[i].material.color.setHex(DEFAULT_COLOR.color);
+            this.nodeMeshes[i].userData.colors = [DEFAULT_COLOR];
+        }
+        // Also reset edge color if set to node
+        if (this.colorMode === "node") {
+            for (var i = 0; i < this.edgeList.length; i++) {
+                var edge = this.edgeList[i];
+                edge.isColorChanged = true;
+            }
         }
     }
 
@@ -630,7 +643,7 @@ class Graph3D {
             this.nodeMeshes[i].userData.colors = colorArray[i];
         }
 
-        // also reset edge color:
+        // Also reset edge color if set to node
         if (this.colorMode === "node") {
             for (var i = 0; i < this.edgeList.length; i++) {
                 var edge = this.edgeList[i];
