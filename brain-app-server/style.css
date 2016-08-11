@@ -9,3 +9,9 @@
     display: inline-block;
     white-space: nowrap;
 }
+
+.clip-to-bottom {
+    top: auto !important;
+    bottom: 0 !important;
+}
+

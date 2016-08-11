@@ -953,10 +953,18 @@ class CircularGraph {
                 `)
         );
         let $pickerDiv = (<any>$(`#input-circular-layout-bar${bar.id}-color`));
+        let customClass = `custom-picker-${bar.id}-${this.id}`;
         $pickerDiv.colorpicker({
-            format: "hex"
+            format: "hex",
+            customClass
         });
         $pickerDiv.on("changeColor", e => varUpdateCircularBarColor(bar.id, (<any>e).color.toHex()));
+        $pickerDiv.on("showPicker", e => {
+            // May need to adjust if it overflows the window
+            let $pickerPalette = $("." + customClass);
+            $pickerPalette.removeClass("clip-to-bottom");
+            if ($pickerPalette.outerHeight() + $pickerPalette.offset().top > window.innerHeight) $pickerPalette.addClass("clip-to-bottom");
+        });
 
 
         $('#select-circular-layout-attribute-' + bar.id + '-' + this.id).empty();
