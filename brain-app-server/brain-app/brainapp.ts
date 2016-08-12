@@ -1881,10 +1881,8 @@ class NeuroMarvl {
     // NOTE: The loaded model cannot be used in more than one WebGL context (scene) at a time - the geometry and materials must be .cloned() into
     // new THREE.Mesh() objects by the application wishing to use the model.
     loadBrainModel = (model: string, callback) => {
-        let file = (model === 'ch2') && 'BrainMesh_ch2.obj'
-            || (model === 'ch2_inflated') && 'BrainMesh_Ch2_Inflated.obj'
+        let file = (model === 'ch2') && 'BrainMesh_Ch2withCerebellum.obj'
             || (model === 'icbm') && 'BrainMesh_ICBM152.obj'
-            || (model === 'ch2_cerebellum') && 'BrainMesh_Ch2withCerebellum.obj'
             ;
         if (!file) {
             callback();

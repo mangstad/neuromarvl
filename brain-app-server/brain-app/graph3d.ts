@@ -1,5 +1,5 @@
 ﻿
-const RENDER_ORDER_EDGE = 0.1;
+const RENDER_ORDER_EDGE = 1.1;
 
 class Graph3D {
     parentObject;
@@ -53,8 +53,6 @@ class Graph3D {
             };
         })
         
-        //this.nodeDefaultColor = nodeColorings.map(a => this.averageColor(a)); // Use average colour
-        //this.nodeCurrentColor = this.nodeDefaultColor.slice(0); // clone the array
         this.nodeCurrentColor = nodeColorings.map(a => this.averageColor(a)); // Use average colour for base, used generally and when restoring from highlights
 
         for (var i = 0; i < adjMatrix.length; ++i) {
@@ -62,9 +60,10 @@ class Graph3D {
             var nodeObject = this.nodeMeshes[i] = new THREE.Mesh(
                 this._sphereGeometry,
                 new THREE.MeshLambertMaterial({
-                    //color: this.nodeDefaultColor[i],       // Average colour value needed for material
                     color: this.nodeCurrentColor[i],
-                    transparent: true       // Not actually transparent, but need this or three.js will render it before the brain surface
+                    transparent: true,       // Not actually transparent, but need this or three.js will render it before the brain surface
+                    depthWrite: false,
+                    depthTest: false
                 })
             );
             nodeObject.renderOrder = RENDER_ORDER_EDGE; // Draw at the same level as edges
@@ -166,13 +165,17 @@ class Graph3D {
         var canvas = document.createElement('canvas');
 
         var context = canvas.getContext('2d');
-        context.font = "Bold " + varFontSize + "px Arial";
+        //context.font = "Bold " + varFontSize + "px Arial";
         
         // Canvas dimensions expected to be a power of 2
-        canvas.width = this.nextPowerOf2(context.measureText(text).width);
+        canvas.width = this.nextPowerOf2(context.measureText(text).width * 2);
         canvas.height = this.nextPowerOf2(varFontSize);
 
         context.font = varFontSize + "px Arial";
+        //context.miterLimit = 2;
+        context.strokeStyle = "rgba(255,255,255,0.5)";
+        context.lineWidth = varFontSize * 0.1;
+        context.strokeText(text, 0, varFontSize);
         context.fillStyle = "rgba(0,0,0,1)";
         context.fillText(text, 0, varFontSize);
 
@@ -183,10 +186,13 @@ class Graph3D {
         // 3. map texture to an object
         var spriteMaterial = new THREE.SpriteMaterial(<any>{
             map: texture,
+            //depthTest: true,
+            depthWrite: false,
             depthTest: false
         });
         var sprite = new THREE.Sprite(spriteMaterial);
         sprite.scale.set(canvas.width / multiplyScale, canvas.height / multiplyScale, 1);
+        sprite.renderOrder = RENDER_ORDER_EDGE;
 
         return sprite;
     }
@@ -873,7 +879,8 @@ class Edge {
             vertexShader: this.vertexShader,
             fragmentShader: this.fragmentShader,
             transparent: true,
-            depthWrite: false
+            depthWrite: false,
+            depthTest: false
         });
         this.shape = new THREE.Mesh(this.geometry, material);
         this.shape.renderOrder = RENDER_ORDER_EDGE; // Draw line BEFORE transparent brain model is drawn
@@ -906,7 +913,7 @@ class Edge {
             vertexShader: this.vertexShader,
             fragmentShader: this.fragmentShader,
             transparent: true,
-            depthWrite: false
+            depthWrite: true
         });
         this.shape = new THREE.Line(this.geometry, material);
         this.shape.renderOrder = RENDER_ORDER_EDGE; // Draw line BEFORE transparent brain model is drawn

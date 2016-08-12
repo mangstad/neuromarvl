@@ -519,7 +519,7 @@ class Graph2D {
 
     setDirectionMode(directionMode: string) {
         this.directionMode = directionMode;
-        this.cy.style().selector("edge").style("mid-target-arrow-shape", (this.directionMode === "arrow") ? "triangle" : "none");
+        if (this.cy) this.cy.style().selector("edge").style("mid-target-arrow-shape", (this.directionMode === "arrow") ? "triangle" : "none");
     }
 
 
