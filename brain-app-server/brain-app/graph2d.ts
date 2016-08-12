@@ -12,7 +12,7 @@ class Graph2D {
 
     groupNodesBy = "none";
     colorMode: string;
-    directionMode: string;
+    directionMode: string;      // arrow, animation, opacity, gradient, none
     mouseDownEventListenerAdded;
     layout = "cola";
 
@@ -133,8 +133,9 @@ class Graph2D {
                 }
                 else {
                     // "node"
-                    let colorVectorSource = edge.uniforms.startColor.value;
-                    linkObject["color"] = `rgb(${colorVectorSource.x * 255}, ${colorVectorSource.y * 255}, ${colorVectorSource.z * 255})`;
+                    //TODO: use gradient to colour edges - this needs a change to cytoscape.js
+                    let colorVector = (new THREE.Vector4()).lerpVectors(edge.uniforms.startColor.value, edge.uniforms.endColor.value, 0.5);
+                    linkObject["color"] = `rgb(${colorVector.x * 255}, ${colorVector.y * 255}, ${colorVector.z * 255})`;
                 }
 
                 linkObject["width"] = edge.shape.scale.x;
@@ -376,12 +377,12 @@ class Graph2D {
                         "opacity": 0.5,
                         'line-color': 'data(color)',
                         'mid-target-arrow-color': 'data(color)',
+                        "mid-target-arrow-shape": (this.directionMode === "arrow") ? "triangle" : "none"
                     }
                 },
                 {
                     selector: "edge.highlight",
                     style: {
-                        "mid-target-arrow-shape": "triangle",
                         opacity: 1
                     }
                 }
@@ -472,8 +473,9 @@ class Graph2D {
                 // "node"
                 this.cy.elements("edge").each((i, e) => {
                     let colorVectorSource = this.graph3d.edgeList[e.data("edgeListIndex")].uniforms.startColor.value;
-                    let color = `rgb(${colorVectorSource.x * 255}, ${colorVectorSource.y * 255}, ${colorVectorSource.z * 255})`;
-                    e.data("color", color);
+                    let colorVectorTarget = this.graph3d.edgeList[e.data("edgeListIndex")].uniforms.endColor.value;
+                    let colorVector = (new THREE.Vector4()).lerpVectors(colorVectorSource, colorVectorTarget, 0.5);
+                    e.data("color", `rgb(${colorVector.x * 255}, ${colorVector.y * 255}, ${colorVector.z * 255})`);
                 });
             }
 
@@ -513,6 +515,11 @@ class Graph2D {
             this.cy.userZoomingEnabled(isOn);
             this.cy.boxSelectionEnabled(isOn);
         }
+    }
+
+    setDirectionMode(directionMode: string) {
+        this.directionMode = directionMode;
+        this.cy.style().selector("edge").style("mid-target-arrow-shape", (this.directionMode === "arrow") ? "triangle" : "none");
     }
 
 

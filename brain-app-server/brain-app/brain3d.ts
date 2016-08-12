@@ -218,6 +218,7 @@ class Brain3DApp implements Application, Loopable {
         if (this.colaGraph) this.colaGraph.setEdgeDirection(directionMode);
 
         if (this.circularGraph) this.circularGraph.circularLayoutEdgeDirectionModeOnChange(directionMode);
+        if (this.canvasGraph) this.canvasGraph.setDirectionMode(directionMode);
         
         this.isAnimationOn = (directionMode === "animation");
         

@@ -939,7 +939,6 @@ class Edge {
                 endRGB.r / 255,
                 endRGB.g / 255,
                 endRGB.b / 255, 1.0);
-
             return;
         }
 
