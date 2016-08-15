@@ -558,10 +558,13 @@ class CircularGraph {
                 nodeObject['scale_' + colname] = scalevalue;
 
                 if (attributes.info[colname].isDiscrete) { // if the attribute is discrete
-                    // Scale to group attirbutes 
-                    var values = attributes.info[colname].distinctValues;
-                    nodeObject['bundle_group_' + colname] = values.indexOf(Math.max.apply(Math, value));
-
+                    // If the attribute is discrete then grouping is clear for simple values, but for multivalue attributes we get the position of the largest value
+                    if (value.length > 1) {
+                        nodeObject['bundle_group_' + colname] = value.indexOf(Math.max(...value));
+                    }
+                    else {
+                        nodeObject['bundle_group_' + colname] = value[0];
+                    }
                 } else { // if the attribute is continuous
                     // Scale to group attirbutes 
                     var bundleGroupMap = d3.scale.linear().domain([min, max]).range([0, 9.99]); // use 9.99 instead of 10 to avoid a group of a single element (that has the max attribute value)
