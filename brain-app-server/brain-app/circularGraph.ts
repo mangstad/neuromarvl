@@ -453,7 +453,6 @@ class CircularGraph {
                 var attrArray = attributes.get(colorAttr);
                 var group = d3.select(this);
                 group.selectAll("path").remove();
-                //if (colorAttr === "" || colorAttr === "none") {
                 if (!attributes.info[colorAttr]) {
                     group.selectAll(".path")
                         .data(pie([1]))
@@ -639,6 +638,8 @@ class CircularGraph {
     }
 
     GenerateCircularUI(sortByAttribute: string, bundleByAttribute: string) {
+        // Based on http://bl.ocks.org/mbostock/1044242
+
         let attributes = this.dataSet.attributes;
         let edgeSettings = this.saveObj.edgeSettings;
         let nodeSettings = this.saveObj.nodeSettings;
@@ -655,9 +656,7 @@ class CircularGraph {
         let cluster = d3.layout.cluster()
             .size([360, innerRadius])
             .sort(null) // Using built-in D3 sort destroy the order of the cluster => need to be investigated
-            .value(function (d) {
-                return 180;
-            });
+            ;
 
 
         let bundle = d3.layout.bundle();
@@ -670,12 +669,12 @@ class CircularGraph {
 
         // Link path
         let line = d3.svg.line.radial()
-            //.tension(.85)
+            .interpolate("bundle")
+            .tension(.85)
             .radius(function (d) {
                 return d.y;
             })
             .angle(function (d) { return d.x / 180 * Math.PI; })
-            .interpolate("bundle")
         ;
 
         this.svgAllElements.attr("transform", "translate(" + width + "," + height + ")");
@@ -686,8 +685,11 @@ class CircularGraph {
         // An alternative solutions to sorting the children while keeping 
         // the order of the clusters 
         let tree = packages.root(nodeJson);
+        // Tree may have a false root. Remove it.
+        if (tree.children.length === 1) tree = tree.children[0];
+
         if (sortByAttribute !== "none") {
-            var groups = tree.children[0].children;
+            var groups = tree.children;
             // If  bundle is none, the children are not put into groups
             if (bundleByAttribute !== "none") {
                 for (var i = 0; i < groups.length; i++) {
@@ -722,10 +724,10 @@ class CircularGraph {
         var varSvg = this.svg[0];
         var varNS = varSvg[0].namespaceURI;
         var varDefs = this.svgDefs;
+        var bundledLinks = bundle(links);
 
         this.svgAllElements.selectAll(".linkCircular")
             .data(function () {
-                var bundledLinks = bundle(links);
                 if (bundledLinks[0][0].bundleByAttribute == "none") {
                     for (var i = 0; i < bundledLinks.length; i++) {
                         bundledLinks[i][1].y = 70;
