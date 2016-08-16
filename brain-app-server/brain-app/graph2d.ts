@@ -26,7 +26,7 @@ class Graph2D {
     BASE_RADIUS = 5;
     BASE_EDGE_WEIGHT = 1.5;
     BASE_BORDER_WIDTH = 1;
-    BASE_LABEL_SIZE = 4;
+    BASE_LABEL_SIZE = 10;
 
     cy;
 
@@ -250,12 +250,19 @@ class Graph2D {
         switch (this.layout) {
             case "cose":
                 // This layout gets something very wrong with the boundingBox, possibly ignoring node radii, so we need to compensate
+                layoutOptions.fit = true;
                 layoutOptions.boundingBox.w *= this.BASE_RADIUS;
                 layoutOptions.boundingBox.h *= this.BASE_RADIUS;
                 layoutOptions.numIter = 100;
+                layoutOptions.nestingFactor = 2;
+                layoutOptions.gravity = 200;
+                layoutOptions.nodeOverlap = this.BASE_RADIUS * 4;
+                layoutOptions.idealEdgeLength = edge => (edge.source().data("radius") + edge.target().data("radius")) * 2;
                 break;
             case "cose-bilkent":
+                layoutOptions.fit = true;
                 layoutOptions.numIter = 15;
+                layoutOptions.idealEdgeLength = this.BASE_RADIUS * 5;
                 break;
             case "cola":
                 layoutOptions.fit = true;
@@ -264,7 +271,8 @@ class Graph2D {
                 layoutOptions.ungrabifyWhileSimulating = true;
                 layoutOptions.maxSimulationTime = 4000;        // Only starts counting after the layout startup, which can take some time by itself. 0 actually works well.
                 layoutOptions.handleDisconnected = true;
-                layoutOptions.avoidOverlap = false;
+                layoutOptions.avoidOverlap = true;
+                layoutOptions.nodeSpacing = node => node.data("radius") * 0.5;
                 
                 layoutOptions.unconstrIter = 15;
                 layoutOptions.userConstIter = 0;
