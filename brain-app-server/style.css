@@ -15,3 +15,7 @@
     bottom: 0 !important;
 }
 
+input.select-network-type-input {
+    width: 0 !important;
+}
+

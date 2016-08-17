@@ -123,7 +123,7 @@ class CircularGraph {
         // option button
         this.jDiv.append($('<button id="button-circular-layout-histogram-' + this.id + '" class="' + this.circularCSSClass + ' btn  btn-sm btn-primary" ' +
                 'data-toggle="tooltip" data-placement="top" title="Show side-by-side graph representation">Options</button>')
-            .css({ 'margin-left': '5px', 'font-size': '12px', 'z-index': 1000 })
+            .css({ 'margin-left': '5px', 'font-size': '12px', 'z-index': 500 })
             .click(function () { varCircularLayoutHistogramButtonOnClick(); }));
 
 
@@ -328,8 +328,12 @@ class CircularGraph {
             .value(function (d) { return d.size; });
 
         var tree = packages.root(nodeJson);
+        // Tree may have a false root. Remove it.
+        if (tree.children.length === 1) tree = tree.children[0];
+
         if (attrSort !== "none") {
-            var groups = tree.children[0].children;
+            //var groups = tree.children[0].children;
+            var groups = tree.children;
 
             if (attrBundle !== "none") {
                 for (var i = 0; i < groups.length; i++) {
@@ -357,9 +361,9 @@ class CircularGraph {
         var varNS = varSvg[0].namespaceURI;
         var varDefs = this.svgDefs;
         // use normal color updating style
+        var bundledLinks = bundle(links);
         this.svgAllElements.selectAll(".linkCircular")
             .data(function () {
-                var bundledLinks = bundle(links);
                 if (bundledLinks[0][0].bundleByAttribute == "none") {
                     for (var i = 0; i < bundledLinks.length; i++) {
                         bundledLinks[i][1].y = 70;
@@ -656,6 +660,7 @@ class CircularGraph {
         let cluster = d3.layout.cluster()
             .size([360, innerRadius])
             .sort(null) // Using built-in D3 sort destroy the order of the cluster => need to be investigated
+            .value(function (d) { return d.size; })
             ;
 
 

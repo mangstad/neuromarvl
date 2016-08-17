@@ -423,40 +423,30 @@ class Brain3DApp implements Application, Loopable {
             )
 
             // Show Network button
-            .append($('<button id="button-show-network-' + this.id + ' data-toggle="tooltip" data-placement="top" title="Show or update the side-by-side graph representation">Show/Update Network</button>')
+            .append($('<button id="button-show-network-' + this.id + '" class="btn btn-sm btn-primary" data-toggle="tooltip" data-placement="top" title="Show or update the side-by-side graph representation">Show/Update Network</button>'
+            )
                 .css({ 'margin-left': '10px', 'font-size': '12px', 'position': 'relative', 'z-index': 1000 })
                 .click(function () { varShowNetwork(false); })
             )
 
             // Select Network type dropdown
-            .append($('<select id="select-network-type-' + this.id + '"data-toggle="tooltip" data-placement="top" title="Select the graph view type" disabled="true"></select>')
-                    .css({ 'margin-left': '5px', 'font-size': '12px', 'width': '80px', 'position': 'relative', 'z-index': 1000 })
-                .on("change", function () { varNetworkTypeOnChange($(this).val()); })
-            )
-            ;
+            .append($(`<div id="select-network-type-${this.id}" class="btn-group" data-toggle="buttons">
+                <label id="select-network-type-${this.id}-3D" class="btn btn-primary btn-sm">
+                    <input class="select-network-type-input" type="radio" name="select-network-type-${this.id}" value="3D" autocomplete="off">3D
+                </label>
+                <label id="select-network-type-${this.id}-2D" class="btn btn-primary btn-sm">
+                    <input class="select-network-type-input" type="radio" name="select-network-type-${this.id}" value="2D" autocomplete="off">2D
+                </label>
+                <label id="select-network-type-${this.id}-circular" class="btn btn-primary btn-sm">
+                    <input class="select-network-type-input" type="radio" name="select-network-type-${this.id}" value="circular" autocomplete="off">Circular
+                </label>
+            </div>`).css({ 'margin-left': '5px', 'position': 'relative', 'z-index': 1000 }))
+        ;
 
         $("[data-toggle='tooltip']").tooltip(<any>{ container: 'body' });
+        
+        $(`input[name=select-network-type-${this.id}]:radio`).change(event => varNetworkTypeOnChange(event.target["value"]));
 
-
-        //$('#button-show-network-' + this.id).button(); // jQuery button
-
-        // Different type of graphs
-        var networkTypeSelect = "#select-network-type-" + this.id;
-        var option = document.createElement('option');
-        option.text = '3D';
-        option.value = '3D';
-        $(networkTypeSelect).append(option);
-        this.networkType = '3D';
-
-        var option = document.createElement('option');
-        option.text = '2D';
-        option.value = '2D';
-        $(networkTypeSelect).append(option);
-
-        var option = document.createElement('option');
-        option.text = 'Circular';
-        option.value = 'circular';
-        $(networkTypeSelect).append(option);
 
         // Graph canvas setup
         this.graph2dContainer = d3.select('#div-svg-' + this.id)
@@ -1001,10 +991,10 @@ class Brain3DApp implements Application, Loopable {
         $('#edge-count-slider-' + this.id).val(<any>app.edgeCount);
     }
 
-    initShowNetwork(app: SaveApp) {
-        
+    initShowNetwork(app: SaveApp) {        
         if (app.showingTopologyNetwork) {
-            $('#select-network-type-' + this.id).val(app.networkType);
+            $(`#select-network-type-${this.id}-${app.networkType}`).addClass("active");
+
             this.networkTypeOnChange(app.networkType);
 
             if (app.networkType == "circular") {
@@ -1272,11 +1262,9 @@ class Brain3DApp implements Application, Loopable {
     }
 
     showNetwork(switchNetworkType: boolean) {
-        if (!this.brainObject || !this.colaObject || !this.physioGraph || !this.colaGraph) return;
+        if (!this.brainObject || !this.colaObject || !this.physioGraph || !this.colaGraph || !this.networkType || !this.dataSet.brainCoords.length || !this.dataSet.brainCoords[0].length) return;
 
         // Change the text of the button to "Topology"
-        $('#button-show-network-' + this.id).text("Topology"); 
-
         this.showingTopologyNetwork = true; 
 
         if (this.bundlingEdges) this.edgesBundlingOnChange(); // turn off edge bundling
@@ -1414,7 +1402,7 @@ class Brain3DApp implements Application, Loopable {
         $('#graph-view-slider-' + this.id).val('100');
 
         $('#button-show-network-' + this.id).prop('disabled', false);
-        $('#select-network-type-' + this.id).prop('disabled', false);
+        $('#select-network-type-' + this.id + '-button').prop('disabled', false);
         $('#graph-view-slider-' + this.id).prop('disabled', false);
     }
 
@@ -1429,8 +1417,7 @@ class Brain3DApp implements Application, Loopable {
         }
 
         this.transitionInProgress = true;
-        $('#button-show-network-' + this.id).prop('disabled', true);
-        $('#select-network-type-' + this.id).prop('disabled', true);    
+        $('#button-show-network-' + this.id).prop('disabled', true);    
         $('#graph-view-slider-' + this.id).prop('disabled', true); 
 
         if (switchNetworkType) {
@@ -1455,7 +1442,6 @@ class Brain3DApp implements Application, Loopable {
                     $('#graph-view-slider-' + this.id).val('100');
 
                     $('#button-show-network-' + this.id).prop('disabled', false);
-                    $('#select-network-type-' + this.id).prop('disabled', false);
                     $('#graph-view-slider-' + this.id).prop('disabled', false); 
                 }
                 
@@ -1479,7 +1465,6 @@ class Brain3DApp implements Application, Loopable {
     svgZoom() {
         if (this.isControllingGraphOnly) {
             this.svgAllElements.attr("transform", "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")");
-            //if (this.networkType == "2D") this.svgNeedsUpdate = true;
         }
     }
    
@@ -1597,32 +1582,6 @@ class Brain3DApp implements Application, Loopable {
             throw "Attribute " + attribute + " does not exist.";
         }
 
-        /*
-        var columnIndex = this.dataSet.attributes.columnNames.indexOf(attribute);
-
-        // assume all positive numbers in the array
-        var min = this.dataSet.attributes.getMin(columnIndex);
-        var max = this.dataSet.attributes.getMax(columnIndex);
-        
-        let colorArray: number[][];
-        let colorMap;
-        if (attrArray[0].length > 1) {
-            colorMap = d3.scale.linear().domain([Math.log(min), Math.log(max)]).range([minColor, maxColor]);
-            colorArray = attrArray.map((values: number[]) => {
-                var str = colorMap(value.indexOf(Math.max.apply(Math,value))).replace("#", "0x");
-                return parseInt(str);
-            });
-        }
-        else {
-            colorMap = d3.scale.linear().domain([min, max]).range([minColor, maxColor]);
-            colorArray = attrArray.map((values: number[]) => {
-                var str = colorMap(Math.max.apply(Math, value)).replace("#", "0x");
-                return parseInt(str);
-            });
-
-        }
-        */
-
         let colorArray = this.getNodeColors(attribute, parseInt(minColor.replace("#", "0x")), parseInt(maxColor.replace("#", "0x")));
 
         if (!colorArray) {
@@ -1642,30 +1601,7 @@ class Brain3DApp implements Application, Loopable {
 
         var attrArray = this.dataSet.attributes.get(attribute);
         if (!attrArray) return;
-
-        /*
-        var colorArrayNum: number[][];
-        var colorMap = d3.scale.ordinal().domain(keyArray).range(colorArray);
-
-        if (attrArray[0].length > 1) {
-            colorArrayNum = attrArray.map((value: number[]) => {
-                var color = 0;
-                var counter = 0;
-                value.forEach(function (v,i) {
-                    if (v > 0) {
-                        color += parseInt(colorMap(i).replace("#", "0x"));
-                        counter++;
-                    }
-                });
-                return Math.round(color / counter);
-            });
-        } else {
-            colorArrayNum = attrArray.map((value: number[]) => {
-                var str = colorMap(Math.max.apply(Math, value)).replace("#", "0x");
-                return parseInt(str);
-            });
-        }
-        */
+        
         let discreteColorValues = colorArray.map(colorString => parseInt(colorString.substring(1), 16));
         let colorArrayNum = this.getNodeColorsDiscrete(attribute, keyArray, discreteColorValues);
 
@@ -1860,7 +1796,6 @@ class Brain3DApp implements Application, Loopable {
         $('#edge-count-slider-' + this.id).prop('disabled', false);
         $('#edge-count-slider-' + this.id).val("" + this.edgeCountSliderValue);
         $('#button-show-network-' + this.id).prop('disabled', false);
-        $('#select-network-type-' + this.id).prop('disabled', false);
 
     }
 

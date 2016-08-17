@@ -551,11 +551,9 @@ class Graph2D {
 
     menuButtonOnClick() {
         let l = $('#button-graph2d-option-menu-' + this.id).position().left + 5;
-        //var t = $('#button-graph2d-option-menu-' + this.id).position().top - $('#div-graph2d-layout-menu-' + this.id).height() - 15;
         let b = $('#button-graph2d-option-menu-' + this.id).outerHeight();
         
         $('#div-graph2d-layout-menu-' + this.id).zIndex(1000);
-        //$('#div-graph2d-layout-menu-' + this.id).css({ left: l, top: t, height: 'auto' });
         $('#div-graph2d-layout-menu-' + this.id).css({ left: l, bottom: b, height: 'auto' });
         $('#div-graph2d-layout-menu-' + this.id).fadeToggle('fast');
     }
@@ -591,7 +589,7 @@ class Graph2D {
         // option button
         this.jDiv.append($('<button id="button-graph2d-option-menu-' + this.id + '" class="' + this.graph2DClass + ' btn  btn-sm btn-primary" ' +
             'data-toggle="tooltip" data-placement="top" title="Show side-by-side graph representation">Options</button>')
-            .css({ 'position': 'relative', 'margin-left': '5px', 'font-size': '12px', 'z-index': 1000 })
+            .css({ 'position': 'relative', 'margin-left': '5px', 'font-size': '12px', 'z-index': 500 })
             .click(function () { varMenuButtonOnClick(); }));
 
 
