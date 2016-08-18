@@ -330,11 +330,12 @@ class Brain3DApp implements Application, Loopable {
 
 
     setupUserInteraction(jDiv) {
+        console.log("setupUserInteraction");///jm
         var varShowNetwork = (b: boolean) => { this.showNetwork(b); };
         var varEdgesBundlingOnChange = () => { this.edgesBundlingOnChange(); };
         var varAllLabelsOnChange = () => { this.allLabelsOnChange(); };
         var varAutoRotationOnChange = (s) => { this.autoRotationOnChange(s); };
-        var varSliderMouseEvent = (e: string) => { this.sliderMouseEvent(e); };
+        //var varSliderMouseEvent = (e: string) => { this.sliderMouseEvent(e); };
         var varGraphViewSliderOnChange = (v: number) => { this.graphViewSliderOnChange(v); };
         var varEdgeCountSliderOnChange = (v: number) => { this.edgeCountSliderOnChange(v); };
         var varCloseBrainAppOnClick = () => { this.closeBrainAppOnClick(); };
@@ -414,12 +415,17 @@ class Brain3DApp implements Application, Loopable {
             .append('<p>Showing <label id="count-' + this.id + '">0</label> edges (<label id=percentile-' + this.id + '>0</label>th percentile)</p>')
 
             // Edge count Slider at the bottom of the application
-            .append($('<input id="edge-count-slider-' + this.id + '" type="range" min="1" max="' + maxEdgesShowable + '" value="' + initialEdgesShown +
-                    'data-toggle="tooltip" data-placement="top" title="Adjust count of visible edges" disabled="true"/>')
-                .css({ 'display': 'inline-block', 'width': '300px', 'position': 'relative', 'margin-right': 10, 'z-index': 1000 })
-                .mousedown(function () { varSliderMouseEvent("mousedown"); })
-                .mouseup(function () { varSliderMouseEvent("mouseup"); })
-                .on("input change", function () { varEdgeCountSliderOnChange($(this).val()); })
+            //.append($('<input id="edge-count-slider-' + this.id + '" type="range" min="1" max="' + maxEdgesShowable + '" value="' + initialEdgesShown +
+            //        'data-toggle="tooltip" data-placement="top" title="Adjust count of visible edges" disabled="true"/>')
+            //    .css({ 'display': 'inline-block', 'width': '300px', 'position': 'relative', 'margin-right': 10, 'z-index': 1000 })
+            //    .mousedown(function () { varSliderMouseEvent("mousedown"); })
+            //    .mouseup(function () { varSliderMouseEvent("mouseup"); })
+            //    .on("input change", function () { varEdgeCountSliderOnChange($(this).val()); })
+            //)
+        //    .append($(`<input id="edge-count-slider-${this.id}" data-slider-id="edge-count-slider-${this.id}" type="text" 
+        //            data-slider-min="1" data-slider-max="${maxEdgesShowable}" data-slider-step="1" data-slider-value="${initialEdgesShown}"/>`)
+        //)
+            .append($(`<input id="edge-count-slider-${this.id}" type="text" />`)
             )
 
             // Show Network button
@@ -441,7 +447,24 @@ class Brain3DApp implements Application, Loopable {
                     <input class="select-network-type-input" type="radio" name="select-network-type-${this.id}" value="circular" autocomplete="off">Circular
                 </label>
             </div>`).css({ 'margin-left': '5px', 'position': 'relative', 'z-index': 1000 }))
-        ;
+            ;
+
+        $("#edge-count-slider-" + this.id)['bootstrapSlider']({
+            min: 1, 
+            max: maxEdgesShowable,
+            step: 1,
+            value: initialEdgesShown,
+            id: "edge-count-slider-" + this.id + "-slider"
+        });
+        $("#edge-count-slider-" + this.id).on("slide", event => varEdgeCountSliderOnChange(event["value"]));
+        $("#edge-count-slider-" + this.id + "-slider").css({
+            //'display': 'inline-block',
+            'width': '300px',
+            //'position': 'relative',
+            'margin-right': 10,
+            'margin-left': 10,
+            'z-index': 1000
+        });
 
         $("[data-toggle='tooltip']").tooltip(<any>{ container: 'body' });
         
@@ -987,8 +1010,12 @@ class Brain3DApp implements Application, Loopable {
     } 
 
     initEdgeCountSlider(app: SaveApp) {
+        console.log("initEdgeCountSlider");///jm
         this.edgeCountSliderOnChange(app.edgeCount);
-        $('#edge-count-slider-' + this.id).val(<any>app.edgeCount);
+        //$('#edge-count-slider-' + this.id).val(<any>app.edgeCount);
+        //$('#edge-count-slider-' + this.id)['bootstrapSlider']();
+        $('#edge-count-slider-' + this.id)['bootstrapSlider']("setValue", parseInt(<any>app.edgeCount));
+        //$('#edge-count-slider-' + this.id).attr("data-slider-value", app.edgeCount);
     }
 
     initShowNetwork(app: SaveApp) {        
@@ -1026,14 +1053,14 @@ class Brain3DApp implements Application, Loopable {
         }
     }
 
-    sliderMouseEvent(e: string) {
-        if (e == "mousedown") {
-            this.input.sliderEvent = true;
-        }
-        else if (e == "mouseup"){
-            this.input.sliderEvent = false;
-        }
-    }
+    //sliderMouseEvent(e: string) {
+    //    if (e == "mousedown") {
+    //        this.input.sliderEvent = true;
+    //    }
+    //    else if (e == "mouseup"){
+    //        this.input.sliderEvent = false;
+    //    }
+    //}
 
     closeBrainAppOnClick() {
         this.jDiv.empty();
@@ -1699,13 +1726,17 @@ class Brain3DApp implements Application, Loopable {
     }
 
     setDataSet(dataSet: DataSet) {
+        console.log("setDataSet");///jm
         this.dataSet = dataSet;
         if (this.dataSet.sortedSimilarities) {
+            console.log($("#edge-count-slider-" + this.id)['bootstrapSlider']());///jm
             // Update slider max value
             if (this.dataSet.sortedSimilarities.length < maxEdgesShowable) {
-                $("#edge-count-slider-" + this.id).prop("max", this.dataSet.sortedSimilarities.length);
+                //$("#edge-count-slider-" + this.id).prop("max", this.dataSet.sortedSimilarities.length);
+                $("#edge-count-slider-" + this.id)['bootstrapSlider']("setAttribute", "max", this.dataSet.sortedSimilarities.length);
             } else {
-                $("#edge-count-slider-" + this.id).prop("max", maxEdgesShowable);
+                //$("#edge-count-slider-" + this.id).prop("max", maxEdgesShowable);
+                $("#edge-count-slider-" + this.id)['bootstrapSlider']("setAttribute", "max", maxEdgesShowable);
             }
             // update Circular Dataset
             this.circularGraph.setDataSet(dataSet);
@@ -1793,8 +1824,10 @@ class Brain3DApp implements Application, Loopable {
         
         
         // Enable the slider
-        $('#edge-count-slider-' + this.id).prop('disabled', false);
-        $('#edge-count-slider-' + this.id).val("" + this.edgeCountSliderValue);
+        //$('#edge-count-slider-' + this.id).prop('disabled', false);
+        //$('#edge-count-slider-' + this.id).val("" + this.edgeCountSliderValue);
+        $('#edge-count-slider-' + this.id)['bootstrapSlider']("setValue", this.edgeCountSliderValue);
+        $("#edge-count-slider-" + this.id)['bootstrapSlider']("setAttribute", "max", maxEdgesShowable);
         $('#button-show-network-' + this.id).prop('disabled', false);
 
     }
