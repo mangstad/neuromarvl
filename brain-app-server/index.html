@@ -279,7 +279,6 @@
                             </div>
                         </div>
                         <div id="div-node-size" style="display:none; margin-top: 20px; margin-left: 20px;">
-                        <!--<div id="div-node-size" style="margin-top: 20px; margin-left: 20px;">-->
                             <p>
                                 <label class="control-label">range:</label>
                                 <label id="label_node_size_range"></label>
@@ -334,15 +333,18 @@
 
                         <p><input type="checkbox" id="checkbox-thickness-by-weight" style="width: 12px;"> <strong>Thickness by Weight</strong></p>
 
+
                         <p style="margin-top: 5px; margin-bottom: 0;">
-                            Edge Direction:
-                            <select id="select-edge-direction" style="background-color: #feeebd;">
-                                <option value="none">None</option>
-                                <option value="arrow">Arrow</option>
-                                <option value="opacity">Transparency</option>
-                                <option value="gradient">Gradient</option>
-                                <option value="animation">Animation</option>
-                            </select>
+                            <div class="form-group">
+                                <label for="select-edge-direction">Edge Direction:</label>
+                                <select class="form-control" id="select-edge-direction">
+                                    <option value="none">None</option>
+                                    <option value="arrow">Arrow</option>
+                                    <option value="opacity">Transparency</option>
+                                    <option value="gradient">Gradient</option>
+                                    <option value="animation">Animation</option>
+                                </select>
+                            </div>
                         </p>
                         <div id="div-edge-gradient-color-pickers" style="display:none; margin-top: 20px; margin-left: 20px;">
                             <p style="margin-bottom: 0;">
@@ -362,12 +364,14 @@
                         </div>
                         <div id="div-edge-color">
                             <p style="margin-top: 5px; margin-bottom: 0;">
-                                Color Edges by:
-                                <select id="select-edge-color" style="background-color: #feeebd;">
-                                    <option value="none">none</option>
-                                    <option value="node">node</option>
-                                    <option value="weight">weight</option>
-                                </select>
+                                <div class="form-group">
+                                    <label for="select-edge-color">Color Edges by:</label>
+                                    <select class="form-control" id="select-edge-color">
+                                        <option value="none">none</option>
+                                        <option value="node">node</option>
+                                        <option value="weight">weight</option>
+                                    </select>
+                                </div>
                             </p>
                             <div id="div-edge-color-pickers" style="display: none; margin-top: 30px; margin-left: 40px;">
                                 <p><input type="checkbox" id="checkbox-edge-color-force-continuous" style="display:none; width: 12px;">Treat as continuous</p>
