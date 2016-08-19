@@ -47,6 +47,7 @@ class CircularGraph {
     circularEdgeColorMode: string;
     circularEdgeDirectionMode: string;
     circularMouseDownEventListenerAdded = false;
+    edgeColorConfig;
 
 
 
@@ -293,14 +294,19 @@ class CircularGraph {
                 if (edge.visible) {
                     // for every node in the array
                     for (var j = 0; j < this.svgNodeBundleArray.length; j++) {
-
-                        // If this node is the source of the link
-                        if (this.svgNodeBundleArray[j].id == edge.sourceNode.userData.id) {
-                            this.svgNodeBundleArray[j].linkColors[edge.targetNode.userData.id] = edge.color;
+                        if (this.edgeColorConfig && this.edgeColorConfig.useTransitionColor && (edge.uniforms.startColor !== edge.uniforms.endColor)) {
+                            this.svgNodeBundleArray[j].linkColors[edge.targetNode.userData.id] = this.edgeColorConfig.useTransitionColor;
+                            this.svgNodeBundleArray[j].linkColors[edge.sourceNode.userData.id] = this.edgeColorConfig.useTransitionColor;
                         }
-                        // If this node is the Target of the link
-                        if (this.svgNodeBundleArray[j].id == edge.targetNode.userData.id) {
-                            this.svgNodeBundleArray[j].linkColors[edge.sourceNode.userData.id] = edge.color;
+                        else {
+                            // If this node is the source of the link
+                            if (this.svgNodeBundleArray[j].id == edge.sourceNode.userData.id) {
+                                this.svgNodeBundleArray[j].linkColors[edge.targetNode.userData.id] = edge.color;
+                            }
+                            // If this node is the Target of the link
+                            if (this.svgNodeBundleArray[j].id == edge.targetNode.userData.id) {
+                                this.svgNodeBundleArray[j].linkColors[edge.sourceNode.userData.id] = edge.color;
+                            }
                         }
                     }
                 }
@@ -356,6 +362,7 @@ class CircularGraph {
         // update UI
         var links = this.links;
         var edgeColorMode = this.circularEdgeColorMode;
+        var edgeColorConfig = this.edgeColorConfig;
         var edgeDirectionMode = this.circularEdgeDirectionMode;
         var varSvg = this.svg[0];
         var varNS = varSvg[0].namespaceURI;
@@ -388,8 +395,16 @@ class CircularGraph {
                     var sourceColor = (String)(edgeSettings.directionStartColor);
                     var targetColor = (String)(edgeSettings.directionEndColor);
                 } else if (edgeColorMode === "node") {
-                    var sourceColor = String(l.source.color);
-                    var targetColor = String(l.target.color);
+                    var sourceColor: string;
+                    var targetColor: string;
+                    if (edgeColorConfig && edgeColorConfig.useTransitionColor && (l.source.color !== l.target.color)) {
+                        sourceColor = String(edgeColorConfig.edgeTransitionColor);
+                        targetColor = String(edgeColorConfig.edgeTransitionColor);
+                    }
+                    else {
+                        sourceColor = String(l.source.color);
+                        targetColor = String(l.target.color);
+                    }
                 } else {
                     var sourceColor = String(l.source.linkColors[l.target.id]);
                     var targetColor = String(l.source.linkColors[l.target.id]);
@@ -725,6 +740,7 @@ class CircularGraph {
         // Add Links to Circular Graph
         var links = this.links;
         var edgeColorMode = this.circularEdgeColorMode;
+        var edgeColorConfig = this.edgeColorConfig;
         var edgeDirectionMode = this.circularEdgeDirectionMode;
         var varSvg = this.svg[0];
         var varNS = varSvg[0].namespaceURI;
@@ -762,8 +778,16 @@ class CircularGraph {
                     var sourceColor = (String)(edgeSettings.directionStartColor);
                     var targetColor = (String)(edgeSettings.directionEndColor);
                 } else if (edgeColorMode === "node") {
-                    var sourceColor = String(l.source.color);
-                    var targetColor = String(l.target.color);
+                    var sourceColor: string;
+                    var targetColor: string;
+                    if (edgeColorConfig && edgeColorConfig.useTransitionColor && (l.source.color !== l.target.color)) {
+                        sourceColor = String(edgeColorConfig.edgeTransitionColor);
+                        targetColor = String(edgeColorConfig.edgeTransitionColor);
+                    }
+                    else {
+                        sourceColor = String(l.source.color);
+                        targetColor = String(l.target.color);
+                    }
                 } else {
                     var sourceColor = String(l.source.linkColors[l.target.id]);
                     var targetColor = String(l.source.linkColors[l.target.id]);
@@ -1200,8 +1224,9 @@ class CircularGraph {
         }
     }
 
-    circularLayoutEdgeColorModeOnChange(mode: string) {
+    circularLayoutEdgeColorModeOnChange(mode: string, config?) {
         this.circularEdgeColorMode = mode;
+        this.edgeColorConfig = config;
         this.update();
     }
 

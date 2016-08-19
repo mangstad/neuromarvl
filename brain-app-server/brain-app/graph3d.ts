@@ -516,7 +516,16 @@ class Graph3D {
         } else if (colorMode === "node") {
             for (var i = 0; i < this.edgeList.length; i++) {
                 var edge = this.edgeList[i];
-                edge.colorMode = colorMode;
+
+                if (config && config.useTransitionColor) {
+                    let transitionColor = parseInt(config.edgeTransitionColor.substring(1), 16);
+                    edge.colorMode = "node-transitioning";
+                    edge.transitionColor = transitionColor;
+                }
+                else {
+                    edge.colorMode = colorMode;
+                }
+
                 edge.isColorChanged = true;
             }
         } else {        // (colorMode === "none")
@@ -568,7 +577,7 @@ class Graph3D {
             }
         }
 
-        if (this.colorMode === "weight") {
+        if (this.colorMode === "weight" || this.colorMode === "node") {
             // update edges' color map
             this.setEdgeColorConfig(this.colorMode, this.edgeColorConfig);
         } else {
@@ -768,10 +777,12 @@ class Edge {
     directionMode: string; // none, animation, arrow, opacity
 
     // Edge's color
-    colorMode: string; // none, weight, node
+    colorMode: string; // none, weight, node, node-transitioning
     color: string;
     canvas;
     isColorChanged: boolean = false;
+
+    transitionColor = 0xee2211;
 
 
     // by weight
@@ -954,9 +965,25 @@ class Edge {
             this.uniforms.startColor.value = new THREE.Vector4(color.r, color.g, color.b, 1.0);
             this.uniforms.endColor.value = new THREE.Vector4(color.r, color.g, color.b, 1.0);
 
-        } else if (this.colorMode === "node") {
+        }
+        else if (this.colorMode === "node") {
             var sourceColor = new THREE.Color("#" + this.sourceNode.material.color.getHexString());
             var targetColor = new THREE.Color("#" + this.targetNode.material.color.getHexString());
+
+            this.uniforms.startColor.value = new THREE.Vector4(sourceColor.r, sourceColor.g, sourceColor.b, 1.0);
+            this.uniforms.endColor.value = new THREE.Vector4(targetColor.r, targetColor.g, targetColor.b, 1.0);
+        }
+        else if (this.colorMode === "node-transitioning") {
+            let sourceColor;
+            let targetColor;
+            if (this.sourceNode.material.color.getHex() === this.targetNode.material.color.getHex()) {
+                sourceColor = new THREE.Color(this.sourceNode.material.color.getHex());
+                targetColor = new THREE.Color(this.targetNode.material.color.getHex());
+            }
+            else {
+                sourceColor = new THREE.Color(this.transitionColor);
+                targetColor = new THREE.Color(this.transitionColor);
+            }
 
             this.uniforms.startColor.value = new THREE.Vector4(sourceColor.r, sourceColor.g, sourceColor.b, 1.0);
             this.uniforms.endColor.value = new THREE.Vector4(targetColor.r, targetColor.g, targetColor.b, 1.0);

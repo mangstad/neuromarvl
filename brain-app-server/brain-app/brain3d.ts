@@ -116,6 +116,9 @@ class Brain3DApp implements Application, Loopable {
     directionMode: string = "none"
     bundlingEdges: boolean = false;
 
+    edgeTransitionColor = "#ee2211";
+    useTransitionColor = false;
+
     networkType: string;
 
     mouse = {
@@ -330,12 +333,10 @@ class Brain3DApp implements Application, Loopable {
 
 
     setupUserInteraction(jDiv) {
-        console.log("setupUserInteraction");///jm
         var varShowNetwork = (b: boolean) => { this.showNetwork(b); };
         var varEdgesBundlingOnChange = () => { this.edgesBundlingOnChange(); };
         var varAllLabelsOnChange = () => { this.allLabelsOnChange(); };
         var varAutoRotationOnChange = (s) => { this.autoRotationOnChange(s); };
-        //var varSliderMouseEvent = (e: string) => { this.sliderMouseEvent(e); };
         var varGraphViewSliderOnChange = (v: number) => { this.graphViewSliderOnChange(v); };
         var varEdgeCountSliderOnChange = (v: number) => { this.edgeCountSliderOnChange(v); };
         var varCloseBrainAppOnClick = () => { this.closeBrainAppOnClick(); };
@@ -989,6 +990,56 @@ class Brain3DApp implements Application, Loopable {
         }
     }
 
+
+    setEdgeTransitionColor(color: string) {
+        if ((!this.physioGraph) || (!this.colaGraph)) return;
+
+        //this.edgeTransitionColor = parseInt(color.substring(1), 16);
+        this.edgeTransitionColor = color;
+
+        this.physioGraph.setEdgeColorConfig(this.colorMode, {
+            edgeTransitionColor: this.edgeTransitionColor,
+            useTransitionColor: this.useTransitionColor
+        });
+        this.colaGraph.setEdgeColorConfig(this.colorMode, {
+            edgeTransitionColor: this.edgeTransitionColor,
+            useTransitionColor: this.useTransitionColor
+        });
+
+        this.svgNeedsUpdate = true;
+        this.needUpdate = true;
+
+        if (this.circularGraph) this.circularGraph.circularLayoutEdgeColorModeOnChange(this.colorMode, {
+            edgeTransitionColor: this.edgeTransitionColor,
+            useTransitionColor: this.useTransitionColor
+        });
+    }
+
+
+    setUseTransitionColor(useColor: boolean) {
+        if ((!this.physioGraph) || (!this.colaGraph)) return;
+
+        this.useTransitionColor = useColor;
+
+        this.physioGraph.setEdgeColorConfig(this.colorMode, {
+            edgeTransitionColor: this.edgeTransitionColor,
+            useTransitionColor: this.useTransitionColor
+        });
+        this.colaGraph.setEdgeColorConfig(this.colorMode, {
+            edgeTransitionColor: this.edgeTransitionColor,
+            useTransitionColor: this.useTransitionColor
+        });
+
+        this.svgNeedsUpdate = true;
+        this.needUpdate = true;
+
+        if (this.circularGraph) this.circularGraph.circularLayoutEdgeColorModeOnChange(this.colorMode, {
+            edgeTransitionColor: this.edgeTransitionColor,
+            useTransitionColor: this.useTransitionColor
+        });
+    }
+
+
     getDrawingCanvas() {
         if (this.renderer) return this.renderer.domElement;
     }
@@ -1010,12 +1061,8 @@ class Brain3DApp implements Application, Loopable {
     } 
 
     initEdgeCountSlider(app: SaveApp) {
-        console.log("initEdgeCountSlider");///jm
         this.edgeCountSliderOnChange(app.edgeCount);
-        //$('#edge-count-slider-' + this.id).val(<any>app.edgeCount);
-        //$('#edge-count-slider-' + this.id)['bootstrapSlider']();
         $('#edge-count-slider-' + this.id)['bootstrapSlider']("setValue", parseInt(<any>app.edgeCount));
-        //$('#edge-count-slider-' + this.id).attr("data-slider-value", app.edgeCount);
     }
 
     initShowNetwork(app: SaveApp) {        
@@ -1193,10 +1240,9 @@ class Brain3DApp implements Application, Loopable {
         if ((!this.physioGraph) || (!this.colaGraph)) return;
         this.colorMode = colorMode;
 
-
         this.physioGraph.setEdgeColorConfig(this.colorMode, config);
         this.colaGraph.setEdgeColorConfig(this.colorMode, config);
-        if (this.circularGraph) this.circularGraph.circularLayoutEdgeColorModeOnChange(colorMode);
+        if (this.circularGraph) this.circularGraph.circularLayoutEdgeColorModeOnChange(colorMode, config);
         
         this.svgNeedsUpdate = true;
         this.needUpdate = true;
@@ -1675,7 +1721,10 @@ class Brain3DApp implements Application, Loopable {
 
     setEdgeColorByNode() {
         var colorMode = "node";
-        this.edgeColorOnChange(colorMode);
+        this.edgeColorOnChange(colorMode, {
+            edgeTransitionColor: this.edgeTransitionColor,
+            useTransitionColor: this.useTransitionColor
+        });
         this.needUpdate = true;
     }
 
@@ -1726,16 +1775,12 @@ class Brain3DApp implements Application, Loopable {
     }
 
     setDataSet(dataSet: DataSet) {
-        console.log("setDataSet");///jm
         this.dataSet = dataSet;
         if (this.dataSet.sortedSimilarities) {
-            console.log($("#edge-count-slider-" + this.id)['bootstrapSlider']());///jm
             // Update slider max value
             if (this.dataSet.sortedSimilarities.length < maxEdgesShowable) {
-                //$("#edge-count-slider-" + this.id).prop("max", this.dataSet.sortedSimilarities.length);
                 $("#edge-count-slider-" + this.id)['bootstrapSlider']("setAttribute", "max", this.dataSet.sortedSimilarities.length);
             } else {
-                //$("#edge-count-slider-" + this.id).prop("max", maxEdgesShowable);
                 $("#edge-count-slider-" + this.id)['bootstrapSlider']("setAttribute", "max", maxEdgesShowable);
             }
             // update Circular Dataset
@@ -1824,8 +1869,6 @@ class Brain3DApp implements Application, Loopable {
         
         
         // Enable the slider
-        //$('#edge-count-slider-' + this.id).prop('disabled', false);
-        //$('#edge-count-slider-' + this.id).val("" + this.edgeCountSliderValue);
         $('#edge-count-slider-' + this.id)['bootstrapSlider']("setValue", this.edgeCountSliderValue);
         $("#edge-count-slider-" + this.id)['bootstrapSlider']("setAttribute", "max", maxEdgesShowable);
         $('#button-show-network-' + this.id).prop('disabled', false);

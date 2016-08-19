@@ -299,6 +299,7 @@ class NeuroMarvl {
         (<any>$("#input-edge-max-color")).colorpicker({ format: "hex" });
         (<any>$("#input-edge-color")).colorpicker({ format: "hex" });
         (<any>$("#input-context-menu-node-color")).colorpicker({ format: "hex" });
+        (<any>$("#input-edge-transitional-color")).colorpicker({ format: "hex" });
     }
 
     start = () => {
@@ -1577,10 +1578,12 @@ class NeuroMarvl {
             this.setEdgeNoColor();
             this.commonData.edgeColorMode = "none";
             $("#div-edge-color-pickers").hide();
+            $("#div-edge-color-by-node-picker").hide();
 
         } else if (value === "weight") {
             this.commonData.edgeColorMode = "weight";
             $("#div-edge-color-pickers").show();
+            $("#div-edge-color-by-node-picker").hide();
 
             // check if discrete for all apps
             CommonUtilities.launchAlertMessage(CommonUtilities.alertType.WARNING, "Current version of application assumes all view port shares the same dataset");
@@ -1644,6 +1647,7 @@ class NeuroMarvl {
             this.commonData.edgeColorMode = "node";
             this.setEdgeColorByNode();
             $("#div-edge-color-pickers").hide();
+            $("#div-edge-color-by-node-picker").show();
         }
     }
 
@@ -1899,6 +1903,7 @@ class NeuroMarvl {
         });
     }
 
+
     setBrainSurfaceColor = (color: string) => {
         this.saveObj.surfaceSettings.color = color;
 
@@ -1906,6 +1911,26 @@ class NeuroMarvl {
         if (this.apps[1]) this.apps[1].setSurfaceColor(color);
         if (this.apps[2]) this.apps[2].setSurfaceColor(color);
         if (this.apps[3]) this.apps[3].setSurfaceColor(color);
+    }
+
+
+    setEdgeTransitionColor = (color: string) => {
+        this.saveObj.edgeSettings.edgeColorByNodeTransitionColor = color;
+
+        if (this.apps[0]) this.apps[0].setEdgeTransitionColor(color);
+        if (this.apps[1]) this.apps[1].setEdgeTransitionColor(color);
+        if (this.apps[2]) this.apps[2].setEdgeTransitionColor(color);
+        if (this.apps[3]) this.apps[3].setEdgeTransitionColor(color);
+    }
+
+
+    setUseTransitionColor = (useColor: boolean) => {
+        this.saveObj.edgeSettings.edgeColorByNodeTransition = useColor;
+
+        if (this.apps[0]) this.apps[0].setUseTransitionColor(useColor);
+        if (this.apps[1]) this.apps[1].setUseTransitionColor(useColor);
+        if (this.apps[2]) this.apps[2].setUseTransitionColor(useColor);
+        if (this.apps[3]) this.apps[3].setUseTransitionColor(useColor);
     }
 
 
@@ -2075,6 +2100,7 @@ class NeuroMarvl {
             this.setEdgeColorByWeight()
         });
         $("#input-context-menu-node-color").on("changeColor", e => this.setNodeColorInContextMenu((<any>e).color.toHex()));
+        $("#input-edge-transitional-color").on("changeColor", e => this.setEdgeTransitionColor((<any>e).color.toHex()));
 
 
         $('#button-select-matrix').click(() => $("#select-matrix").click());
@@ -2206,6 +2232,11 @@ class NeuroMarvl {
             }
 
             this.setNodeSizeOrColor();
+        });
+
+        $("#checkbox-color-transitional-edges").on("change", () => {
+            let useTransitionColor = $('#checkbox-color-transitional-edges').is(":checked");
+            this.setUseTransitionColor(useTransitionColor);
         });
 
         $('#select-attribute').on('change', this.setupAttributeNodeControls);

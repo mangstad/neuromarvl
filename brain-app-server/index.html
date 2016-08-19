@@ -367,12 +367,24 @@
                                 <div class="form-group">
                                     <label for="select-edge-color">Color Edges by:</label>
                                     <select class="form-control" id="select-edge-color">
-                                        <option value="none">none</option>
-                                        <option value="node">node</option>
-                                        <option value="weight">weight</option>
+                                        <option value="none">None</option>
+                                        <option value="node">Node</option>
+                                        <option value="weight">Weight</option>
                                     </select>
                                 </div>
                             </p>
+                            <div id="div-edge-color-by-node-picker" style="display: none; margin-top: 30px; margin-left: 40px;">
+                                <p><input type="checkbox" id="checkbox-color-transitional-edges" style="width: 12px;"><strong>Colorize transitional edges</strong></p>
+                                <p>
+                                    color:
+                                    <div id="input-edge-transitional-color" class="input-group colorpicker-component">
+                                        <input type="text" value="ee2211" class="form-control" />
+                                        <span class="input-group-addon"><i></i></span>
+                                    </div>
+
+                                    <br>
+                                </p>
+                            </div>
                             <div id="div-edge-color-pickers" style="display: none; margin-top: 30px; margin-left: 40px;">
                                 <p><input type="checkbox" id="checkbox-edge-color-force-continuous" style="display:none; width: 12px;">Treat as continuous</p>
                                 <div id="div-edge-color-continuous">
@@ -395,7 +407,6 @@
                                                 <input type="text" value="2ecc71" class="form-control" />
                                                 <span class="input-group-addon"><i></i></span>
                                             </div>
-
                                             <br>
                                         </div>
 

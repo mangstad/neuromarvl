@@ -14,6 +14,8 @@ class CommonData {
     public edgeColorMode = "none";
     public edgeWeightColorMode = "";
     public edgeForceContinuous = false;
+    //public edgeColorByNodeTransition = false;
+    //public edgeColorByNodeTransitionColor = "#ee2211";
 
     coordCallbacks: Array<() => void> = new Array();
     labelCallbacks: Array<() => void> = new Array();
@@ -316,7 +318,9 @@ class SaveFile {
                     colorArray: [],
                     valueArray: []
                 }
-            }
+            },
+            edgeColorByNodeTransition: false,
+            edgeColorByNodeTransitionColor: "#ee2211"
         };
 
         this.nodeSettings = (sourceObject && sourceObject.nodeSettings) || {
