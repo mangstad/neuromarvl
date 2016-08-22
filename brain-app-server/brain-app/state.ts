@@ -67,27 +67,34 @@ class DataSet {
     }
 
     verify() {
-        //if (this.simMatrix.length === 0) {
-        //    CommonUtilities.launchAlertMessage(CommonUtilities.alertType.ERROR, "Similarity Matrix is not loaded!");
-        //    return false;
-        //}
+        //console.log(`verify() with matrix [${this.simMatrix.length}], attributes [${this.attributes.numRecords}], coordinates [${this.brainCoords[0].length}]`);///jm
 
-        //if (!this.attributes) {
-        //    CommonUtilities.launchAlertMessage(CommonUtilities.alertType.ERROR, "Attributes are not loaded!");
-        //    return false;
-        //}
+        let isValid = true;
 
-        //if (this.brainCoords.length === 0) {
-        //    CommonUtilities.launchAlertMessage(CommonUtilities.alertType.ERROR, "Node Coordinates is not loaded!");
-        //    return false;
-        //}
+        if (this.simMatrix.length === 0) {
+            CommonUtilities.launchAlertMessage(CommonUtilities.alertType.INFO, "Similarity Matrix is empty");
+            isValid = false;
+        }
+
+        if (!this.attributes || !this.attributes.numRecords) {
+            CommonUtilities.launchAlertMessage(CommonUtilities.alertType.INFO, "Attributes are empty");
+            isValid = false;
+        }
+
+        if (this.brainCoords[0].length === 0) {
+            CommonUtilities.launchAlertMessage(CommonUtilities.alertType.INFO, "Node Coordinates are empty");
+            isValid = false;
+        }
+
+        // Above errors are expected during normal workflow, those below are more indicative of actual problems
+        if (!isValid) return false;
 
         if (this.brainCoords[0].length !== this.attributes.numRecords) {
             CommonUtilities.launchAlertMessage(
                 CommonUtilities.alertType.ERROR,
                 `Attributes and Coordinates files do not match! (${this.attributes.numRecords} attributes for ${this.brainCoords[0].length} columns)`
             );
-            return false;
+            isValid = false;
         }
 
         if (this.brainCoords[0].length !== this.simMatrix.length) {
@@ -95,10 +102,10 @@ class DataSet {
                 CommonUtilities.alertType.ERROR,
                 `Similarity Matrix and Coordinates files do not match! (lengths ${this.brainCoords[0].length} and ${this.simMatrix.length})`
             );
-            return false;
+            isValid = false;
         }
 
-        return true;
+        return isValid;
     }
 
     clone() {
