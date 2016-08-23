@@ -329,7 +329,7 @@ class SaveFile {
             nodeSizeOrColor: '',
             nodeSizeAttribute: '',
             nodeSizeMin: 1,
-            nodeSizeMax: 5,
+            nodeSizeMax: 2,
             nodeColorAttribute: '',
             nodeColorMode: "discrete",
             nodeColorDiscrete: ["#1f77b4", "#a2b0e8", "#ff7f0e", "#fffb87", "#2ca02c"],
