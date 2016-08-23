@@ -50,8 +50,8 @@ class DataSet {
     public attributes = new Attributes();
     public info;
     public sortedSimilarities = [];
-    simCallbacks: Array<() => void> = new Array();
-    attCallbacks: Array<() => void> = new Array();
+    simCallback: () => void;
+    attCallback: () => void;
 
     constructor() {
 
@@ -68,7 +68,7 @@ class DataSet {
     verify() {
         // Give a boolean result that indicates whether there is enough data to produce an interactive model.
         // Note that incomplete data will sometimes be progressively loaded, so error alerts should be less
-        // dramatic and more informative in these cases.        
+        // dramatic and more informative in these cases.
 
         if (!this.brainCoords[0].length) {
             // Can't do much, but empty data is still technically OK
@@ -140,10 +140,9 @@ class DataSet {
         newDataset.info = newInfo;
 
         return newDataset;
-
     }
 
-    //
+    
     adjMatrixWithoutEdgesCrossHemisphere(count: number) {
         var max = this.info.nodeCount * (this.info.nodeCount - 1) / 2;
         if (count > max) count = max;
@@ -265,17 +264,17 @@ class DataSet {
     }
 
     regNotifySim(callback: () => void) {
-        this.simCallbacks.push(callback);
+        this.simCallback = callback;
     }
     regNotifyAttributes(callback: () => void) {
-        this.attCallbacks.push(callback);
+        this.attCallback = callback;
     }
     // TODO: add deregistration capability
     notifySim() {
-        this.simCallbacks.forEach(function (c) { c() });
+        this.simCallback();
     }
     notifyAttributes() {
-        this.attCallbacks.forEach(function (c) { c() });
+        this.attCallback();
     }
 }
 

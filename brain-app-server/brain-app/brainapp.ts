@@ -1551,7 +1551,7 @@ class NeuroMarvl {
             // Get a dataset from the default example
             this.loadExampleData(() => this.apps[id].setDataSet(this.referenceDataSet));
         } else {
-            if (!this.referenceDataSet.verify()) return;
+            //if (!this.referenceDataSet.verify()) return;///jm
             this.apps[id].setDataSet(this.referenceDataSet);
         }
     }
