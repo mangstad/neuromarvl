@@ -804,11 +804,11 @@ class NeuroMarvl {
             var id = fRecords[i]["index"];
             idArray.push(id);
         }
-
-        if (this.apps[0]) this.apps[0].applyFilter(idArray);
-        if (this.apps[1]) this.apps[1].applyFilter(idArray);
-        if (this.apps[2]) this.apps[2].applyFilter(idArray);
-        if (this.apps[3]) this.apps[3].applyFilter(idArray);
+        
+        this.apps.forEach(app => {
+            app.applyFilter(idArray);
+            app.needUpdate = true;
+        });
 
         this.saveObj.filteredRecords = this.referenceDataSet.attributes.filteredRecords;
     }
@@ -1448,11 +1448,11 @@ class NeuroMarvl {
                     idArray.push(id);
                 }
             }
-
-            if (this.apps[0]) this.apps[0].highlightSelectedNodes(idArray);
-            if (this.apps[1]) this.apps[1].highlightSelectedNodes(idArray);
-            if (this.apps[2]) this.apps[2].highlightSelectedNodes(idArray);
-            if (this.apps[3]) this.apps[3].highlightSelectedNodes(idArray);
+            
+            this.apps.forEach(app => {
+                app.highlightSelectedNodes(idArray);
+                app.needUpdate = true;
+            });
         }
     }
 
@@ -1551,7 +1551,6 @@ class NeuroMarvl {
             // Get a dataset from the default example
             this.loadExampleData(() => this.apps[id].setDataSet(this.referenceDataSet));
         } else {
-            //if (!this.referenceDataSet.verify()) return;///jm
             this.apps[id].setDataSet(this.referenceDataSet);
         }
     }

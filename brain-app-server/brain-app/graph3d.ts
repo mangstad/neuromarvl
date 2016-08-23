@@ -76,6 +76,7 @@ class Graph3D {
             nodeObject.userData.id = i;
             nodeObject.userData.colors = nodeColorings[i];
             nodeObject.userData.filtered = false;
+            nodeObject.userData.highlighted = false;
 
             this.rootObject.add(nodeObject);
         }
@@ -342,10 +343,20 @@ class Graph3D {
         for (var i = 0; i < this.nodeMeshes.length; ++i) {
             if (filteredIDs.indexOf(i) == -1) {
                 this.nodeMeshes[i].material.color.setHex(this.nodeCurrentColor[i]);
+                this.nodeMeshes[i].userData.highlighted = false;
             }
             else {
                 this.nodeMeshes[i].material.color.setHex(0xFFFF00); // highlight color
+                this.nodeMeshes[i].userData.highlighted = true;
             }
+        }
+
+        // Don't forget to keep edges in sync
+        if (this.colorMode === "weight" || this.colorMode === "node") {
+            // update edges' color map
+            this.setEdgeColorConfig(this.colorMode, this.edgeColorConfig);
+        } else {
+            this.setEdgeColorConfig(this.colorMode);
         }
     }
 

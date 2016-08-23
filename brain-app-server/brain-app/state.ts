@@ -271,10 +271,10 @@ class DataSet {
     }
     // TODO: add deregistration capability
     notifySim() {
-        this.simCallback();
+        if (this.simCallback) this.simCallback();
     }
     notifyAttributes() {
-        this.attCallback();
+        if (this.attCallback) this.attCallback();
     }
 }
 

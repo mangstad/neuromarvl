@@ -24,8 +24,8 @@ class Graph2D {
 
     // Style constants
     BASE_RADIUS = 5;
-    BASE_EDGE_WEIGHT = 1.5;
-    BASE_BORDER_WIDTH = 1;
+    BASE_EDGE_WEIGHT = 2;
+    BASE_BORDER_WIDTH = 2;
     BASE_LABEL_SIZE = 10;
 
     cy;
@@ -104,6 +104,7 @@ class Graph2D {
             nodeObject["color"] = "#".concat(node.material.color.getHexString());
             nodeObject["radius"] = node.scale.x;
             nodeObject["colors"] = d.colors;
+            nodeObject["highlighted"] = d.highlighted;
 
             // Use projection of colaGraph to screen space to initialise positions
             let position = (new THREE.Vector3()).setFromMatrixPosition(node.matrixWorld);
@@ -191,13 +192,14 @@ class Graph2D {
                     radius: d.radius * this.scale * this.BASE_RADIUS,
                     border: d.radius * this.scale * this.BASE_BORDER_WIDTH,
                     labelSize: d.radius * this.scale * this.BASE_LABEL_SIZE,
-                    label: this.dataSet.brainLabels[d.id] || d.id
+                    label: this.dataSet.brainLabels[d.id] || d.id,
+                    highlighted: d.highlighted
                 },
                 position: {
                     x: d.x,
                     y: d.y
                 },
-                classes: "child"
+                classes: "child" + (d.highlighted ? " highlighted" : "")
             };
         });
         let edges = this.links.map(d => ({
@@ -206,7 +208,7 @@ class Graph2D {
                 source: "n_" + d.source.id,
                 target: "n_" + d.target.id,
                 color: d.color,
-                highlight: false,
+                hover: false,
                 edgeWeight: d.width,
                 edgeListIndex: d.edgeListIndex,
                 weight: d.width * this.scale * this.BASE_EDGE_WEIGHT
@@ -358,7 +360,14 @@ class Graph2D {
                     }
                 },
                 {
-                    selector: "node.child.highlight",
+                    selector: "node.child.highlighted",
+                    style: {
+                        "border-color": "#ffff00",
+                        "border-opacity": 1.0
+                    }
+                },
+                {
+                    selector: "node.child.hover",
                     style: {
                         'label': 'data(label)',
                         "border-opacity": 0.5
@@ -372,10 +381,10 @@ class Graph2D {
                     }
                 },
                 {
-                    selector: "node.cluster.highlight",
+                    selector: "node.cluster.hover",
                     style: {
                         "background-opacity": 0.5,
-                        "border-width": 1
+                        "border-width": 2
                     }
                 },
                 {
@@ -389,7 +398,7 @@ class Graph2D {
                     }
                 },
                 {
-                    selector: "edge.highlight",
+                    selector: "edge.hover",
                     style: {
                         opacity: 1
                     }
@@ -404,10 +413,10 @@ class Graph2D {
         let commonData = this.commonData;
         let cy = this.cy;
         cy.on("mouseover", "node.cluster", function (e) {
-            this.addClass("highlight");
+            this.addClass("hover");
         });
         cy.on("mouseout", "node.cluster", function (e) {
-            this.removeClass("highlight");
+            this.removeClass("hover");
         });
         cy.on("mouseover", "node.child", function (e) {
             commonData.nodeIDUnderPointer[4] = this.data("sourceId");
@@ -452,22 +461,23 @@ class Graph2D {
     }
 
     updateInteractive() {
+        console.log("updateInteractive");///jm
         // Minor update, no layout recalculation but will have redraw, e.g. for selected node change
         if (!this.cy) return;
 
         this.cy.batch(() => {
             // Hover and selection
-            this.cy.elements(".highlight").removeClass("highlight");
+            this.cy.elements(".hover").removeClass("hover");
             this.cy.elements("node.select").removeClass("select");
             this.cy.elements(`node[sourceId=${this.commonData.nodeIDUnderPointer[0]}]`)
-                .addClass("highlight")
+                .addClass("hover")
                 .neighborhood()
-                .addClass("highlight")
+                .addClass("hover")
                 ;
             this.cy.elements(`node[sourceId=${this.commonData.nodeIDUnderPointer[4]}]`)
-                .addClass("highlight")
+                .addClass("hover")
                 .neighborhood()
-                .addClass("highlight")
+                .addClass("hover")
                 ;
 
             this.cy.elements(`node[sourceId=${this.commonData.selectedNode}]`).addClass("select");
@@ -497,7 +507,7 @@ class Graph2D {
                 let radius = node.scale.x * this.scale * this.BASE_RADIUS
                 e.data("radius", radius);
 
-                //Colour
+                // Colour
                 let d = node.userData;
                 e.data("color0", d.colors[0] ? "#" + d.colors[0].color.toString(16) : "black");
                 e.data("color1", d.colors[1] ? "#" + d.colors[1].color.toString(16) : "black");
@@ -515,6 +525,14 @@ class Graph2D {
                 e.data("portion5", d.colors[5] ? d.colors[5].portion * 100 : 0);
                 e.data("portion6", d.colors[6] ? d.colors[6].portion * 100 : 0);
                 e.data("portion7", d.colors[7] ? d.colors[7].portion * 100 : 0);
+
+                // Filter highlighting
+                if (d.highlighted) {
+                    e.addClass("highlighted");
+                }
+                else {
+                    e.removeClass("highlighted");
+                }
             });
         });
     }
@@ -538,6 +556,7 @@ class Graph2D {
     */
 
     settingOnChange() {
+        console.log("settingOnChange");///jm
         // Styling changes not affecting layout, triggered by 2d settings
         this.cy.batch(() => {
             this.cy.elements("node.child")

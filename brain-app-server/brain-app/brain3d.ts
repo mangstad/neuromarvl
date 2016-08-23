@@ -1612,6 +1612,7 @@ class Brain3DApp implements Application, Loopable {
 
         this.physioGraph.highlightSelectedNodes(filteredIDs);
         this.colaGraph.highlightSelectedNodes(filteredIDs);
+        //TODO: add highlight for other graphs
 
         this.svgNeedsUpdate = true;
     }
