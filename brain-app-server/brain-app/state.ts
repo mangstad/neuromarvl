@@ -47,7 +47,6 @@ class DataSet {
     public simMatrix: number[][] = [];
     public brainCoords: number[][] = [[]];
     public brainLabels: string[] = [];
-    //public attributes: Attributes = null;
     public attributes = new Attributes();
     public info;
     public sortedSimilarities = [];
@@ -67,41 +66,39 @@ class DataSet {
     }
 
     verify() {
-        //console.log(`verify() with matrix [${this.simMatrix.length}], attributes [${this.attributes.numRecords}], coordinates [${this.brainCoords[0].length}]`);///jm
+        // Give a boolean result that indicates whether there is enough data to produce an interactive model.
+        // Note that incomplete data will sometimes be progressively loaded, so error alerts should be less
+        // dramatic and more informative in these cases.        
+
+        if (!this.brainCoords[0].length) {
+            // Can't do much, but empty data is still technically OK
+            CommonUtilities.launchAlertMessage(CommonUtilities.alertType.INFO, "Node Coordinates are empty. Load a valid coordinates file.");
+            return true;
+        }
 
         let isValid = true;
 
-        if (this.simMatrix.length === 0) {
-            CommonUtilities.launchAlertMessage(CommonUtilities.alertType.INFO, "Similarity Matrix is empty");
-            isValid = false;
-        }
-
-        if (!this.attributes || !this.attributes.numRecords) {
-            CommonUtilities.launchAlertMessage(CommonUtilities.alertType.INFO, "Attributes are empty");
-            isValid = false;
-        }
-
-        if (this.brainCoords[0].length === 0) {
-            CommonUtilities.launchAlertMessage(CommonUtilities.alertType.INFO, "Node Coordinates are empty");
-            isValid = false;
-        }
-
-        // Above errors are expected during normal workflow, those below are more indicative of actual problems
-        if (!isValid) return false;
-
         if (this.brainCoords[0].length !== this.attributes.numRecords) {
-            CommonUtilities.launchAlertMessage(
-                CommonUtilities.alertType.ERROR,
-                `Attributes and Coordinates files do not match! (${this.attributes.numRecords} attributes for ${this.brainCoords[0].length} columns)`
-            );
+            if (!this.attributes.numRecords) {
+                CommonUtilities.launchAlertMessage(CommonUtilities.alertType.INFO, "Attributes are empty. Load a valid attributes file.");
+            }
+            else {
+                CommonUtilities.launchAlertMessage(
+                    CommonUtilities.alertType.ERROR, `Attributes and Coordinates files do not match! (${this.attributes.numRecords} attributes for ${this.brainCoords[0].length} columns)`
+                );
+            }
             isValid = false;
         }
 
         if (this.brainCoords[0].length !== this.simMatrix.length) {
-            CommonUtilities.launchAlertMessage(
-                CommonUtilities.alertType.ERROR,
-                `Similarity Matrix and Coordinates files do not match! (lengths ${this.brainCoords[0].length} and ${this.simMatrix.length})`
-            );
+            if (!this.simMatrix.length) {
+                CommonUtilities.launchAlertMessage(CommonUtilities.alertType.INFO, "Similarity Matrix is empty. Load a valid matrix file.");
+            }
+            else {
+                CommonUtilities.launchAlertMessage(
+                    CommonUtilities.alertType.ERROR, `Similarity Matrix and Coordinates files do not match! (lengths ${this.brainCoords[0].length} and ${this.simMatrix.length})`
+                );
+            }
             isValid = false;
         }
 
@@ -194,6 +191,7 @@ class DataSet {
             adjMatrix[i] = new Array<number>(this.info.nodeCount);
         }
 
+        console.log(this.simMatrix);///jm
 
         for (var i = 0; i < this.info.nodeCount - 1; ++i) {
 
@@ -234,6 +232,8 @@ class DataSet {
     }
 
     setSimMatrix(simMatrix) {
+        console.log(simMatrix);///jm
+
         this.simMatrix = simMatrix;
         this.info.isSymmetricalMatrix = CommonUtilities.isSymmetrical(this.simMatrix);
 

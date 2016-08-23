@@ -2030,12 +2030,12 @@ class Brain3DApp implements Application, Loopable {
             }
 
             if (this.needUpdate || this.isAnimationOn) {
+                console.log("update");///jm
                 this.physioGraph.update();
                 this.colaGraph.update();
                 this.needUpdate = false;
             }
 
-            //if (this.showingCola)
             if (this.colaGraph.isVisible()) {
                 //TODO: This is very slow, for minimal impact - look at using regular 3D layout, e.g.:
                 //  http://marvl.infotech.monash.edu/webcola/examples/3dtree.html
