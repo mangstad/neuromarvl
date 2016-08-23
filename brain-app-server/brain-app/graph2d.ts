@@ -453,6 +453,8 @@ class Graph2D {
 
     updateInteractive() {
         // Minor update, no layout recalculation but will have redraw, e.g. for selected node change
+        if (!this.cy) return;
+
         this.cy.batch(() => {
             // Hover and selection
             this.cy.elements(".highlight").removeClass("highlight");

@@ -191,8 +191,6 @@ class DataSet {
             adjMatrix[i] = new Array<number>(this.info.nodeCount);
         }
 
-        console.log(this.simMatrix);///jm
-
         for (var i = 0; i < this.info.nodeCount - 1; ++i) {
 
             for (var j = i + 1; j < this.info.nodeCount; ++j) {
@@ -232,8 +230,6 @@ class DataSet {
     }
 
     setSimMatrix(simMatrix) {
-        console.log(simMatrix);///jm
-
         this.simMatrix = simMatrix;
         this.info.isSymmetricalMatrix = CommonUtilities.isSymmetrical(this.simMatrix);
 

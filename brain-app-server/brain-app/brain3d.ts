@@ -113,6 +113,7 @@ class Brain3DApp implements Application, Loopable {
     autoRotation: boolean = false;
     weightEdges: boolean = false;
     colorMode: string = "none";
+    colorConfig: Object;
     directionMode: string = "none"
     bundlingEdges: boolean = false;
 
@@ -1239,6 +1240,7 @@ class Brain3DApp implements Application, Loopable {
     edgeColorOnChange(colorMode: string, config?) {
         if ((!this.physioGraph) || (!this.colaGraph)) return;
         this.colorMode = colorMode;
+        this.colorConfig = config;
 
         this.physioGraph.setEdgeColorConfig(this.colorMode, config);
         this.colaGraph.setEdgeColorConfig(this.colorMode, config);
@@ -1863,16 +1865,18 @@ class Brain3DApp implements Application, Loopable {
         }
         this.physioGraph.findNodeConnectivity(this.filteredAdjMatrix, this.dissimilarityMatrix, null);
         this.physioGraph.setEdgeVisibilities(this.filteredAdjMatrix);
+        this.physioGraph.setEdgeColorConfig(this.colorMode, this.colorConfig);
         this.colaGraph.findNodeConnectivity(this.filteredAdjMatrix, this.dissimilarityMatrix, null);
         this.colaGraph.setEdgeVisibilities(this.filteredAdjMatrix);
+        this.colaGraph.setEdgeColorConfig(this.colorMode, this.colorConfig);
         this.edgeCountSliderOnChange(Number(this.edgeCountSliderValue));
-        
-        
+                
         // Enable the slider
         $('#edge-count-slider-' + this.id)['bootstrapSlider']("setValue", this.edgeCountSliderValue);
         $("#edge-count-slider-" + this.id)['bootstrapSlider']("setAttribute", "max", maxEdgesShowable);
         $('#button-show-network-' + this.id).prop('disabled', false);
 
+        this.needUpdate = true;
     }
 
     computeMedialViewCoords() {
@@ -2030,7 +2034,6 @@ class Brain3DApp implements Application, Loopable {
             }
 
             if (this.needUpdate || this.isAnimationOn) {
-                console.log("update");///jm
                 this.physioGraph.update();
                 this.colaGraph.update();
                 this.needUpdate = false;
