@@ -72,7 +72,7 @@ class DataSet {
 
         if (!this.brainCoords[0].length) {
             // Can't do much, but empty data is still technically OK
-            CommonUtilities.launchAlertMessage(CommonUtilities.alertType.INFO, "Node Coordinates are empty. Load a valid coordinates file.");
+            CommonUtilities.launchAlertMessage(CommonUtilities.alertType.INFO, "Node coordinates are empty. Load a valid coordinates file.");
             return true;
         }
 
@@ -84,7 +84,7 @@ class DataSet {
             }
             else {
                 CommonUtilities.launchAlertMessage(
-                    CommonUtilities.alertType.ERROR, `Attributes and Coordinates files do not match! (${this.attributes.numRecords} attributes for ${this.brainCoords[0].length} columns)`
+                    CommonUtilities.alertType.ERROR, `Attribute and coordinate files do not match! (${this.attributes.numRecords} attributes for ${this.brainCoords[0].length} columns)`
                 );
             }
             isValid = false;
@@ -92,11 +92,11 @@ class DataSet {
 
         if (this.brainCoords[0].length !== this.simMatrix.length) {
             if (!this.simMatrix.length) {
-                CommonUtilities.launchAlertMessage(CommonUtilities.alertType.INFO, "Similarity Matrix is empty. Load a valid matrix file.");
+                CommonUtilities.launchAlertMessage(CommonUtilities.alertType.INFO, "Similarity matrix is empty. Load a valid matrix file.");
             }
             else {
                 CommonUtilities.launchAlertMessage(
-                    CommonUtilities.alertType.ERROR, `Similarity Matrix and Coordinates files do not match! (lengths ${this.brainCoords[0].length} and ${this.simMatrix.length})`
+                    CommonUtilities.alertType.ERROR, `Similarity matrix and coordinates files do not match! (lengths ${this.brainCoords[0].length} and ${this.simMatrix.length})`
                 );
             }
             isValid = false;

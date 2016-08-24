@@ -55,7 +55,6 @@ class CommonUtilities {
             for (var i = 0; i < len - 1; i++) {
                 adjMatrix[i][i] = null;
                 for (var j = i + 1; j < len; ++j) {
-
                     if (adjMatrix[i][j] === 1) {
                         array.push(matrix[i][j]);
                     } 

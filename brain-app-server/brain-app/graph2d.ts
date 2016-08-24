@@ -461,7 +461,6 @@ class Graph2D {
     }
 
     updateInteractive() {
-        console.log("updateInteractive");///jm
         // Minor update, no layout recalculation but will have redraw, e.g. for selected node change
         if (!this.cy) return;
 
@@ -556,7 +555,6 @@ class Graph2D {
     */
 
     settingOnChange() {
-        console.log("settingOnChange");///jm
         // Styling changes not affecting layout, triggered by 2d settings
         this.cy.batch(() => {
             this.cy.elements("node.child")

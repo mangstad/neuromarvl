@@ -269,7 +269,7 @@ class Graph3D {
         }
     }
 
-    findNodeConnectivity(filteredAdjMatrix, dissimilarityMatrix, edges: any[]) {
+    findNodeConnectivity(filteredAdjMatrix, dissimilarityMatrix, edges?: any[]) {
 
         var hasNeighbours = Array<boolean>(this.nodeMeshes.length);
         for (var i = 0; i < this.nodeMeshes.length - 1; ++i) {

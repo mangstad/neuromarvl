@@ -90,17 +90,6 @@ class Loop {
             var deltaTime = (currentTime - this.timeOfLastFrame) / 1000;
             this.timeOfLastFrame = currentTime;
 
-            //TODO: This bit isn't useful now as there is no mechanism to clear apps. It also should be somewhere else.
-            // Kept for now, because app deletion will probably need to be implemented in the future.
-            /*
-            for (var i = 0; i < 4; ++i) {
-                if (apps[i] && apps[i].isDeleted()) {
-                    apps[i] = null;
-                    saveObj.saveApps[i] = null; // create a new instance (if an old instance exists)
-                }
-            }
-            */
-
             // Limit the maximum time step
             if (deltaTime > this.frameTimeLimit)
                 this.loopable.update(this.frameTimeLimit);
@@ -363,12 +352,12 @@ class NeuroMarvl {
     initApp = id => {
         // init edge count
         var app = this.saveObj.saveApps[id];
-        if ((app.surfaceModel != null) && (app.surfaceModel.length > 0)) {
+        if (app.surfaceModel) {
             this.apps[id].initEdgeCountSlider(app);
         }
 
         // init cross filter
-        if ((this.saveObj.filteredRecords != null) && (this.saveObj.filteredRecords.length > 0)) {
+        if (this.saveObj.filteredRecords && (this.saveObj.filteredRecords.length > 0)) {
             this.referenceDataSet.attributes.filteredRecords = this.saveObj.filteredRecords.slice(0);
             this.applyFilterButtonOnClick();
         }
@@ -377,7 +366,7 @@ class NeuroMarvl {
         this.apps[id].restart();
 
         // init show network
-        if ((app.surfaceModel != null) && (app.surfaceModel.length > 0)) {
+        if (app.surfaceModel) {
             this.apps[id].initShowNetwork(app);
         }
 
@@ -386,7 +375,7 @@ class NeuroMarvl {
 
     initDataDependantUI = () => {
         // init the node size and color given the current UI. The UI needs to be redesigned.
-        if ((this.saveObj.nodeSettings.nodeSizeOrColor != null) && (this.saveObj.nodeSettings.nodeSizeOrColor.length > 0)) {
+        if (this.saveObj.nodeSettings.nodeSizeOrColor && (this.saveObj.nodeSettings.nodeSizeOrColor.length > 0)) {
             if (this.saveObj.nodeSettings.nodeSizeOrColor == "node-size") {
                 this.initNodeColor();
                 this.initNodeSize();
@@ -398,12 +387,12 @@ class NeuroMarvl {
         }
 
         // init edge size and color.
-        if (this.saveObj.edgeSettings != null) {
+        if (this.saveObj.edgeSettings) {
             this.initEdgeSizeAndColor();
         }
 
         // init Surface Setting
-        if (this.saveObj.surfaceSettings != null) {
+        if (this.saveObj.surfaceSettings) {
             this.initSurfaceSettings();
         }
 
@@ -1822,7 +1811,7 @@ class NeuroMarvl {
     }
 
     initNodeSize = () => {
-        if ((this.saveObj.nodeSettings.nodeSizeAttribute != null) && (this.saveObj.nodeSettings.nodeSizeAttribute.length > 0)) {
+        if (this.saveObj.nodeSettings.nodeSizeAttribute) {
             $('#select-node-size-color').val("node-size");
             $('#select-attribute').val(this.saveObj.nodeSettings.nodeSizeAttribute);
             
@@ -1835,7 +1824,7 @@ class NeuroMarvl {
     }
 
     initNodeColor = () => {
-        if ((this.saveObj.nodeSettings.nodeColorAttribute != null) && (this.saveObj.nodeSettings.nodeColorAttribute.length > 0)) {
+        if (this.saveObj.nodeSettings.nodeColorAttribute) {
             $('#select-node-size-color').val("node-color");
             $('#select-attribute').val(this.saveObj.nodeSettings.nodeColorAttribute);
 

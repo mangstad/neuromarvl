@@ -70,10 +70,10 @@ class Brain3DApp implements Application, Loopable {
     
 
     //Graphs
-    circularGraph: CircularGraph = null;
-    colaGraph: Graph3D = null;
-    canvasGraph: Graph2D = null;
-    physioGraph: Graph3D = null;
+    circularGraph: CircularGraph;
+    colaGraph: Graph3D;
+    canvasGraph: Graph2D;
+    physioGraph: Graph3D;
     needUpdate = false;
     isAnimationOn = false;
 
@@ -974,7 +974,7 @@ class Brain3DApp implements Application, Loopable {
         } else {
             this.filteredAdjMatrix = this.dataSet.adjMatrixWithoutEdgesCrossHemisphere(Number(this.edgeCountSliderValue));
         }
-        this.physioGraph.findNodeConnectivity(this.filteredAdjMatrix, this.dissimilarityMatrix, null);
+        this.physioGraph.findNodeConnectivity(this.filteredAdjMatrix, this.dissimilarityMatrix);
         this.physioGraph.setEdgeVisibilities(this.filteredAdjMatrix);
     }
 
@@ -1213,7 +1213,7 @@ class Brain3DApp implements Application, Loopable {
             this.filteredAdjMatrix = this.dataSet.adjMatrixWithoutEdgesCrossHemisphere(numEdges);
         }
         if (this.physioGraph) {
-            this.physioGraph.findNodeConnectivity(this.filteredAdjMatrix, this.dissimilarityMatrix, null);
+            this.physioGraph.findNodeConnectivity(this.filteredAdjMatrix, this.dissimilarityMatrix);
             this.physioGraph.setEdgeVisibilities(this.filteredAdjMatrix);
         }
 
@@ -1265,7 +1265,7 @@ class Brain3DApp implements Application, Loopable {
             $('#bundling-edges-' + this.id).css('opacity', 0.2);
 
             this.physioGraph.removeAllBundlingEdges();
-            this.physioGraph.findNodeConnectivity(this.filteredAdjMatrix, this.dissimilarityMatrix, null);
+            this.physioGraph.findNodeConnectivity(this.filteredAdjMatrix, this.dissimilarityMatrix);
             this.physioGraph.setEdgeVisibilities(this.filteredAdjMatrix);
         }
 
@@ -1599,7 +1599,7 @@ class Brain3DApp implements Application, Loopable {
 
         this.physioGraph.filteredNodeIDs = filteredIDs;
         this.physioGraph.applyNodeFiltering();
-        this.physioGraph.findNodeConnectivity(this.filteredAdjMatrix, this.dissimilarityMatrix, null);
+        this.physioGraph.findNodeConnectivity(this.filteredAdjMatrix, this.dissimilarityMatrix);
         this.physioGraph.setEdgeVisibilities(this.filteredAdjMatrix);
         
     }
@@ -1864,10 +1864,10 @@ class Brain3DApp implements Application, Loopable {
         } else {
             this.filteredAdjMatrix = this.dataSet.adjMatrixWithoutEdgesCrossHemisphere(Number(this.edgeCountSliderValue));
         }
-        this.physioGraph.findNodeConnectivity(this.filteredAdjMatrix, this.dissimilarityMatrix, null);
+        this.physioGraph.findNodeConnectivity(this.filteredAdjMatrix, this.dissimilarityMatrix);
         this.physioGraph.setEdgeVisibilities(this.filteredAdjMatrix);
         this.physioGraph.setEdgeColorConfig(this.colorMode, this.colorConfig);
-        this.colaGraph.findNodeConnectivity(this.filteredAdjMatrix, this.dissimilarityMatrix, null);
+        this.colaGraph.findNodeConnectivity(this.filteredAdjMatrix, this.dissimilarityMatrix);
         this.colaGraph.setEdgeVisibilities(this.filteredAdjMatrix);
         this.colaGraph.setEdgeColorConfig(this.colorMode, this.colorConfig);
         this.edgeCountSliderOnChange(Number(this.edgeCountSliderValue));
@@ -1930,7 +1930,7 @@ class Brain3DApp implements Application, Loopable {
         }
 
         this.commonData.nodeIDUnderPointer[this.id] = -1;
-        return null;
+        return;
     }
 
     getBoundingSphereUnderPointer(pointer) {
