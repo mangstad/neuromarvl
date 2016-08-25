@@ -958,8 +958,11 @@ class Edge {
 
         // Overwriter current color setting if directionMode is gradient
         if (this.directionMode === "gradient") {
-            var startRGB = CommonUtilities.hexToRgb(this.saveObj.edgeSettings.directionStartColor, 1.0);
-            var endRGB = CommonUtilities.hexToRgb(this.saveObj.edgeSettings.directionEndColor, 1.0);
+            let edgeSettings = this.saveObj.edgeSettings;
+            if (!edgeSettings.directionStartColor) edgeSettings.directionStartColor = "#ff0000";
+            if (!edgeSettings.directionEndColor) edgeSettings.directionEndColor = "#0000ff";
+            var startRGB = CommonUtilities.hexToRgb(edgeSettings.directionStartColor, 1.0);
+            var endRGB = CommonUtilities.hexToRgb(edgeSettings.directionEndColor, 1.0);
             this.uniforms.startColor.value = new THREE.Vector4(
                 startRGB.r / 255,
                 startRGB.g / 255,

@@ -414,7 +414,7 @@ class CircularGraph {
                     sourceOpacity = 0;
                     targetOpacity = 1;
                 }
-
+                
                 var sourceColorRGBA = CommonUtilities.hexToRgb(sourceColor, sourceOpacity).toString();
                 var targetColorRGBA = CommonUtilities.hexToRgb(targetColor, targetOpacity).toString();
                 var stops = [
