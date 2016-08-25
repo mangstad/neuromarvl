@@ -23,10 +23,10 @@ class Graph2D {
     links: any[];
 
     // Style constants
-    BASE_RADIUS = 5;
+    BASE_RADIUS = 7;
     BASE_EDGE_WEIGHT = 2;
     BASE_BORDER_WIDTH = 2;
-    BASE_LABEL_SIZE = 10;
+    BASE_LABEL_SIZE = 8;
 
     cy;
 
@@ -230,7 +230,8 @@ class Graph2D {
                         radius: 10,
                         border: 2
                     },
-                    classes: "cluster"
+                    classes: "cluster",
+                    selectable: false
                 }))
                 ;
         }
@@ -370,11 +371,25 @@ class Graph2D {
                     selector: "node.child.hover",
                     style: {
                         'label': 'data(label)',
-                        "border-opacity": 0.5
+                        "border-opacity": 0.3
                     }
                 },
                 {
-                    selector: "node.select",
+                    selector: "node.child.hover-neighbour",
+                    style: {
+                        "border-opacity": 0.3
+                    }
+                },
+                {
+                    selector: "node:selected",
+                    style: {
+                        "border-opacity": 0.3,
+                        //"border-style": "double",
+                        //"border-width": e => e.data("border") * 2
+                    }
+                },
+                {
+                    selector: "node.chosen",
                     style: {
                         'label': 'data(label)',
                         "border-opacity": 1.0
@@ -383,7 +398,7 @@ class Graph2D {
                 {
                     selector: "node.cluster.hover",
                     style: {
-                        "background-opacity": 0.5,
+                        "background-opacity": 0.3,
                         "border-width": 2
                     }
                 },
@@ -391,7 +406,7 @@ class Graph2D {
                     selector: "edge",
                     style: {
                         "width": "data(weight)",
-                        "opacity": 0.5,
+                        "opacity": 0.6,
                         'line-color': 'data(color)',
                         'mid-target-arrow-color': 'data(color)',
                         "mid-target-arrow-shape": (this.directionMode === "arrow") ? "triangle" : "none"
@@ -412,7 +427,7 @@ class Graph2D {
 
         let commonData = this.commonData;
         let cy = this.cy;
-        cy.on("mouseover", "node.cluster", function (e) {
+        cy.on("mousemove", "node.cluster", function (e) {
             this.addClass("hover");
         });
         cy.on("mouseout", "node.cluster", function (e) {
@@ -427,10 +442,10 @@ class Graph2D {
         cy.on("tap", "node.child", function (e) {
             let oldSelected = commonData.selectedNode;
             if (oldSelected > -1) {
-                cy.elements("node").removeClass("select");
+                cy.elements("node").removeClass("chosen");
             }
             let newSelected = this.data("sourceId");
-            this.addClass("select");
+            this.addClass("chosen");
         });
         cy.on("layoutstop", e => {
             // Some layouts need to pan/zoom after layout is done
@@ -467,19 +482,20 @@ class Graph2D {
         this.cy.batch(() => {
             // Hover and selection
             this.cy.elements(".hover").removeClass("hover");
-            this.cy.elements("node.select").removeClass("select");
+            this.cy.elements(".hover-neighbour").removeClass("hover-neighbour");
+            this.cy.elements("node.chosen").removeClass("chosen");
             this.cy.elements(`node[sourceId=${this.commonData.nodeIDUnderPointer[0]}]`)
                 .addClass("hover")
                 .neighborhood()
-                .addClass("hover")
+                .addClass("hover-neighbour")
                 ;
             this.cy.elements(`node[sourceId=${this.commonData.nodeIDUnderPointer[4]}]`)
                 .addClass("hover")
                 .neighborhood()
-                .addClass("hover")
+                .addClass("hover-neighbour")
                 ;
 
-            this.cy.elements(`node[sourceId=${this.commonData.selectedNode}]`).addClass("select");
+            this.cy.elements(`node[sourceId=${this.commonData.selectedNode}]`).addClass("chosen");
 
             // Edge colour setting changes
             if ((this.graph3d.colorMode === "weight") || (this.graph3d.colorMode === "none")) {
