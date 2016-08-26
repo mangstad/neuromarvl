@@ -98,7 +98,6 @@ class CommonUtilities {
         }
 
         var newAlert = $('<div id="' + alertID + '" class="alert ' + alertTypeClass + '" role="alert"></div>')
-
             .append($('<span class="glyphicon ' + alertIcon + '" aria-hidden="true"> ' + alertTypeString + '</span>'))
             .append('<p>' + alertMessage + '</p>');
 

@@ -265,7 +265,7 @@ class Graph2D {
             case "cose-bilkent":
                 layoutOptions.fit = true;
                 layoutOptions.numIter = 15;
-                layoutOptions.idealEdgeLength = this.BASE_RADIUS * 5;
+                layoutOptions.idealEdgeLength = this.BASE_RADIUS * 4;
                 break;
             case "cola":
                 layoutOptions.fit = true;

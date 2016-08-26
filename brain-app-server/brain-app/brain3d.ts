@@ -459,10 +459,9 @@ class Brain3DApp implements Application, Loopable {
             id: "edge-count-slider-" + this.id + "-slider"
         });
         $("#edge-count-slider-" + this.id).on("slide", event => varEdgeCountSliderOnChange(event["value"]));
+        $("#edge-count-slider-" + this.id).on("slideStop", event => this.showNetwork(false));
         $("#edge-count-slider-" + this.id + "-slider").css({
-            //'display': 'inline-block',
             'width': '300px',
-            //'position': 'relative',
             'margin-right': 10,
             'margin-left': 10,
             'z-index': 1000
@@ -1101,15 +1100,6 @@ class Brain3DApp implements Application, Loopable {
         }
     }
 
-    //sliderMouseEvent(e: string) {
-    //    if (e == "mousedown") {
-    //        this.input.sliderEvent = true;
-    //    }
-    //    else if (e == "mouseup"){
-    //        this.input.sliderEvent = false;
-    //    }
-    //}
-
     closeBrainAppOnClick() {
         this.jDiv.empty();
 
@@ -1339,12 +1329,15 @@ class Brain3DApp implements Application, Loopable {
     showNetwork(switchNetworkType: boolean) {
         if (!this.brainObject || !this.colaObject || !this.physioGraph || !this.colaGraph || !this.networkType || !this.dataSet.brainCoords.length || !this.dataSet.brainCoords[0].length) return;
 
+        CommonUtilities.launchAlertMessage(CommonUtilities.alertType.INFO, "Generating new graph layout...");
+
         // Change the text of the button to "Topology"
         this.showingTopologyNetwork = true; 
 
         if (this.bundlingEdges) this.edgesBundlingOnChange(); // turn off edge bundling
 
-        if (!this.transitionInProgress) {
+        // Wrap long-running changes in a short timeout so we don't block the UI
+        window.setTimeout(() => {
             // Leave *showingCola* on permanently after first turn-on
             //this.showingCola = true;
 
@@ -1442,7 +1435,9 @@ class Brain3DApp implements Application, Loopable {
 
                 this.colaObjectAnimation(origin, target, originColaCoords, this.colaCoords, switchNetworkType, true);                
             }
-        }
+
+            CommonUtilities.launchAlertMessage(CommonUtilities.alertType.INFO, "Graph layout done");
+        }, 0)
     }
 
     cross(u: number[], v: number[]) {
@@ -1601,7 +1596,8 @@ class Brain3DApp implements Application, Loopable {
         this.physioGraph.applyNodeFiltering();
         this.physioGraph.findNodeConnectivity(this.filteredAdjMatrix, this.dissimilarityMatrix);
         this.physioGraph.setEdgeVisibilities(this.filteredAdjMatrix);
-        
+
+        this.showNetwork(false);
     }
 
     //////////////////////////////////////////////////
@@ -1878,6 +1874,7 @@ class Brain3DApp implements Application, Loopable {
         $('#button-show-network-' + this.id).prop('disabled', false);
 
         this.needUpdate = true;
+        this.showNetwork(false);
     }
 
     computeMedialViewCoords() {
