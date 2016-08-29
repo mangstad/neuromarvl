@@ -666,8 +666,10 @@ class Brain3DApp implements Application, Loopable {
                 this.commonData.selectedNode = node ? node.userData.id : nodeIDUnderPointer;
 
                 // Select the new node
-                this.physioGraph.selectNode(this.commonData.selectedNode, false, false);
-                this.colaGraph.selectNode(this.commonData.selectedNode, this.ignore3dControl, true);
+                //this.physioGraph.selectNode(this.commonData.selectedNode, false, false);
+                //this.colaGraph.selectNode(this.commonData.selectedNode, this.ignore3dControl, true);
+                this.physioGraph.selectNode(this.commonData.selectedNode, false);
+                this.colaGraph.selectNode(this.commonData.selectedNode, this.ignore3dControl);
 
 
                 var varNodeID = this.commonData.selectedNode;
@@ -1314,8 +1316,10 @@ class Brain3DApp implements Application, Loopable {
 
         if (this.allLabels) {
             $('#all-labels-' + this.id).css('opacity', 1);
-            this.physioGraph.showAllLabels(false, false);
-            this.colaGraph.showAllLabels(this.ignore3dControl, true);
+            //this.physioGraph.showAllLabels(false, false);
+            //this.colaGraph.showAllLabels(this.ignore3dControl, true);
+            this.physioGraph.showAllLabels(false);
+            this.colaGraph.showAllLabels(this.ignore3dControl);
         }
         else {
             $('#all-labels-' + this.id).css('opacity', 0.2);
@@ -1347,7 +1351,8 @@ class Brain3DApp implements Application, Loopable {
             this.colaGraph.setNodeVisibilities(); // Hide the nodes without neighbours
             this.colaGraph.setEdgeVisibilities(this.filteredAdjMatrix); // Hide the edges that have not been selected
             if (this.allLabels) {
-                this.colaGraph.showAllLabels(this.ignore3dControl, true);
+                //this.colaGraph.showAllLabels(this.ignore3dControl, true);
+                this.colaGraph.showAllLabels(this.ignore3dControl);
             }
             //-------------------------------------------------------------------------------------------------------------
             // 3d cola graph
@@ -1994,8 +1999,10 @@ class Brain3DApp implements Application, Loopable {
                     }
 
                     // Select the new node ID
-                    this.physioGraph.selectNode(this.selectedNodeID, false, false);
-                    this.colaGraph.selectNode(this.selectedNodeID, this.ignore3dControl, true);
+                    //this.physioGraph.selectNode(this.selectedNodeID, false, false);
+                    //this.colaGraph.selectNode(this.selectedNodeID, this.ignore3dControl, true);
+                    this.physioGraph.selectNode(this.selectedNodeID, false);
+                    this.colaGraph.selectNode(this.selectedNodeID, this.ignore3dControl);
 
 
                     var varNodeID = this.selectedNodeID;
