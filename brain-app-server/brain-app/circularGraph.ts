@@ -16,8 +16,8 @@ class CircularGraph {
     saveObj;
 
     // Circular Only data
-    nodes;
-    links;
+    nodes = [];
+    links = [];
 
     // Save html elements
     circularBar1ColorPicker;

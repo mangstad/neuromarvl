@@ -334,7 +334,7 @@ class Brain3DApp implements Application, Loopable {
 
 
     setupUserInteraction(jDiv) {
-        var varShowNetwork = (b: boolean) => { this.showNetwork(b); };
+        //var varShowNetwork = (b: boolean) => { this.showNetwork(b); };
         var varEdgesBundlingOnChange = () => { this.edgesBundlingOnChange(); };
         var varAllLabelsOnChange = () => { this.allLabelsOnChange(); };
         var varAutoRotationOnChange = (s) => { this.autoRotationOnChange(s); };
@@ -431,13 +431,13 @@ class Brain3DApp implements Application, Loopable {
             )
 
             // Show Network button
-            .append($('<button id="button-show-network-' + this.id + '" class="btn btn-sm btn-primary" data-toggle="tooltip" data-placement="top" title="Show or update the side-by-side graph representation">Show/Update Network</button>'
-            )
-                .css({ 'margin-left': '10px', 'font-size': '12px', 'position': 'relative', 'z-index': 1000 })
-                .click(function () { varShowNetwork(false); })
-            )
+            //.append($('<button id="button-show-network-' + this.id + '" class="btn btn-sm btn-primary" data-toggle="tooltip" data-placement="top" title="Show or update the side-by-side graph representation">Show/Update Network</button>'
+            //)
+            //    .css({ 'margin-left': '10px', 'font-size': '12px', 'position': 'relative', 'z-index': 1000 })
+            //    .click(function () { varShowNetwork(false); })
+            //)
 
-            // Select Network type dropdown
+            // Select Network Type button group
             .append($(`<div id="select-network-type-${this.id}" class="btn-group" data-toggle="buttons">
                 <label id="select-network-type-${this.id}-3D" class="btn btn-primary btn-sm">
                     <input class="select-network-type-input" type="radio" name="select-network-type-${this.id}" value="3D" autocomplete="off">3D
@@ -447,6 +447,9 @@ class Brain3DApp implements Application, Loopable {
                 </label>
                 <label id="select-network-type-${this.id}-circular" class="btn btn-primary btn-sm">
                     <input class="select-network-type-input" type="radio" name="select-network-type-${this.id}" value="circular" autocomplete="off">Circular
+                </label>
+                <label id="select-network-type-${this.id}-none" class="btn btn-primary btn-sm">
+                    <input class="select-network-type-input" type="radio" name="select-network-type-${this.id}" value="none" autocomplete="off">None
                 </label>
             </div>`).css({ 'margin-left': '5px', 'position': 'relative', 'z-index': 1000 }))
             ;
@@ -1098,6 +1101,9 @@ class Brain3DApp implements Application, Loopable {
                 this.showNetwork(true);
             }
         }
+        else {
+            $(`#select-network-type-${this.id}-none`).addClass("active");
+        }
     }
 
     closeBrainAppOnClick() {
@@ -1127,7 +1133,8 @@ class Brain3DApp implements Application, Loopable {
             this.circularGraph.setupOptionMenuUI(); // add options button to the page
             this.svg.attr("visibility", "visible");
             $(this.graph2dContainer).hide();
-        } else {
+        } 
+        else {
             // hide options button
             $('#button-circular-layout-histogram-' + this.id).hide();
         }
@@ -1136,13 +1143,19 @@ class Brain3DApp implements Application, Loopable {
             this.canvasGraph.setupOptionMenuUI(); // add options button to the page
             this.svg.attr("visibility", "hidden");
             $(this.graph2dContainer).show();
-        } else {
+        } 
+        else {
             // hide options button
             $('#button-graph2d-option-menu-' + this.id).hide();
             $(this.graph2dContainer).hide();
         }
 
-
+        if (type === "none") {
+            this.svg.attr("visibility", "hidden");
+            $(this.graph2dContainer).hide();
+            this.colaGraph.setVisible(false);
+        }
+        
         if (this.colaGraph && this.colaGraph.isVisible()) {
             this.showNetwork(true);
         }
@@ -1430,12 +1443,12 @@ class Brain3DApp implements Application, Loopable {
                 this.ignore3dControl = true;
                 this.canvasGraph.updateGraph();
                 this.colaGraph.setVisible(false);
-            } else { // this.network === "3D"
+            } else if (this.networkType == '3D') {
                 // Set up a coroutine to do the animation
                 var origin = new THREE.Vector3(this.brainContainer.position.x, this.brainContainer.position.y, this.brainContainer.position.z);
                 var target = new THREE.Vector3(this.brainContainer.position.x + 2 * this.graphOffset, this.brainContainer.position.y, this.brainContainer.position.z);
 
-                this.colaObjectAnimation(origin, target, originColaCoords, this.colaCoords, switchNetworkType, true);                
+                this.colaObjectAnimation(origin, target, originColaCoords, this.colaCoords, switchNetworkType, true);
             }
 
             CommonUtilities.launchAlertMessage(CommonUtilities.alertType.INFO, "Graph layout done");
@@ -1473,7 +1486,7 @@ class Brain3DApp implements Application, Loopable {
         $('#graph-view-slider-' + this.id).css({ visibility: 'visible' });
         $('#graph-view-slider-' + this.id).val('100');
 
-        $('#button-show-network-' + this.id).prop('disabled', false);
+        //$('#button-show-network-' + this.id).prop('disabled', false);
         $('#select-network-type-' + this.id + '-button').prop('disabled', false);
         $('#graph-view-slider-' + this.id).prop('disabled', false);
     }
@@ -1489,7 +1502,7 @@ class Brain3DApp implements Application, Loopable {
         }
 
         this.transitionInProgress = true;
-        $('#button-show-network-' + this.id).prop('disabled', true);    
+        //$('#button-show-network-' + this.id).prop('disabled', true);    
         $('#graph-view-slider-' + this.id).prop('disabled', true); 
 
         if (switchNetworkType) {
@@ -1513,7 +1526,7 @@ class Brain3DApp implements Application, Loopable {
                     $('#graph-view-slider-' + this.id).css({ visibility: 'visible' });
                     $('#graph-view-slider-' + this.id).val('100');
 
-                    $('#button-show-network-' + this.id).prop('disabled', false);
+                    //$('#button-show-network-' + this.id).prop('disabled', false);
                     $('#graph-view-slider-' + this.id).prop('disabled', false); 
                 }
                 
@@ -1873,7 +1886,7 @@ class Brain3DApp implements Application, Loopable {
         // Enable the slider
         $('#edge-count-slider-' + this.id)['bootstrapSlider']("setValue", this.edgeCountSliderValue);
         $("#edge-count-slider-" + this.id)['bootstrapSlider']("setAttribute", "max", maxEdgesShowable);
-        $('#button-show-network-' + this.id).prop('disabled', false);
+        //$('#button-show-network-' + this.id).prop('disabled', false);
 
         this.needUpdate = true;
         this.showNetwork(false);
