@@ -666,8 +666,6 @@ class Brain3DApp implements Application, Loopable {
                 this.commonData.selectedNode = node ? node.userData.id : nodeIDUnderPointer;
 
                 // Select the new node
-                //this.physioGraph.selectNode(this.commonData.selectedNode, false, false);
-                //this.colaGraph.selectNode(this.commonData.selectedNode, this.ignore3dControl, true);
                 this.physioGraph.selectNode(this.commonData.selectedNode, false);
                 this.colaGraph.selectNode(this.commonData.selectedNode, this.ignore3dControl);
 
@@ -1351,7 +1349,6 @@ class Brain3DApp implements Application, Loopable {
             this.colaGraph.setNodeVisibilities(); // Hide the nodes without neighbours
             this.colaGraph.setEdgeVisibilities(this.filteredAdjMatrix); // Hide the edges that have not been selected
             if (this.allLabels) {
-                //this.colaGraph.showAllLabels(this.ignore3dControl, true);
                 this.colaGraph.showAllLabels(this.ignore3dControl);
             }
             //-------------------------------------------------------------------------------------------------------------
@@ -1598,7 +1595,7 @@ class Brain3DApp implements Application, Loopable {
         if (this.bundlingEdges) this.edgesBundlingOnChange(); // turn off edge bundling
 
         this.physioGraph.filteredNodeIDs = filteredIDs;
-        this.physioGraph.applyNodeFiltering();
+        this.physioGraph.setNodeVisibilities();
         this.physioGraph.findNodeConnectivity(this.filteredAdjMatrix, this.dissimilarityMatrix);
         this.physioGraph.setEdgeVisibilities(this.filteredAdjMatrix);
 
@@ -1999,8 +1996,6 @@ class Brain3DApp implements Application, Loopable {
                     }
 
                     // Select the new node ID
-                    //this.physioGraph.selectNode(this.selectedNodeID, false, false);
-                    //this.colaGraph.selectNode(this.selectedNodeID, this.ignore3dControl, true);
                     this.physioGraph.selectNode(this.selectedNodeID, false);
                     this.colaGraph.selectNode(this.selectedNodeID, this.ignore3dControl);
 

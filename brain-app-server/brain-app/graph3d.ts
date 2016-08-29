@@ -11,7 +11,6 @@ class Graph3D {
     nodeMeshes: any[];
     nodePositions: number[][];
     nodeInfo: any[];
-    //nodeDefaultColor: number[];
     nodeCurrentColor: number[];
 
     // Edges
@@ -29,8 +28,7 @@ class Graph3D {
     visible: boolean = true;
 
 
-    filteredNodeIDs: number[];
-    //nodeHasNeighbors: boolean[]; // used for cola graph only
+    filteredNodeIDs: number[] = [];
 
     // Shared for optimisation
     _sphereGeometry: THREE.SphereGeometry = new THREE.SphereGeometry(2, 10, 10);
@@ -79,6 +77,8 @@ class Graph3D {
             nodeObject.userData.highlighted = false;
 
             this.rootObject.add(nodeObject);
+            
+            this.filteredNodeIDs.push(i);
         }
 
         // Create all the edges
@@ -252,136 +252,34 @@ class Graph3D {
         return this.visible;
     }
 
-    // used by physioGraph
-    applyNodeFiltering() {
-        for (var i = 0; i < this.nodeMeshes.length; ++i) {
-            this.rootObject.remove(this.nodeMeshes[i]);
-            this.nodeMeshes[i].userData.filtered = true;
-        }
 
-        if (this.filteredNodeIDs) {
-            for (var j = 0; j < this.filteredNodeIDs.length; ++j) {
-                var nodeID = this.filteredNodeIDs[j];
-
-                this.rootObject.add(this.nodeMeshes[nodeID]);
-                this.nodeMeshes[nodeID].userData.filtered = false;
-            }
-        }
-    }
-
-    //findNodeConnectivity(filteredAdjMatrix, dissimilarityMatrix, edges?: any[]) {
-
-    //    var hasNeighbours = Array<boolean>(this.nodeMeshes.length);
-    //    for (var i = 0; i < this.nodeMeshes.length - 1; ++i) {
-    //        for (var j = i + 1; j < this.nodeMeshes.length; ++j) {
-    //            if (filteredAdjMatrix[i][j] === 1) {
-    //                if (this.filteredNodeIDs) {
-    //                    if ((this.filteredNodeIDs.indexOf(i) != -1) && (this.filteredNodeIDs.indexOf(j) != -1)) {
-    //                        var len = dissimilarityMatrix[i][j];
-    //                        if (edges) edges.push({ source: i, target: j, length: len });
-    //                        hasNeighbours[i] = true;
-    //                        hasNeighbours[j] = true;
-    //                    }
-    //                } else {
-    //                    var len = dissimilarityMatrix[i][j];
-    //                    if (edges) edges.push({ source: i, target: j, length: len });
-    //                    hasNeighbours[i] = true;
-    //                    hasNeighbours[j] = true;
-    //                }
-    //            } else if (filteredAdjMatrix[j][i] === 1) {
-    //                if (this.filteredNodeIDs) {
-    //                    if ((this.filteredNodeIDs.indexOf(i) != -1) && (this.filteredNodeIDs.indexOf(j) != -1)) {
-    //                        var len = dissimilarityMatrix[i][j];
-    //                        if (edges) edges.push({ source: j, target: i, length: len });
-    //                        hasNeighbours[i] = true;
-    //                        hasNeighbours[j] = true;
-    //                    }
-    //                } else {
-    //                    var len = dissimilarityMatrix[i][j];
-    //                    if (edges) edges.push({ source: j, target: i, length: len });
-    //                    hasNeighbours[i] = true;
-    //                    hasNeighbours[j] = true;
-    //                }
-    //            }
-
-    //        }
-    //    }
-
-    //    this.nodeHasNeighbors = hasNeighbours.slice(0);
-    //}
     findNodeConnectivity(filteredAdjMatrix, dissimilarityMatrix, edges?: any[]) {
         for (var i = 0; i < this.nodeMeshes.length - 1; ++i) {
             for (var j = i + 1; j < this.nodeMeshes.length; ++j) {
                 if (filteredAdjMatrix[i][j] === 1) {
-                    if (this.filteredNodeIDs) {
-                        if ((this.filteredNodeIDs.indexOf(i) != -1) && (this.filteredNodeIDs.indexOf(j) != -1)) {
-                            var len = dissimilarityMatrix[i][j];
-                            if (edges) edges.push({ source: i, target: j, length: len });
-                        }
-                    } else {
-                        var len = dissimilarityMatrix[i][j];
-                        if (edges) edges.push({ source: i, target: j, length: len });
+                    if ((this.filteredNodeIDs.indexOf(i) != -1) && (this.filteredNodeIDs.indexOf(j) != -1)) {
+                        if (edges) edges.push({ source: i, target: j, length: dissimilarityMatrix[i][j] });
                     }
                 } else if (filteredAdjMatrix[j][i] === 1) {
-                    if (this.filteredNodeIDs) {
-                        if ((this.filteredNodeIDs.indexOf(i) != -1) && (this.filteredNodeIDs.indexOf(j) != -1)) {
-                            var len = dissimilarityMatrix[i][j];
-                            if (edges) edges.push({ source: j, target: i, length: len });
-                        }
-                    } else {
-                        var len = dissimilarityMatrix[i][j];
-                        if (edges) edges.push({ source: j, target: i, length: len });
+                    if ((this.filteredNodeIDs.indexOf(i) != -1) && (this.filteredNodeIDs.indexOf(j) != -1)) {
+                        if (edges) edges.push({ source: j, target: i, length: dissimilarityMatrix[i][j] });
                     }
                 }
-
             }
         }
     }
 
-    // used by 
 
-    //setNodeVisibilities() {
-    //    if (!this.nodeHasNeighbors) return;
-
-    //    for (var i = 0; i < this.nodeHasNeighbors.length; ++i) {
-    //        if (this.nodeHasNeighbors[i]) {
-    //            if (this.filteredNodeIDs) {
-    //                if (this.filteredNodeIDs.indexOf(i) != -1) {
-    //                    this.rootObject.add(this.nodeMeshes[i]);
-    //                    this.nodeMeshes[i].userData.filtered = false;
-    //                }
-    //                else {
-    //                    this.rootObject.remove(this.nodeMeshes[i]);
-    //                    this.nodeMeshes[i].userData.filtered = true;
-    //                }
-    //            }
-    //            else {
-    //                this.rootObject.add(this.nodeMeshes[i]);
-    //                this.nodeMeshes[i].userData.filtered = false;
-    //            }
-    //        }
-    //        else {
-    //            this.rootObject.remove(this.nodeMeshes[i]);
-    //            this.nodeMeshes[i].userData.filtered = true;
-    //        }
-    //    }
-    //}
     setNodeVisibilities() {
         let i = this.nodeMeshes.length;
         while (i--) {
-            if (this.filteredNodeIDs) {
-                if (this.filteredNodeIDs.indexOf(i) != -1) {
-                    this.rootObject.add(this.nodeMeshes[i]);
-                    this.nodeMeshes[i].userData.filtered = false;
-                }
-                else {
-                    this.rootObject.remove(this.nodeMeshes[i]);
-                    this.nodeMeshes[i].userData.filtered = true;
-                }
-            }
-            else {
+            if (this.filteredNodeIDs.indexOf(i) != -1) {
                 this.rootObject.add(this.nodeMeshes[i]);
                 this.nodeMeshes[i].userData.filtered = false;
+            }
+            else {
+                this.rootObject.remove(this.nodeMeshes[i]);
+                this.nodeMeshes[i].userData.filtered = true;
             }
         }
     }
@@ -612,8 +510,7 @@ class Graph3D {
             for (var j = i + 1; j < len; ++j) {
                 if (this.edgeMatrix[i][j] || this.edgeMatrix[j][i]) {
                     var edge = (this.edgeMatrix[i][j]) ? this.edgeMatrix[i][j] : this.edgeMatrix[j][i];
-
-                    if (this.filteredNodeIDs && ((this.filteredNodeIDs.indexOf(i) == -1) || (this.filteredNodeIDs.indexOf(j) == -1))) {
+                    if ((this.filteredNodeIDs.indexOf(i) == -1) || (this.filteredNodeIDs.indexOf(j) == -1)) {
                         edge.setVisible(false);
                     } else if (visMatrix[i][j] === 1 || visMatrix[j][i] === 1) {
                         this.nodeMeshes[i].userData.hasVisibleEdges = true;
@@ -671,21 +568,12 @@ class Graph3D {
     //////////////////////////////////////////////
     /////// Label's Functions ////////////////////
     //////////////////////////////////////////////
-    //showAllLabels(ignore3dControl: boolean, bCola: boolean) {
+
     showAllLabels(ignore3dControl: boolean) {
         this.hideAllLabels();
-
         for (var i = 0; i < this.nodeInfo.length; ++i) {
             if (this.nodeInfo[i]["label"]) {
                 if (!ignore3dControl) {
-                    //if (bCola) {
-                    //    if (this.nodeHasNeighbors[i]) {
-                    //        this.rootObject.add(this.nodeInfo[i]["label"]);
-                    //    }
-                    //}
-                    //else {
-                    //    this.rootObject.add(this.nodeInfo[i]["label"]);
-                    //}
                     this.rootObject.add(this.nodeInfo[i]["label"]);
                 }
             }
@@ -737,7 +625,7 @@ class Graph3D {
         this.nodeMeshes[id].material.color.setHex(color);
     }
 
-    //selectNode(id: number, ignore3dControl: boolean, bCola: boolean) {
+
     selectNode(id: number, ignore3dControl: boolean) {
 
         if (!this.nodeInfo[id].isSelected) {
@@ -750,14 +638,6 @@ class Graph3D {
 
             if (this.allLabels == false) {
                 if (!ignore3dControl) {
-                    //if (bCola) {
-                    //    if (this.nodeHasNeighbors[id]) {
-                    //        this.rootObject.add(this.nodeInfo[id]["label"]);
-                    //    }
-                    //}
-                    //else {
-                    //    this.rootObject.add(this.nodeInfo[id]["label"]);
-                    //}
                     this.rootObject.add(this.nodeInfo[id]["label"]);
                 }
             }
