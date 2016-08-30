@@ -49,8 +49,6 @@ class Graph2D {
     }
     
     updateGraph() {
-        CommonUtilities.launchAlertMessage(CommonUtilities.alertType.INFO, `Generating a 2D ${this.layout} layout...`);
-
         // Use this.dataSet to build the elements for the cytoscape graph.
         // Include default values that are input to style fuctions.
         
@@ -455,7 +453,6 @@ class Graph2D {
                 y: container.offsetHeight * 0.2
             });
             cy.zoom(cy.zoom() * 0.6);
-            CommonUtilities.launchAlertMessage(CommonUtilities.alertType.SUCCESS, `New 2D ${this.layout} layout created`);
         });
         cy.fit();
         if (this.layout === "concentric") {
@@ -609,6 +606,7 @@ class Graph2D {
         };
 
         var varGroupNodesOnChange = groupBy => {
+            CommonUtilities.launchAlertMessage(CommonUtilities.alertType.INFO, `Updating grouping for ${this.layout} layout...`);
             this.groupNodesBy = groupBy;
             this.updateGraph();
         }
@@ -616,6 +614,7 @@ class Graph2D {
         var varMenuButtonOnClick = () => { this.menuButtonOnClick(); };
 
         var changeLayout = layout => {
+            CommonUtilities.launchAlertMessage(CommonUtilities.alertType.INFO, `Updating ${this.layout} layout...`);
             this.layout = layout;
             this.updateGraph();
         }
