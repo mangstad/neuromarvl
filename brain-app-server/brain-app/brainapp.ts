@@ -667,7 +667,6 @@ class NeuroMarvl {
 
         $.get('brain-app/' + sourceLocation + '/' + saveObj.serverFileNameCoord, text => {
             this.parseCoordinates(text);
-            //$('#shared-coords').css({ color: 'green' });
             $('#label-coords')
                 .text("Pre-uploaded data")
                 .css({ color: 'green' });
@@ -680,7 +679,6 @@ class NeuroMarvl {
         });
         $.get('brain-app/' + sourceLocation + '/' + saveObj.serverFileNameMatrix, text => {
             this.parseSimilarityMatrix(text, this.referenceDataSet);
-            //$('#d1-mat').css({ color: 'green' });
             $('#label-similarity-matrix')
                 .text("Pre-uploaded data")
                 .css({ color: 'green' });

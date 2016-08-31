@@ -1098,7 +1098,7 @@ class Brain3DApp implements Application, Loopable {
                 this.circularGraph.circularLabelAttribute = app.circularLableAttribute;
                 this.circularGraph.updateAllAttributeBars();
 
-                this.showNetwork(true);
+                //this.showNetwork(true);
             }
         }
         else {
