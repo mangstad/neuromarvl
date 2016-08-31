@@ -42,7 +42,7 @@ class CircularGraph {
     circularDotCSSClass: string;
     circularBundleAttribute: string;
     circularSortAttribute: string;
-    circularLableAttribute: string;
+    circularLabelAttribute: string;
 
     circularEdgeColorMode: string;
     circularEdgeDirectionMode: string;
@@ -61,10 +61,10 @@ class CircularGraph {
         this.d3Zoom = d3Zoom;
         this.commonData = commonData;
         this.saveObj = saveObj;
-
+        
         this.circularBundleAttribute = "none";
         this.circularSortAttribute = "none";
-        this.circularLableAttribute = "label";
+        this.circularLabelAttribute = "label";
     }
 
     setDataSet(dataSet: DataSet) {
@@ -94,7 +94,6 @@ class CircularGraph {
 
     // Define UI components of the settings 
     setupOptionMenuUI() {
-
         // Remove existing html elements
         this.circularDotCSSClass = ".network-type-appended-element-" + this.id;
         this.circularCSSClass = "network-type-appended-element-" + this.id;
@@ -162,6 +161,8 @@ class CircularGraph {
             $('#select-circular-layout-bundle-' + this.id).append('<option value = "' + columnName + '">' + columnName + '</option>');
         }
 
+        $('#select-circular-layout-bundle-' + this.id).val(this.circularBundleAttribute);
+
         //------------------------------------------------------------------------
         // menu - sort
         $('#div-circular-layout-menu-' + this.id).append('<div id="div-circular-sort-' + this.id + '">sort: </div>');
@@ -180,6 +181,8 @@ class CircularGraph {
             var columnName = this.dataSet.attributes.columnNames[i];
             $('#select-circular-layout-sort-' + this.id).append('<option value = "' + columnName + '">' + columnName + '</option>');
         }
+
+        $('#select-circular-layout-sort-' + this.id).val(this.circularSortAttribute);
 
         //------------------------------------------------------------------------
         // menu - label
@@ -208,6 +211,8 @@ class CircularGraph {
             var columnName = this.dataSet.attributes.columnNames[i];
             $('#select-circular-label-' + this.id).append('<option value = "' + columnName + '">' + columnName + '</option>');
         }
+
+        $('#select-circular-label-' + this.id).val(this.circularLabelAttribute);
 
         //------------------------------------------------------------------------
         // menu - histogram
@@ -249,6 +254,7 @@ class CircularGraph {
         }
     }
 
+
     create() {
         if (!this.colaGraph) {
             console.log("ERROR: colaGraph is NULL");
@@ -263,8 +269,8 @@ class CircularGraph {
         this.GenerateCircularUI(attrSort, attrBundle);
         this.circularLayoutLabelOnChange(attrLabel);
         this.updateAllAttributeBars();
-
     }
+
 
     update() {
         if (!this.colaGraph) {
@@ -1264,7 +1270,7 @@ class CircularGraph {
     }
 
     circularLayoutLabelOnChange(attr: string) {
-        this.circularLableAttribute = attr;
+        this.circularLabelAttribute = attr;
 
         if (attr == "label") {
             this.svgAllElements.selectAll(".nodeCircular")

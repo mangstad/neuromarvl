@@ -452,6 +452,7 @@ class SaveFile {
         }
     }
 }
+
 class SaveApp {
     //determine which brain surface model
     surfaceModel: string;

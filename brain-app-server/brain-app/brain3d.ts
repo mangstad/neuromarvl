@@ -1056,7 +1056,7 @@ class Brain3DApp implements Application, Loopable {
         if (this.circularGraph) {
             app.circularBundleAttribute = this.circularGraph.circularBundleAttribute;
             app.circularSortAttribute = this.circularGraph.circularSortAttribute;
-            app.circularLableAttribute = this.circularGraph.circularLableAttribute;
+            app.circularLableAttribute = this.circularGraph.circularLabelAttribute;
             app.circularAttributeBars = this.circularGraph.attributeBars;
         } else {
             console.log("ERROR: circularGraph is NULL");
@@ -1095,7 +1095,7 @@ class Brain3DApp implements Application, Loopable {
 
                 this.circularGraph.circularBundleAttribute = app.circularBundleAttribute;
                 this.circularGraph.circularSortAttribute = app.circularSortAttribute;
-                this.circularGraph.circularLableAttribute = app.circularLableAttribute;
+                this.circularGraph.circularLabelAttribute = app.circularLableAttribute;
                 this.circularGraph.updateAllAttributeBars();
 
                 this.showNetwork(true);
