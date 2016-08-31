@@ -647,7 +647,7 @@ class Graph2D {
 
         $('#select-graph2d-layout-' + this.id).empty();
 
-        // Full layout options: ["cose", "cose-bilkent", "cola", "cola-flow", "grid", "circle", "concentric", "breadthfirst", "random"]
+        // Full possible layout options: ["cose", "cose-bilkent", "cola", "cola-flow", "grid", "circle", "concentric", "breadthfirst", "random"]
         for (let layout of ["cola", "cose", "cose-bilkent", "grid", "concentric"]) {
             var option = document.createElement('option');
             option.text = layout;
@@ -655,6 +655,7 @@ class Graph2D {
             $('#select-graph2d-layout-' + this.id).append(option);
         }
         (<any>document.getElementById("select-graph2d-layout-" + this.id)).value = this.layout;
+        $('#select-graph2d-layout-' + this.id).val(this.layout);
 
 
         // menu - group nodes
@@ -671,15 +672,15 @@ class Graph2D {
         option.text = 'none';
         option.value = 'none';
         $('#select-graph2d-group-' + this.id).append(option);
-
+        
         // Add descrete attribute to list
         for (var i = 0; i < this.dataSet.attributes.columnNames.length; ++i) {
             var columnName = this.dataSet.attributes.columnNames[i];
             if (this.dataSet.attributes.info[columnName].isDiscrete) {
                 $('#select-graph2d-group-' + this.id).append('<option value = "' + columnName + '">' + columnName + '</option>');
             }
-
         }
+        $('#select-graph2d-group-' + this.id).val(this.groupNodesBy);
 
 
         // menu - scale
@@ -690,7 +691,8 @@ class Graph2D {
 
         $("#div-scale-slider-alt-" + this.id)['bootstrapSlider']({ tooltip_position: "bottom" });
         $("#div-scale-slider-alt-" + this.id)['bootstrapSlider']().on('change', varEdgeLengthOnChange);
-
+        
+        $("#div-scale-slider-alt-" + this.id)['bootstrapSlider']("setValue", this.scale);
 
 
         let targetClass = this.graph2DClass;
