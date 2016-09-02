@@ -1119,7 +1119,7 @@ class NeuroMarvl {
         setTimeout(() => window["URL"].revokeObjectURL(url), 10);
     }
 
-    exportSVG = (viewport, type) => {
+    exportSVG = (viewport, fileType) => {
         var documents = [window.document],
             SVGSources = [];
 
@@ -1130,9 +1130,9 @@ class NeuroMarvl {
         var newSource = this.getSource(viewport, styles);
 
         // Export all svg Graph on the page
-        if (type === "svg") {
+        if (fileType === "svg") {
             this.downloadSVG(newSource);
-        } else if (type === "image") {
+        } else if (fileType === "image") {
             this.downloadSVGImage(newSource);
         }
 
@@ -1230,6 +1230,7 @@ class NeuroMarvl {
     }
 
     downloadSVGImage = source => {
+        console.log("downloadSVGImage", source);///jm
         var filename = "untitled";
 
         if (source.id) {

@@ -410,49 +410,55 @@ class Brain3DApp implements Application, Loopable {
 
 
             // Circular Graph
-            .append($('<div id="div-svg-' + this.id + '"></div>')
-                .css({ 'position': 'absolute', 'width': '100%', 'height': '100%', 'top': 0, 'left': 0, 'z-index': 10, 'overflow': 'hidden' }))
-
-            .append(this.renderer.domElement)
-            .append('<p>Showing <label id="count-' + this.id + '">0</label> edges (<label id=percentile-' + this.id + '>0</label>th percentile)</p>')
-
-            // Edge count Slider at the bottom of the application
-            //.append($('<input id="edge-count-slider-' + this.id + '" type="range" min="1" max="' + maxEdgesShowable + '" value="' + initialEdgesShown +
-            //        'data-toggle="tooltip" data-placement="top" title="Adjust count of visible edges" disabled="true"/>')
-            //    .css({ 'display': 'inline-block', 'width': '300px', 'position': 'relative', 'margin-right': 10, 'z-index': 1000 })
-            //    .mousedown(function () { varSliderMouseEvent("mousedown"); })
-            //    .mouseup(function () { varSliderMouseEvent("mouseup"); })
-            //    .on("input change", function () { varEdgeCountSliderOnChange($(this).val()); })
-            //)
-        //    .append($(`<input id="edge-count-slider-${this.id}" data-slider-id="edge-count-slider-${this.id}" type="text" 
-        //            data-slider-min="1" data-slider-max="${maxEdgesShowable}" data-slider-step="1" data-slider-value="${initialEdgesShown}"/>`)
-        //)
-            .append($(`<input id="edge-count-slider-${this.id}" type="text" />`)
+            .append($('<div id="div-graph-' + this.id + '"></div>')
+                .css({ 'position': 'absolute', 'width': '100%', 'height': '100%', 'top': 0, 'left': 0, 'z-index': 10, 'overflow': 'hidden' })
+                .append(this.renderer.domElement)
             )
 
-            // Show Network button
-            //.append($('<button id="button-show-network-' + this.id + '" class="btn btn-sm btn-primary" data-toggle="tooltip" data-placement="top" title="Show or update the side-by-side graph representation">Show/Update Network</button>'
-            //)
-            //    .css({ 'margin-left': '10px', 'font-size': '12px', 'position': 'relative', 'z-index': 1000 })
-            //    .click(function () { varShowNetwork(false); })
-            //)
+            //.append(this.renderer.domElement)
+            .append($("<div id='div-graph-controls'></div>").css({ position: "absolute", bottom: 0 })
+                // Controls for the bottom of the graph area
 
-            // Select Network Type button group
-            .append($(`<div id="select-network-type-${this.id}" class="btn-group" data-toggle="buttons">
-                <label id="select-network-type-${this.id}-3D" class="btn btn-primary btn-sm">
-                    <input class="select-network-type-input" type="radio" name="select-network-type-${this.id}" value="3D" autocomplete="off">3D
-                </label>
-                <label id="select-network-type-${this.id}-2D" class="btn btn-primary btn-sm">
-                    <input class="select-network-type-input" type="radio" name="select-network-type-${this.id}" value="2D" autocomplete="off">2D
-                </label>
-                <label id="select-network-type-${this.id}-circular" class="btn btn-primary btn-sm">
-                    <input class="select-network-type-input" type="radio" name="select-network-type-${this.id}" value="circular" autocomplete="off">Circular
-                </label>
-                <label id="select-network-type-${this.id}-none" class="btn btn-primary btn-sm">
-                    <input class="select-network-type-input" type="radio" name="select-network-type-${this.id}" value="none" autocomplete="off">None
-                </label>
-            </div>`).css({ 'margin-left': '5px', 'position': 'relative', 'z-index': 1000 }))
-            ;
+                .append('<p>Showing <label id="count-' + this.id + '">0</label> edges (<label id=percentile-' + this.id + '>0</label>th percentile)</p>')
+
+                // Edge count Slider at the bottom of the application
+                //.append($('<input id="edge-count-slider-' + this.id + '" type="range" min="1" max="' + maxEdgesShowable + '" value="' + initialEdgesShown +
+                //        'data-toggle="tooltip" data-placement="top" title="Adjust count of visible edges" disabled="true"/>')
+                //    .css({ 'display': 'inline-block', 'width': '300px', 'position': 'relative', 'margin-right': 10, 'z-index': 1000 })
+                //    .mousedown(function () { varSliderMouseEvent("mousedown"); })
+                //    .mouseup(function () { varSliderMouseEvent("mouseup"); })
+                //    .on("input change", function () { varEdgeCountSliderOnChange($(this).val()); })
+                //)
+                //    .append($(`<input id="edge-count-slider-${this.id}" data-slider-id="edge-count-slider-${this.id}" type="text" 
+                //            data-slider-min="1" data-slider-max="${maxEdgesShowable}" data-slider-step="1" data-slider-value="${initialEdgesShown}"/>`)
+                //)
+                .append($(`<input id="edge-count-slider-${this.id}" type="text" />`)
+                )
+
+                // Show Network button
+                //.append($('<button id="button-show-network-' + this.id + '" class="btn btn-sm btn-primary" data-toggle="tooltip" data-placement="top" title="Show or update the side-by-side graph representation">Show/Update Network</button>'
+                //)
+                //    .css({ 'margin-left': '10px', 'font-size': '12px', 'position': 'relative', 'z-index': 1000 })
+                //    .click(function () { varShowNetwork(false); })
+                //)
+
+                // Select Network Type button group
+                .append($(`<div id="select-network-type-${this.id}" class="btn-group" data-toggle="buttons">
+                    <label id="select-network-type-${this.id}-3D" class="btn btn-primary btn-sm">
+                        <input class="select-network-type-input" type="radio" name="select-network-type-${this.id}" value="3D" autocomplete="off">3D
+                    </label>
+                    <label id="select-network-type-${this.id}-2D" class="btn btn-primary btn-sm">
+                        <input class="select-network-type-input" type="radio" name="select-network-type-${this.id}" value="2D" autocomplete="off">2D
+                    </label>
+                    <label id="select-network-type-${this.id}-circular" class="btn btn-primary btn-sm">
+                        <input class="select-network-type-input" type="radio" name="select-network-type-${this.id}" value="circular" autocomplete="off">Circular
+                    </label>
+                    <label id="select-network-type-${this.id}-none" class="btn btn-primary btn-sm">
+                        <input class="select-network-type-input" type="radio" name="select-network-type-${this.id}" value="none" autocomplete="off">None
+                    </label>
+                </div>`).css({ 'margin-left': '5px', 'position': 'relative', 'z-index': 1000 }))
+            )
+        ;
 
         $("#edge-count-slider-" + this.id)['bootstrapSlider']({
             min: 1, 
@@ -476,30 +482,33 @@ class Brain3DApp implements Application, Loopable {
 
 
         // Graph canvas setup
-        this.graph2dContainer = d3.select('#div-svg-' + this.id)
+        this.graph2dContainer = d3.select('#div-graph-' + this.id)
             .append("div")
             .style({
                 width: "100%",
                 height: "100%",
+                position: "absolute",
+                top: 0
             })
             .classed("graph2dContainer", true)
             .node();
 
         // SVG Initializing
         var varSVGZoom = () => { this.svgZoom(); }
-        this.svg = d3.select('#div-svg-' + this.id).append("svg")
+        this.svg = d3.select('#div-graph-' + this.id).append("svg")
             .attr("width", jDiv.width())
             .attr("height", jDiv.height() - sliderSpace)
             .call(this.d3Zoom.on("zoom", varSVGZoom));
 
         try {
             this.svg[0][0].setAttribute("id", "svgGraph" + this.id);
+            this.svg[0][0].setAttribute("style", "position: absolute; top: 0; left: 0");
             this.svgAllElements = this.svg.append("g"); // svg Group of shapes
 
             // add arrow marker
             this.svgAllElements.append("defs").append("marker")
                 .attr("id", "arrowhead-circular")
-                .attr("refX", 0) /*must be smarter way to calculate shift*/
+                .attr("refX", 0)
                 .attr("refY", 2)
                 .attr("markerWidth", 6)
                 .attr("markerHeight", 4)
@@ -510,7 +519,7 @@ class Brain3DApp implements Application, Loopable {
 
             this.svgAllElements.append("defs").append("marker")
                 .attr("id", "arrowhead-2d")
-                .attr("refX", 8) /*must be smarter way to calculate shift*/
+                .attr("refX", 8)
                 .attr("refY", 2)
                 .attr("markerWidth", 6)
                 .attr("markerHeight", 4)
@@ -1417,7 +1426,6 @@ class Brain3DApp implements Application, Loopable {
             if (this.ignore3dControl) {
                 // clear  circular
                 this.circularGraph.clear();
-
                 this.ignore3dControl = false;
             }
 

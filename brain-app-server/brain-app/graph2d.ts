@@ -621,7 +621,7 @@ class Graph2D {
 
         // Setting Options
         // option button
-        this.jDiv.append($('<button id="button-graph2d-option-menu-' + this.id + '" class="' + this.graph2DClass + ' btn  btn-sm btn-primary" ' +
+        this.jDiv.find("#div-graph-controls").append($('<button id="button-graph2d-option-menu-' + this.id + '" class="' + this.graph2DClass + ' btn  btn-sm btn-primary" ' +
             'data-toggle="tooltip" data-placement="top" title="Show side-by-side graph representation">Options</button>')
             .css({ 'position': 'relative', 'margin-left': '5px', 'font-size': '12px', 'z-index': 500 })
             .click(function () { varMenuButtonOnClick(); }));
