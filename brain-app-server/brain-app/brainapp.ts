@@ -1134,13 +1134,14 @@ class NeuroMarvl {
             this.downloadSVG(newSource);
         } else if (fileType === "image") {
             this.downloadSVGImage(newSource);
+            //this.downloadImage();
         }
 
     }
 
     getSource = (id, styles) => {
         var svgInfo = {},
-            svg = document.getElementById("svgGraph" + id);
+            svg = <Element>(document.getElementById("svgGraph" + id).cloneNode(true));
         var doctype = '<?xml version="1.0" standalone="no"?><!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">';
         var prefix = {
             xmlns: "http://www.w3.org/2000/xmlns/",
@@ -1154,6 +1155,7 @@ class NeuroMarvl {
         var oldImage = document.getElementById('brain3D' + id);
         if (oldImage) oldImage.parentNode.removeChild(oldImage);
 
+        // 3D canvas
         var canvas = this.apps[id].getDrawingCanvas();
         var image = document.createElement("image");
         svg.insertBefore(image, svg.firstChild);
@@ -1164,6 +1166,20 @@ class NeuroMarvl {
         image.setAttribute('width', canvas.width);
         image.setAttribute('height', canvas.height);
         image.removeAttribute('xmlns');
+        // 2D canvas
+        var canvas2d = <any>$(`#div-graph-${id} div.graph2dContainer canvas[data-id='layer2-node']`).get(0);
+        console.log(canvas2d);///jm
+        if (canvas2d) {
+            var image2d = document.createElement("image");
+            svg.insertBefore(image2d, svg.firstChild);
+            image2d.setAttribute('y', '0');
+            image2d.setAttribute('x', '0');
+            image2d.setAttribute('id', 'brain2D' + id);
+            image2d.setAttribute('xlink:href', canvas2d.toDataURL());
+            image2d.setAttribute('width', canvas2d.width);
+            image2d.setAttribute('height', canvas2d.height);
+            image2d.removeAttribute('xmlns');
+        }
 
         // insert defs
         var defsEl = document.createElement("defs");
@@ -1181,7 +1197,6 @@ class NeuroMarvl {
         svg.removeAttribute("xlink");
 
         // These are needed for the svg
-
         if (!svg.hasAttributeNS(prefix.xmlns, "xmlns:xlink")) {
             svg.setAttributeNS(prefix.xmlns, "xmlns:xlink", prefix.xlink);
         }
@@ -1228,6 +1243,51 @@ class NeuroMarvl {
 
         setTimeout(() => window["URL"].revokeObjectURL(url), 10);
     }
+
+    /*
+    downloadImage = () => {
+        let root = document.documentElement;
+        let canvas = <any>document.createElementNS('http://www.w3.org/1999/xhtml', 'html:canvas');
+        let context = canvas.getContext('2d');
+        let selection = {
+            top: 0,
+            left: 0,
+            width: root.scrollWidth,
+            height: root.scrollHeight,
+        };
+
+        canvas.height = selection.height;
+        canvas.width = selection.width;
+
+        context.drawWindow(
+            window,
+            selection.left,
+            selection.top,
+            selection.width,
+            selection.height,
+            'rgb(255, 255, 255)'
+        );
+
+        //return canvas.toDataURL('image/png', '');
+        
+        let filename = window.document.title.replace(/[^a-z0-9]/gi, '-').toLowerCase();
+        let image = new Image();
+        image.src = canvas.toDataURL('image/png', '');
+        image.onload = () => {
+            let canvas = document.createElement('canvas');
+            canvas.width = image.width;
+            canvas.height = image.height;
+            let context = canvas.getContext('2d');
+            context.drawImage(image, 0, 0);
+
+            let a = document.createElement("a");
+            a.setAttribute("download", filename + ".png");
+            a.setAttribute("href", canvas.toDataURL('image/png'));
+            a.click();
+        }
+    }
+    */
+
 
     downloadSVGImage = source => {
         console.log("downloadSVGImage", source);///jm
