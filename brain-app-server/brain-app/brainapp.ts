@@ -1134,20 +1134,32 @@ class NeuroMarvl {
             this.downloadSVG(newSource);
         } else if (fileType === "image") {
             this.downloadSVGImage(newSource);
-            //this.downloadImage();
         }
 
     }
 
     getSource = (id, styles) => {
-        var svgInfo = {},
-            svg = <Element>(document.getElementById("svgGraph" + id).cloneNode(true));
+        let svgInfo = {};
+        let svg;
         var doctype = '<?xml version="1.0" standalone="no"?><!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">';
         var prefix = {
             xmlns: "http://www.w3.org/2000/xmlns/",
             xlink: "http://www.w3.org/1999/xlink",
             svg: "http://www.w3.org/2000/svg"
         };
+        let canvas = this.apps[id].getDrawingCanvas();
+        let svgGraph = document.getElementById("svgGraph" + id);
+        if (svgGraph.getAttribute("visibility") === "hidden") {
+            // Not meant to be seen, use a new blank svg
+            svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+            svg.setAttribute('width', canvas.width);
+            svg.setAttribute('height', canvas.height);
+            svg.setAttributeNS("http://www.w3.org/2000/xmlns/", "xmlns:xlink", "http://www.w3.org/1999/xlink");
+        }
+        else {
+            // Use as basis for combined svg
+            svg = <HTMLElement>(document.getElementById("svgGraph" + id).cloneNode(true));
+        }
         svg.setAttribute("version", "1.1");
 
         // insert 3D brain image
@@ -1156,7 +1168,6 @@ class NeuroMarvl {
         if (oldImage) oldImage.parentNode.removeChild(oldImage);
 
         // 3D canvas
-        var canvas = this.apps[id].getDrawingCanvas();
         var image = document.createElement("image");
         svg.insertBefore(image, svg.firstChild);
         image.setAttribute('y', '0');
@@ -1167,17 +1178,16 @@ class NeuroMarvl {
         image.setAttribute('height', canvas.height);
         image.removeAttribute('xmlns');
         // 2D canvas
-        var canvas2d = <any>$(`#div-graph-${id} div.graph2dContainer canvas[data-id='layer2-node']`).get(0);
-        console.log(canvas2d);///jm
-        if (canvas2d) {
+        var canvas2d = <HTMLCanvasElement>$(`#div-graph-${id} div.graph2dContainer canvas[data-id='layer2-node']`).get(0);
+        if (canvas2d && (canvas2d.getAttribute("visibility") !== "hidden")) {
             var image2d = document.createElement("image");
             svg.insertBefore(image2d, svg.firstChild);
             image2d.setAttribute('y', '0');
             image2d.setAttribute('x', '0');
             image2d.setAttribute('id', 'brain2D' + id);
             image2d.setAttribute('xlink:href', canvas2d.toDataURL());
-            image2d.setAttribute('width', canvas2d.width);
-            image2d.setAttribute('height', canvas2d.height);
+            image2d.setAttribute('width', canvas2d.width.toString());
+            image2d.setAttribute('height', canvas2d.height.toString());
             image2d.removeAttribute('xmlns');
         }
 
@@ -1220,16 +1230,8 @@ class NeuroMarvl {
     }
 
     downloadSVG = source => {
-        var filename = "untitled";
+        var filename = window.document.title.replace(/[^a-z0-9]/gi, '-').toLowerCase();
         var body = document.body;
-
-        if (source.id) {
-            filename = source.id;
-        } else if (source.class) {
-            filename = source.class;
-        } else if (window.document.title) {
-            filename = window.document.title.replace(/[^a-z0-9]/gi, '-').toLowerCase();
-        }
 
         var url = window["URL"].createObjectURL(new Blob(source.source, { "type": "text\/xml" }));
 
@@ -1244,77 +1246,28 @@ class NeuroMarvl {
         setTimeout(() => window["URL"].revokeObjectURL(url), 10);
     }
 
-    /*
-    downloadImage = () => {
-        let root = document.documentElement;
-        let canvas = <any>document.createElementNS('http://www.w3.org/1999/xhtml', 'html:canvas');
-        let context = canvas.getContext('2d');
-        let selection = {
-            top: 0,
-            left: 0,
-            width: root.scrollWidth,
-            height: root.scrollHeight,
-        };
-
-        canvas.height = selection.height;
-        canvas.width = selection.width;
-
-        context.drawWindow(
-            window,
-            selection.left,
-            selection.top,
-            selection.width,
-            selection.height,
-            'rgb(255, 255, 255)'
-        );
-
-        //return canvas.toDataURL('image/png', '');
-        
-        let filename = window.document.title.replace(/[^a-z0-9]/gi, '-').toLowerCase();
-        let image = new Image();
-        image.src = canvas.toDataURL('image/png', '');
-        image.onload = () => {
-            let canvas = document.createElement('canvas');
-            canvas.width = image.width;
-            canvas.height = image.height;
-            let context = canvas.getContext('2d');
-            context.drawImage(image, 0, 0);
-
-            let a = document.createElement("a");
-            a.setAttribute("download", filename + ".png");
-            a.setAttribute("href", canvas.toDataURL('image/png'));
-            a.click();
-        }
-    }
-    */
-
 
     downloadSVGImage = source => {
-        console.log("downloadSVGImage", source);///jm
-        var filename = "untitled";
+        var filename = window.document.title.replace(/[^a-z0-9]/gi, '-').toLowerCase();
 
-        if (source.id) {
-            filename = source.id;
-        } else if (source.class) {
-            filename = source.class;
-        } else if (window.document.title) {
-            filename = window.document.title.replace(/[^a-z0-9]/gi, '-').toLowerCase();
-        }
-
-        var image = new Image();
-        image.src = 'data:image/svg+xml;base64,' + window.btoa(extra.unescape(encodeURIComponent(source.source)))
+        // Adapted from https://bl.ocks.org/biovisualize/8187844
+        let canvas = document.createElement('canvas');
+        let context = canvas.getContext('2d');
+        let image = new Image();
+        let svgBlob = new Blob(source.source, { type: "image/svg+xml;charset=utf-8" });
         image.onload = () => {
-            var canvas = document.createElement('canvas');
             canvas.width = image.width;
             canvas.height = image.height;
-            var context = canvas.getContext('2d');
+            context.fillStyle = "#ffffff";
+            context.fillRect(0, 0, canvas.width, canvas.height);
             context.drawImage(image, 0, 0);
 
             var a = document.createElement("a");
-            a.setAttribute("download", filename + ".png");
-            a.setAttribute("href", canvas.toDataURL('image/png'));
+            a.setAttribute("download", filename + ".jpg");
+            a.setAttribute("href", canvas.toDataURL('image/jpeg', 0.7));
             a.click();
         }
+        image.src = URL.createObjectURL(svgBlob);
     }
 
     getStyles = doc => {
