@@ -334,7 +334,6 @@ class Brain3DApp implements Application, Loopable {
 
 
     setupUserInteraction(jDiv) {
-        //var varShowNetwork = (b: boolean) => { this.showNetwork(b); };
         var varEdgesBundlingOnChange = () => { this.edgesBundlingOnChange(); };
         var varAllLabelsOnChange = () => { this.allLabelsOnChange(); };
         var varAutoRotationOnChange = (s) => { this.autoRotationOnChange(s); };
@@ -414,33 +413,14 @@ class Brain3DApp implements Application, Loopable {
                 .css({ 'position': 'absolute', 'width': '100%', 'height': '100%', 'top': 0, 'left': 0, 'z-index': 10, 'overflow': 'hidden' })
                 .append(this.renderer.domElement)
             )
-
-            //.append(this.renderer.domElement)
+            
             .append($("<div id='div-graph-controls'></div>").css({ position: "absolute", bottom: 0 })
                 // Controls for the bottom of the graph area
 
                 .append('<p>Showing <label id="count-' + this.id + '">0</label> edges (<label id=percentile-' + this.id + '>0</label>th percentile)</p>')
-
-                // Edge count Slider at the bottom of the application
-                //.append($('<input id="edge-count-slider-' + this.id + '" type="range" min="1" max="' + maxEdgesShowable + '" value="' + initialEdgesShown +
-                //        'data-toggle="tooltip" data-placement="top" title="Adjust count of visible edges" disabled="true"/>')
-                //    .css({ 'display': 'inline-block', 'width': '300px', 'position': 'relative', 'margin-right': 10, 'z-index': 1000 })
-                //    .mousedown(function () { varSliderMouseEvent("mousedown"); })
-                //    .mouseup(function () { varSliderMouseEvent("mouseup"); })
-                //    .on("input change", function () { varEdgeCountSliderOnChange($(this).val()); })
-                //)
-                //    .append($(`<input id="edge-count-slider-${this.id}" data-slider-id="edge-count-slider-${this.id}" type="text" 
-                //            data-slider-min="1" data-slider-max="${maxEdgesShowable}" data-slider-step="1" data-slider-value="${initialEdgesShown}"/>`)
-                //)
+                
                 .append($(`<input id="edge-count-slider-${this.id}" type="text" />`)
                 )
-
-                // Show Network button
-                //.append($('<button id="button-show-network-' + this.id + '" class="btn btn-sm btn-primary" data-toggle="tooltip" data-placement="top" title="Show or update the side-by-side graph representation">Show/Update Network</button>'
-                //)
-                //    .css({ 'margin-left': '10px', 'font-size': '12px', 'position': 'relative', 'z-index': 1000 })
-                //    .click(function () { varShowNetwork(false); })
-                //)
 
                 // Select Network Type button group
                 .append($(`<div id="select-network-type-${this.id}" class="btn-group" data-toggle="buttons">
@@ -476,7 +456,15 @@ class Brain3DApp implements Application, Loopable {
             'z-index': 1000
         });
 
-        $("[data-toggle='tooltip']").tooltip(<any>{ container: 'body' });
+        let $checkboxTips = $("#checkbox-tips");
+        $checkboxTips.change(event => {
+            if ($checkboxTips.is(":checked")) {
+                $("[data-toggle='tooltip']").tooltip(<any>{ container: 'body' });
+            }
+            else {
+                $("[data-toggle='tooltip']").tooltip("destroy");
+            }
+        });
         
         $(`input[name=select-network-type-${this.id}]:radio`).change(event => varNetworkTypeOnChange(event.target["value"]));
 
