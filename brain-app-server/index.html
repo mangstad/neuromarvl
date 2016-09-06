@@ -318,24 +318,25 @@
                         </div>
                         <div id="div-charts" class="dc-data-count" style="width: 95%">
                             <div id="barCharts"></div>
-                            <button id="button-apply-filter" title="Show only nodes that are selected above" class="btn btn-primary btn-sm">Apply</button>
+                            <button id="button-apply-filter" data-toggle="tooltip" data-placement="bottom" title="Show only nodes that are selected using the histogram ranges above" class="btn btn-primary btn-sm">Apply</button>
                             <span class="filter-count"></span> selected out of <span class="total-count"></span> | <a href="javascript:dc.filterAll();dc.renderAll();">Reset</a>
                         </div>
                     </div>
                     <div id="div-edge-attribute-tab" class="tab-pane">
-                        <div id="div-edge-size" style="margin-left: 0px; margin-bottom: 10px;">
-                            <p><strong>Edge size:</strong></p>
+                        <div id="div-edge-size" style="margin-left: 0px; margin-bottom: 10px;" data-toggle="tooltip" data-placement="right" title="Adjust edge thickness">
+                            <p><strong>Edge size</strong></p>
                             <input id="div-edge-size-slider" data-slider-id='edge-size-slider' type="text" 
                                    data-slider-min="0.01" data-slider-max="3" data-slider-step="0.02" data-slider-value="1" />
                             <label id="label_edge_size"></label>
                         </div>
 
-                        <p><input type="checkbox" id="checkbox-thickness-by-weight" style="width: 12px;"> <strong>Thickness by Weight</strong></p>
-
-
+                        <p data-toggle="tooltip" data-placement="right" title="Toggle thickness proportional to edge weight">
+                            <input type="checkbox" id="checkbox-thickness-by-weight" style="width: 12px;"> <strong>Thickness by weight</strong>
+                        </p>
+                        
                         <p style="margin-top: 5px; margin-bottom: 0;">
-                            <div class="form-group">
-                                <label for="select-edge-direction">Edge Direction:</label>
+                            <div class="form-group" data-toggle="tooltip" data-placement="right" title="Set a visual indicator of edge direction">
+                                <label for="select-edge-direction">Edge direction</label>
                                 <select class="form-control" id="select-edge-direction">
                                     <option value="none">None</option>
                                     <option value="arrow">Arrow</option>
@@ -363,8 +364,8 @@
                         </div>
                         <div id="div-edge-color">
                             <p style="margin-top: 5px; margin-bottom: 0;">
-                                <div class="form-group">
-                                    <label for="select-edge-color">Color Edges by:</label>
+                                <div class="form-group" data-toggle="tooltip" data-placement="right" title="Set edge color to match either connected nodes or strength value">
+                                    <label for="select-edge-color">Color edges by</label>
                                     <select class="form-control" id="select-edge-color">
                                         <option value="none">None</option>
                                         <option value="node">Node</option>
@@ -372,12 +373,12 @@
                                     </select>
                                 </div>
                             </p>
-                            <div id="div-edge-color-by-node-picker" style="display: none; margin-top: 30px; margin-left: 40px;">
-                                <p><input type="checkbox" id="checkbox-color-transitional-edges" style="width: 12px;"><strong>Customize inter-cluster edges</strong></p>
+                            <div id="div-edge-color-by-node-picker" style="display: none; margin-top: 30px; margin-left: 40px;" data-toggle="tooltip" data-placement="right" title="Set an alternative color for edges with ends with nodes of different values">
+                                <p><input type="checkbox" id="checkbox-color-transitional-edges" style="width: 12px;"><strong> Customize inter-cluster edges</strong></p>
                                 <p>
-                                    color:
+                                    <label for="pick-color-intercluster">Color</label>
                                     <div id="input-edge-transitional-color" class="input-group colorpicker-component">
-                                        <input type="text" value="ee2211" class="form-control" />
+                                        <input id="pick-color-intercluster" type="text" value="ee2211" class="form-control" />
                                         <span class="input-group-addon"><i></i></span>
                                     </div>
 
@@ -385,13 +386,15 @@
                                 </p>
                             </div>
                             <div id="div-edge-color-pickers" style="display: none; margin-top: 30px; margin-left: 40px;">
-                                <p><input type="checkbox" id="checkbox-edge-color-force-continuous" style="display:none; width: 12px;">Treat as continuous</p>
+                                <p><input type="checkbox" id="checkbox-edge-color-force-continuous" style="display:none; width: 12px;"><strong>Treat as continuous</strong></p>
                                 <div id="div-edge-color-continuous">
-                                    <p><input type="checkbox" id="checkbox-edge-color-discretized" style="width: 12px;">Descretize continuous values</p>
-                                    <div id="div-edge-color-continuous-discretized">
+                                    <p data-toggle="tooltip" data-placement="right" title="Set specific colors for value ranges">
+                                        <input type="checkbox" id="checkbox-edge-color-discretized" style="width: 12px;"><strong> Descretize continuous values</strong>
+                                    </p>
+                                    <div id="div-edge-color-continuous-discretized" data-toggle="tooltip" data-placement="right" title="Set the number and color of divisions based on value ranges">
 
-                                        Select number of category:
-                                        <select id="select-edge-color-number-discretized-category" style="background-color: #feeebd; margin-bottom: 10px;">
+                                        <strong>Select number of divisions </strong>
+                                        <select id="select-edge-color-number-discretized-category" class="form-control" style="margin-bottom: 10px;">
                                             <option value="1">1</option>
                                             <option value="2">2</option>
                                             <option value="3">3</option>
@@ -400,8 +403,9 @@
                                         </select>
 
                                         <div id="div-edge-discretized-0">
-                                            From:<input id="input-edge-discretized-0-from" type="text" />
-                                            To:<input id="input-edge-discretized-0-to" type="text" />
+                                            <strong>From </strong><input id="input-edge-discretized-0-from" type="text" />
+                                            <br />
+                                            <strong>To </strong><input id="input-edge-discretized-0-to" type="text" />
                                             <div id="input-edge-discretized-0-color" class="input-group colorpicker-component">
                                                 <input type="text" value="2ecc71" class="form-control" />
                                                 <span class="input-group-addon"><i></i></span>
@@ -452,14 +456,14 @@
                                     </div>
                                     <div id="div-edge-color-continuous-normal">
                                         <p style="margin-bottom: 0;">
-                                            min:
+                                            <strong>Minimum</strong>
                                             <div id="input-edge-min-color" class="input-group colorpicker-component">
                                                 <input type="text" value="ffff00" class="form-control" />
                                                 <span class="input-group-addon"><i></i></span>
                                             </div>
                                         </p>
                                         <p style="margin-top: 0;">
-                                            max:
+                                            <strong>Maximum</strong>
                                             <div id="input-edge-max-color" class="input-group colorpicker-component">
                                                 <input type="text" value="ff0000" class="form-control" />
                                                 <span class="input-group-addon"><i></i></span>
