@@ -424,16 +424,16 @@ class Brain3DApp implements Application, Loopable {
 
                 // Select Network Type button group
                 .append($(`<div id="select-network-type-${this.id}" class="btn-group" data-toggle="buttons">
-                    <label id="select-network-type-${this.id}-3D" class="btn btn-primary btn-sm">
+                    <label id="select-network-type-${this.id}-3D" class="btn btn-primary btn-sm" data-toggle="tooltip" data-placement="top" title="3D topology with improved layout">
                         <input class="select-network-type-input" type="radio" name="select-network-type-${this.id}" value="3D" autocomplete="off">3D
                     </label>
-                    <label id="select-network-type-${this.id}-2D" class="btn btn-primary btn-sm">
+                    <label id="select-network-type-${this.id}-2D" class="btn btn-primary btn-sm" data-toggle="tooltip" data-placement="top" title="2D graph with multiple layout types">
                         <input class="select-network-type-input" type="radio" name="select-network-type-${this.id}" value="2D" autocomplete="off">2D
                     </label>
-                    <label id="select-network-type-${this.id}-circular" class="btn btn-primary btn-sm">
+                    <label id="select-network-type-${this.id}-circular" class="btn btn-primary btn-sm" data-toggle="tooltip" data-placement="top" title="Circular layout with additional attribute visualisation">
                         <input class="select-network-type-input" type="radio" name="select-network-type-${this.id}" value="circular" autocomplete="off">Circular
                     </label>
-                    <label id="select-network-type-${this.id}-none" class="btn btn-primary btn-sm">
+                    <label id="select-network-type-${this.id}-none" class="btn btn-primary btn-sm" data-toggle="tooltip" data-placement="top" title="Remove the secondary view">
                         <input class="select-network-type-input" type="radio" name="select-network-type-${this.id}" value="none" autocomplete="off">None
                     </label>
                 </div>`).css({ 'margin-left': '5px', 'position': 'relative', 'z-index': 1000 }))
@@ -457,14 +457,16 @@ class Brain3DApp implements Application, Loopable {
         });
 
         let $checkboxTips = $("#checkbox-tips");
-        $checkboxTips.change(event => {
+        let onToggleTips = () => {
             if ($checkboxTips.is(":checked")) {
                 $("[data-toggle='tooltip']").tooltip(<any>{ container: 'body' });
             }
             else {
                 $("[data-toggle='tooltip']").tooltip("destroy");
             }
-        });
+        };
+        $checkboxTips.change(onToggleTips);
+        onToggleTips();
         
         $(`input[name=select-network-type-${this.id}]:radio`).change(event => varNetworkTypeOnChange(event.target["value"]));
 

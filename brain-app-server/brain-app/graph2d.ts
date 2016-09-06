@@ -621,10 +621,13 @@ class Graph2D {
 
         // Setting Options
         // option button
-        this.jDiv.find("#div-graph-controls").append($('<button id="button-graph2d-option-menu-' + this.id + '" class="' + this.graph2DClass + ' btn  btn-sm btn-primary" ' +
-            'data-toggle="tooltip" data-placement="top" title="Show side-by-side graph representation">Options</button>')
-            .css({ 'position': 'relative', 'margin-left': '5px', 'font-size': '12px', 'z-index': 500 })
-            .click(function () { varMenuButtonOnClick(); }));
+        let $button = $('<button id="button-graph2d-option-menu-' + this.id + '" class="' + this.graph2DClass + ' btn  btn-sm btn-primary" ' +
+            'data-toggle="tooltip" data-placement="right" title="Configure 2D layout">Options</button>')
+        ;
+        if ($("#checkbox-tips").is(":checked")) $button.tooltip(<any>{ container: 'body' });
+        $button.css({ 'position': 'relative', 'margin-left': '5px', 'font-size': '12px', 'z-index': 500 })
+        this.jDiv.find("#div-graph-controls").append($button);
+        $button.click(function () { varMenuButtonOnClick(); });
 
 
         //------------------------------------------------------------------------
@@ -640,10 +643,13 @@ class Graph2D {
 
         //------------------------------------------------------------------------
         // menu - layouts
-        $('#div-graph2d-layout-menu-' + this.id).append('<div id="div-graph2d-layout-' + this.id + '">layout: </div>');
-        $('#div-graph2d-layout-' + this.id).append($('<select id="select-graph2d-layout-' + this.id + '" class=' + this.graph2DClass + '></select>')
+        let $divLayout = $('<div id="div-graph2d-layout-' + this.id + '" data-toggle="tooltip" data-placement="left" title="Select layout generation method">Layout </div>');
+        $('#div-graph2d-layout-menu-' + this.id).append($divLayout);
+        $divLayout.append($('<select id="select-graph2d-layout-' + this.id + '" class=' + this.graph2DClass + '></select>')
             .css({ 'margin-left': '5px', 'margin-bottom': '5px', 'font-size': '12px', 'width': '80px', 'background-color': '#feeebd' })
-            .on("change", function () { changeLayout($(this).val()); }));
+            .on("change", function () { changeLayout($(this).val()); })
+        );
+        if ($("#checkbox-tips").is(":checked")) $divLayout.tooltip(<any>{ container: 'body' });
 
         $('#select-graph2d-layout-' + this.id).empty();
 
@@ -659,12 +665,14 @@ class Graph2D {
 
 
         // menu - group nodes
-        $('#div-graph2d-layout-menu-' + this.id).append('<div id="div-graph2d-group-' + this.id + '">bundle: </div>');
-        $('#div-graph2d-group-' + this.id).append(
+        let $divBundle = $('<div id="div-graph2d-group-' + this.id + '" data-toggle="tooltip" data-placement="left" title="Group nodes by a given attribute">Bundle </div>');
+        $('#div-graph2d-layout-menu-' + this.id).append($divBundle);
+        $divBundle.append(
             $('<select id="select-graph2d-group-' + this.id + '" class=' + this.graph2DClass + '></select>')
                 .css({ 'margin-left': '5px', 'margin-bottom': '5px', 'font-size': '12px', 'width': '80px', 'background-color': '#feeebd' })
                 .on("change", function () { varGroupNodesOnChange($(this).val()); })
         );
+        if ($("#checkbox-tips").is(":checked")) $divBundle.tooltip(<any>{ container: 'body' });
 
         $('#select-graph2d-group-' + this.id).empty();
 
@@ -684,7 +692,9 @@ class Graph2D {
 
 
         // menu - scale
-        $('#div-graph2d-layout-menu-' + this.id).append('<div>Scale elements<div/>');
+        let $divScale = $('<div data-toggle="tooltip" data-placement="left" title="Adjust node radius and edge thickness">Scale elements<div/>');
+        $('#div-graph2d-layout-menu-' + this.id).append($divScale);
+        if ($("#checkbox-tips").is(":checked")) $divScale.tooltip(<any>{ container: 'body' });
         $('#div-graph2d-layout-menu-' + this.id).append($('<input id="div-scale-slider-alt-' + this.id + '" class=' + this.graph2DClass + 'data-slider-id="surface-opacity-slider" type="text"' +
             'data-slider-min="1" data-slider-max="10" data-slider-step="0.5" data-slider-value="5" />')
             .css({ 'position': 'relative', 'width': '150px' }));
