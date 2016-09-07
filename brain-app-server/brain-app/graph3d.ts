@@ -518,6 +518,7 @@ class Graph3D {
                         edge.setVisible(true);
                     } else {
                         edge.setVisible(false);
+                        //console.log("setEdgeVisibilities", this.nodeMeshes[i].userData, this.nodeMeshes[j].userData);///jm
                     }
                 }
 

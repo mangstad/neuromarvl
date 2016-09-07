@@ -1408,8 +1408,23 @@ class Brain3DApp implements Application, Loopable {
 
             this.colaCoords = this.descent.x; // Hold a reference to the solver's coordinates
             // Relieve some of the initial stress
-            for (var i = 0; i < 10; ++i) {
+            for (let i = 0; i < 10; ++i) {
                 this.descent.reduceStress();
+            }
+            
+            // Offset unconnected nodes
+            let i = this.colaGraph.nodeMeshes.length;
+            while (i--) {
+                let mesh = this.colaGraph.nodeMeshes[i];
+                if (!mesh.userData.hasVisibleEdges) {
+                    this.colaCoords[0][i] *= 0.6;
+                    this.colaCoords[1][i] *= 0.6;
+                    this.colaCoords[1][i] -= (this.graphOffset * 0.7);
+                    this.colaCoords[2][i] *= 0.6;
+                }
+                else {
+                    this.colaCoords[1][i] += (this.graphOffset * 0.4);
+                }
             }
 
             // clear svg graphs
