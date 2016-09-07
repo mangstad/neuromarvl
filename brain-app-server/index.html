@@ -102,16 +102,16 @@
     <div id="control-panel-bottom">
         <div id ="control-panel-bottom-close" class="btn btn-primary" style="height: 50%; width: 100%;" data-toggle="tooltip" data-placement="top" title="Show introduction with example links">Splash Page</div>
         <div class="btn-group btn-group-justified bg-info" style="height: 50%; width: 100%;">
-            <div id="button-export-svg" class="btn btn-primary" data-toggle="tooltip" data-placement="top" title="Download Visualisations">
+            <div id="button-export-svg" class="btn btn-primary" data-toggle="tooltip" data-placement="top" title="Download visualisation as an image file">
                 <span class="glyphicon glyphicon-download-alt" aria-hidden="true"></span>
             </div>
-            <div id="button-save-settings" class="btn btn-primary" data-toggle="tooltip" data-placement="top" title="Save Settings">
+            <div id="button-save-settings" class="btn btn-primary" data-toggle="tooltip" data-placement="top" title="Save settings for reload in another session">
                 <span class="glyphicon glyphicon glyphicon-floppy-save" aria-hidden="true"></span>
             </div>
-            <div id="button-load-settings" class="btn btn-primary" data-toggle="tooltip" data-placement="top" title="Load Settings">
+            <div id="button-load-settings" class="btn btn-primary" data-toggle="tooltip" data-placement="top" title="Load settings from a previously saved session file">
                 <span class="glyphicon glyphicon glyphicon-floppy-open" aria-hidden="true"></span>
             </div>
-            <div id="button-save-app" class="btn btn-primary" data-toggle="tooltip" data-placement="top" title="Share Visualisations">
+            <div id="button-save-app" class="btn btn-primary" data-toggle="tooltip" data-placement="top" title="Share visualisation as a web link">
                 <span class="glyphicon glyphicon-send" aria-hidden="true"></span>
             </div>
         </div>
@@ -119,20 +119,20 @@
     <input id="input-select-load-file" style="display:none;" type="file" />
     <div id="control-panel" class="bg-info">
         <ul class="nav nav-tabs">
-            <li id="tab1" role="presentation" class="active" data-toggle="tooltip" data-placement="bottom" title="3D model settings">
+            <li id="tab1" role="presentation" class="active" data-toggle="tooltip" data-placement="bottom" title="3D brain model settings">
                 <a href="#tab-1" data-toggle="tab">Surface</a>
             </li>
-            <li id="tab2" role="presentation" data-toggle="tooltip" data-placement="bottom" title="Data source selection">
+            <li id="tab2" role="presentation" data-toggle="tooltip" data-placement="bottom" title="Data source selection and loading">
                 <a href="#tab-2" data-toggle="tab">Data</a>
             </li>
-            <li id="tab3" role="presentation" data-toggle="tooltip" data-placement="bottom" title="Attribute mappings">
+            <li id="tab3" role="presentation" data-toggle="tooltip" data-placement="bottom" title="Attribute mappings to visualisation features, including filtering">
                 <a href="#tab-3" data-toggle="tab">Attribute</a>
             </li>
         </ul>
         <div class="tab-content" style="height: 100%; ">
             <div id="tab-1" class="tab-pane active">
                 <br/>
-                <label class="control-label" data-toggle="tooltip" data-placement="right" title="Set the 3D brain model">Model</label>
+                <label class="control-label" data-toggle="tooltip" data-placement="right" title="Set the 3D brain model to a preset option or upload new model file">Model</label>
                 <select id="select-brain3d-model" class="form-control input-sm">
                     <option value="icbm">ICBM152</option>
                     <option value="ch2">CH2</option>
@@ -140,7 +140,7 @@
                     <option value="none">None</option>
                 </select>
                 <br />
-                <label class="control-label" data-toggle="tooltip" data-placement="right" title="Open colour picker for the brain model">Color</label>
+                <label class="control-label" data-toggle="tooltip" data-placement="right" title="Open colour picker for the brain model surface">Color</label>
                 <p style="margin-bottom: 0;">
                     <div id="input-surface-color" class="input-group colorpicker-component">
                         <input type="text" value="E3E3E3" class="form-control" />
@@ -148,7 +148,7 @@
                     </div>
                 </p>
                 <br/>
-                <label class="control-label" data-toggle="tooltip" data-placement="right" title="Adjust brain model opacity">Opacity</label>
+                <label class="control-label" data-toggle="tooltip" data-placement="right" title="Adjust brain model surface opacity">Opacity</label>
                 <input id="div-surface-opacity-slider" data-slider-id='surface-opacity-slider' type="text"
                        data-slider-min="0.0" data-slider-max="1" data-slider-step="0.02" data-slider-value="0.5" />
                 <br/>        
@@ -172,53 +172,53 @@
                 <br />
                 <div class="btn-group btn-group-justified" data-toggle="btns">
                     <a class="btn btn-sm btn-primary active" href="#div-set-data-tab" data-toggle="tab">
-                        <span data-toggle="tooltip" data-placement="bottom" title="Set data source files">Dataset</span>
+                        <span data-toggle="tooltip" data-placement="bottom" title="Set data source files for node position, connectivity, attributes and labels">Dataset</span>
                     </a>
                     <a class="btn btn-sm btn-primary" href="#div-batching-tab" data-toggle="tab">
-                        <span data-toggle="tooltip" data-placement="bottom" title="Create batch images from multiple sources">Batching</span>
+                        <span data-toggle="tooltip" data-placement="bottom" title="Create and download batch images files using multiple source data files">Batching</span>
                     </a>
                 </div>
                 <div class="tab-content" style="height: 85%; overflow-x: hidden; overflow-y: auto;">
                     
                     <div id="div-set-data-tab" class="tab-pane active">
                         <br />
-                        <button id="load-example-data" class="btn btn-sm btn-primary" data-toggle="tooltip" data-placement="top" title="Immediately load default data">Load Default Data</button>
-                        <a id="download-example-data" class="btn btn-sm btn-primary" data-toggle="tooltip" data-placement="top" title="Download example files to create custom data..." href="brain-app/data/example.zip">Get Example Files</a>
+                        <button id="load-example-data" class="btn btn-sm btn-primary" data-toggle="tooltip" data-placement="top" title="Immediately load default data">Load default data</button>
+                        <a id="download-example-data" class="btn btn-sm btn-primary" data-toggle="tooltip" data-placement="top" title="Download example files to create custom data..." href="brain-app/data/example.zip">Get example files</a>
                         <br />
                         <br />
-                        <label class="control-label" data-toggle="tooltip" data-placement="right" title="Coordinates of areas (or nodes) in the brain">Node Coordinates</label>
+                        <label class="control-label" data-toggle="tooltip" data-placement="right" title="Coordinates of areas (or nodes) in the brain">Node coordinates</label>
                         <input id="select-coords" style="display:none;" type="file" />
                         <div class="input-group input-group-sm">
                             <div class="input-group-addon glyphicon glyphicon glyphicon-info-sign status-changed" id="coords-status"
                                  data-toggle="tooltip" data-placement="bottom" title="File is not uploaded"></div>
-                            <button id="button-select-coords" class="form-control btn-default"><span id="button-select-coords-filename">Coordinates File</span></button>
+                            <button id="button-select-coords" class="form-control btn-default"><span id="button-select-coords-filename">Coordinates file</span></button>
                         </div>
                         <br />
                         <br />
-                        <label class="control-label" data-toggle="tooltip" data-placement="right" title="Measured similarities (in activity) between nodes">Connectivity Matrix</label>
+                        <label class="control-label" data-toggle="tooltip" data-placement="right" title="Measured similarities (in activity) between nodes">Connectivity matrix</label>
                         <input id="select-matrix" style="display:none;" type="file" />
                         <div class="input-group input-group-sm">
                             <div class="input-group-addon glyphicon glyphicon glyphicon-info-sign status-changed" id="matrix-status"
                                  data-toggle="tooltip" data-placement="bottom" title="File is not uploaded"></div>
-                            <button id="button-select-matrix" class="form-control btn-default"><span id="button-select-matrix-filename">Matrix File</span></button>
+                            <button id="button-select-matrix" class="form-control btn-default"><span id="button-select-matrix-filename">Matrix file</span></button>
                         </div>
                         <br />
                         <br />
-                        <label class="control-label" data-toggle="tooltip" data-placement="right" title="Attributes for each node">Node Attributes</label>
+                        <label class="control-label" data-toggle="tooltip" data-placement="right" title="Numerical attributes for each node">Node attributes</label>
                         <input id="select-attrs" style="display:none;" type="file" />
                         <div class="input-group input-group-sm">
                             <div class="input-group-addon glyphicon glyphicon glyphicon-info-sign status-changed" id="attrs-status"
                                  data-toggle="tooltip" data-placement="bottom" title="File is not uploaded"></div>
-                            <button id="button-select-attrs" class="form-control btn-default"><span id="button-select-attrs-filename">Attributes File</span></button>
+                            <button id="button-select-attrs" class="form-control btn-default"><span id="button-select-attrs-filename">Attributes file</span></button>
                         </div>
                         <br />
                         <br />
-                        <label class="control-label" data-toggle="tooltip" data-placement="right" title="Node names">Node Labels (optional)</label>
+                        <label class="control-label" data-toggle="tooltip" data-placement="right" title="Node names">Node labels (optional)</label>
                         <input id="select-labels" style="display:none;" type="file" />
                         <div class="input-group input-group-sm">
                             <div class="input-group-addon glyphicon glyphicon glyphicon-info-sign status-changed" id="labels-status"
                                  data-toggle="tooltip" data-placement="bottom" title="File is not uploaded"></div>
-                            <button id="button-select-labels" class="form-control btn-default"><span id="button-select-labels-filename">Labels File</span></button>
+                            <button id="button-select-labels" class="form-control btn-default"><span id="button-select-labels-filename">Labels file</span></button>
                         </div>
                         <br />
                     </div>
@@ -226,7 +226,7 @@
                        
                         
                         <br/>
-                        <label class="control-label" data-toggle="tooltip" data-placement="right" title="Select 1 (or more) input matrix files">Connectivity Matrices</label>
+                        <label class="control-label" data-toggle="tooltip" data-placement="right" title="Select 1 (or more) input matrix files">Connectivity matrices</label>
                         <input id="select-matrices-batching" style="display:none;" type="file" multiple/>
                         <div id="div-batching-tab" class="tab-pane">
                             <div class="input-group input-group-sm">
@@ -237,7 +237,7 @@
                         </div>
                         <br />
                         <br />
-                        <label class="control-label" data-toggle="tooltip" data-placement="right" title="Select 1 (or more) input attribute files">Node Attributes</label>
+                        <label class="control-label" data-toggle="tooltip" data-placement="right" title="Select 1 (or more) input attribute files">Node attributes</label>
                         <input id="select-attrs-batching" style="display:none;" type="file" multiple/>
                         <div class="input-group input-group-sm">
                             <div class="input-group-addon glyphicon glyphicon glyphicon-info-sign status-changed" id="attrs-batching-status"
@@ -364,7 +364,7 @@
                         </div>
                         <div id="div-edge-color">
                             <p style="margin-top: 5px; margin-bottom: 0;">
-                                <div class="form-group" data-toggle="tooltip" data-placement="right" title="Set edge color to match either connected nodes or strength value">
+                                <div class="form-group" data-toggle="tooltip" data-placement="right" title="Set edge color to match either the connected nodes orcolor range scaled to strength value">
                                     <label for="select-edge-color">Color edges by</label>
                                     <select class="form-control" id="select-edge-color">
                                         <option value="none">None</option>
@@ -373,7 +373,7 @@
                                     </select>
                                 </div>
                             </p>
-                            <div id="div-edge-color-by-node-picker" style="display: none; margin-top: 30px; margin-left: 40px;" data-toggle="tooltip" data-placement="right" title="Set an alternative color for edges with ends with nodes of different values">
+                            <div id="div-edge-color-by-node-picker" style="display: none; margin-top: 30px; margin-left: 40px;" data-toggle="tooltip" data-placement="right" title="Set an alternative color for edges with end nodes of different values">
                                 <p><input type="checkbox" id="checkbox-color-transitional-edges" style="width: 12px;"><strong> Customize inter-cluster edges</strong></p>
                                 <p>
                                     <label for="pick-color-intercluster">Color</label>

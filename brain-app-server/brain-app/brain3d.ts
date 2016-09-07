@@ -375,10 +375,10 @@ class Brain3DApp implements Application, Loopable {
         this.renderer.sortObjects = true;
 
         this.renderer.setSize(jDiv.width(), (jDiv.height() - sliderSpace));
-        jDiv.append($('<span id="close-brain-app-' + this.id + '" title="Close" class="view-panel-span"  data-toggle="tooltip" data-placement="bottom">x</span>')
-            .css({ 'right': '6px', 'top': '10px', 'font-size': '12px', 'z-index': 1000 })
-            .click(function () { varCloseBrainAppOnClick(); }))
-
+        jDiv
+            //.append($('<span id="close-brain-app-' + this.id + '" title="Close" class="view-panel-span"  data-toggle="tooltip" data-placement="bottom">x</span>')
+            //.css({ 'right': '6px', 'top': '10px', 'font-size': '12px', 'z-index': 1000 })
+            //.click(function () { varCloseBrainAppOnClick(); }))
             .append($('<span id="top-view-' + this.id + '" title="Top View" class="view-panel-span" data-toggle="tooltip" data-placement="left">T</span>')
                 .css({ 'right': '6px', 'top': '30px', 'z-index': 1000 })
                 .click(function () { varDefaultOrientationsOnClick("top"); }))
