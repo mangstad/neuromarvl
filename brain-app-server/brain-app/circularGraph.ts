@@ -16,8 +16,8 @@ class CircularGraph {
     saveObj;
 
     // Circular Only data
-    nodes;
-    links;
+    nodes = [];
+    links = [];
 
     // Save html elements
     circularBar1ColorPicker;
@@ -42,11 +42,12 @@ class CircularGraph {
     circularDotCSSClass: string;
     circularBundleAttribute: string;
     circularSortAttribute: string;
-    circularLableAttribute: string;
+    circularLabelAttribute: string;
 
     circularEdgeColorMode: string;
     circularEdgeDirectionMode: string;
     circularMouseDownEventListenerAdded = false;
+    edgeColorConfig;
 
 
 
@@ -60,10 +61,10 @@ class CircularGraph {
         this.d3Zoom = d3Zoom;
         this.commonData = commonData;
         this.saveObj = saveObj;
-
+        
         this.circularBundleAttribute = "none";
         this.circularSortAttribute = "none";
-        this.circularLableAttribute = "label";
+        this.circularLabelAttribute = "label";
     }
 
     setDataSet(dataSet: DataSet) {
@@ -93,7 +94,6 @@ class CircularGraph {
 
     // Define UI components of the settings 
     setupOptionMenuUI() {
-
         // Remove existing html elements
         this.circularDotCSSClass = ".network-type-appended-element-" + this.id;
         this.circularCSSClass = "network-type-appended-element-" + this.id;
@@ -121,10 +121,13 @@ class CircularGraph {
         // Setting Options
 
         // option button
-        this.jDiv.append($('<button id="button-circular-layout-histogram-' + this.id + '" class="' + this.circularCSSClass + ' btn  btn-sm btn-primary" ' +
-                'data-toggle="tooltip" data-placement="top" title="Show side-by-side graph representation">Options</button>')
-            .css({ 'margin-left': '5px', 'font-size': '12px', 'z-index': 1000 })
-            .click(function () { varCircularLayoutHistogramButtonOnClick(); }));
+        let $button = $('<button id="button-circular-layout-histogram-' + this.id + '" class="' + this.circularCSSClass + ' btn  btn-sm btn-primary" ' +
+                'data-toggle="tooltip" data-placement="right" title="Configure circular layout">Options</button>')
+        ;
+        if ($("#checkbox-tips").is(":checked")) $button.tooltip(<any>{ container: 'body' });
+        $button.css({ 'position': 'relative', 'margin-left': '5px', 'font-size': '12px', 'z-index': 500 });
+        this.jDiv.find("#div-graph-controls").append($button);
+        $button.click(function () { varCircularLayoutHistogramButtonOnClick(); })
 
 
         //------------------------------------------------------------------------
@@ -137,15 +140,25 @@ class CircularGraph {
                 'padding': '8px',
                 'border-radius': '5px'
             }));
+        
 
         //------------------------------------------------------------------------
-        // menu - bundle
+        // menu - display all
         $('#div-circular-layout-menu-' + this.id).append($('<input type="checkbox" id="checkbox-circular-layout-display-all-' + this.id + '" class=' + this.circularCSSClass + '>')
             .css({ 'width': '20px' })
             .on("change", function () { varCircularDisplayAllNodeOnCheck($(this).is(":checked")); }));
-        $('#div-circular-layout-menu-' + this.id).append('Display All Nodes');
-        $('#div-circular-layout-menu-' + this.id).append('<div id="div-circular-bundle-' + this.id + '">bundle: </div>');
-        $('#div-circular-bundle-' + this.id).append($('<select id="select-circular-layout-bundle-' + this.id + '" class=' + this.circularCSSClass + '></select>')
+        let $spanDisplayAll = $('<span data-toggle="tooltip" data-placement="top" '
+            + 'title="Toggle exclusion of nodes that are disconnected for the current filter and edge count">Display all nodes</span>');
+        $('#div-circular-layout-menu-' + this.id).append($spanDisplayAll);
+        if ($("#checkbox-tips").is(":checked")) $spanDisplayAll.tooltip(<any>{ container: 'body' });
+        
+
+        //------------------------------------------------------------------------
+        // menu - bundle
+        let $divBundle = $('<div id="div-circular-bundle-' + this.id + '" data-toggle="tooltip" data-placement="left" title="Group nodes by value of given attribute">Bundle </div>');
+        $('#div-circular-layout-menu-' + this.id).append($divBundle);
+        if ($("#checkbox-tips").is(":checked")) $divBundle.tooltip(<any>{ container: 'body' });
+        $divBundle.append($('<select id="select-circular-layout-bundle-' + this.id + '" class=' + this.circularCSSClass + '></select>')
             .css({ 'margin-left': '5px', 'margin-bottom': '5px', 'font-size': '12px', 'width': '80px', 'background-color': '#feeebd' })
             .on("change", function () { varCircularLayoutBundleOnChange($(this).val()); }));
 
@@ -161,10 +174,14 @@ class CircularGraph {
             $('#select-circular-layout-bundle-' + this.id).append('<option value = "' + columnName + '">' + columnName + '</option>');
         }
 
+        $('#select-circular-layout-bundle-' + this.id).val(this.circularBundleAttribute);
+
         //------------------------------------------------------------------------
         // menu - sort
-        $('#div-circular-layout-menu-' + this.id).append('<div id="div-circular-sort-' + this.id + '">sort: </div>');
-        $('#div-circular-sort-' + this.id).append($('<select id="select-circular-layout-sort-' + this.id + '" class=' + this.circularCSSClass + '></select>')
+        let $divSort = $('<div id="div-circular-sort-' + this.id + '" data-toggle="tooltip" data-placement="left" title="Sort nodes within group by attribute value">Sort </div>');
+        $('#div-circular-layout-menu-' + this.id).append($divSort);
+        if ($("#checkbox-tips").is(":checked")) $divSort.tooltip(<any>{ container: 'body' });
+        $divSort.append($('<select id="select-circular-layout-sort-' + this.id + '" class=' + this.circularCSSClass + '></select>')
             .css({ 'margin-left': '5px', 'margin-bottom': '5px', 'font-size': '12px', 'width': '80px', 'background-color': '#feeebd' })
             .on("change", function () { varCircularLayoutSortOnChange($(this).val()); }));
 
@@ -180,10 +197,14 @@ class CircularGraph {
             $('#select-circular-layout-sort-' + this.id).append('<option value = "' + columnName + '">' + columnName + '</option>');
         }
 
+        $('#select-circular-layout-sort-' + this.id).val(this.circularSortAttribute);
+
         //------------------------------------------------------------------------
         // menu - label
-        $('#div-circular-layout-menu-' + this.id).append('<div id="div-circular-label-' + this.id + '">label: </div>');
-        $('#div-circular-label-' + this.id).append($('<select id="select-circular-label-' + this.id + '" class=' + this.circularCSSClass + '></select>')
+        let $divLabel = $('<div id="div-circular-label-' + this.id + '" data-toggle="tooltip" data-placement="left" title="Specify attribute for node label">Label </div>');
+        $('#div-circular-layout-menu-' + this.id).append($divLabel);
+        if ($("#checkbox-tips").is(":checked")) $divLabel.tooltip(<any>{ container: 'body' });
+        $divLabel.append($('<select id="select-circular-label-' + this.id + '" class=' + this.circularCSSClass + '></select>')
             .css({ 'margin-left': '5px', 'margin-bottom': '5px', 'font-size': '12px', 'width': '80px', 'background-color': '#feeebd' })
             .on("change", function () { varCircularLayoutLabelOnChange($(this).val()); }));
 
@@ -208,16 +229,19 @@ class CircularGraph {
             $('#select-circular-label-' + this.id).append('<option value = "' + columnName + '">' + columnName + '</option>');
         }
 
+        $('#select-circular-label-' + this.id).val(this.circularLabelAttribute);
+
         //------------------------------------------------------------------------
         // menu - histogram
-        $('#div-circular-layout-menu-' + this.id).append('<div>histogram:</div>');
-        $('#div-circular-layout-menu-' + this.id).append($('<button id="button-circular-add-bar-' + this.id + '" class=' + this.circularCSSClass + '>Add More</button>')
+        let $divHisto = $('<div data-toggle="tooltip" data-placement="left" title="Apply histogram bars for node attributes">Histogram</div>');
+        $('#div-circular-layout-menu-' + this.id).append($divHisto);
+        if ($("#checkbox-tips").is(":checked")) $divHisto.tooltip(<any>{ container: 'body' });
+        $('#div-circular-layout-menu-' + this.id).append($('<button id="button-circular-add-bar-' + this.id + '" class=' + this.circularCSSClass + '>Add more</button>')
             .css({ 'margin-left': '5px', 'font-size': '12px' })
             .click(function () { varCircularAddMoreButtonOnClick(); }));
 
 
         //---
-        //$('#select-circular-layout-attribute-two-' + this.id).prop('disabled', true);
 
         var varClass = this.circularCSSClass;
 
@@ -248,6 +272,7 @@ class CircularGraph {
         }
     }
 
+
     create() {
         if (!this.colaGraph) {
             console.log("ERROR: colaGraph is NULL");
@@ -262,8 +287,8 @@ class CircularGraph {
         this.GenerateCircularUI(attrSort, attrBundle);
         this.circularLayoutLabelOnChange(attrLabel);
         this.updateAllAttributeBars();
-
     }
+
 
     update() {
         if (!this.colaGraph) {
@@ -293,14 +318,19 @@ class CircularGraph {
                 if (edge.visible) {
                     // for every node in the array
                     for (var j = 0; j < this.svgNodeBundleArray.length; j++) {
-
-                        // If this node is the source of the link
-                        if (this.svgNodeBundleArray[j].id == edge.sourceNode.userData.id) {
-                            this.svgNodeBundleArray[j].linkColors[edge.targetNode.userData.id] = edge.color;
+                        if (this.edgeColorConfig && this.edgeColorConfig.useTransitionColor && (edge.uniforms.startColor !== edge.uniforms.endColor)) {
+                            this.svgNodeBundleArray[j].linkColors[edge.targetNode.userData.id] = this.edgeColorConfig.useTransitionColor;
+                            this.svgNodeBundleArray[j].linkColors[edge.sourceNode.userData.id] = this.edgeColorConfig.useTransitionColor;
                         }
-                        // If this node is the Target of the link
-                        if (this.svgNodeBundleArray[j].id == edge.targetNode.userData.id) {
-                            this.svgNodeBundleArray[j].linkColors[edge.sourceNode.userData.id] = edge.color;
+                        else {
+                            // If this node is the source of the link
+                            if (this.svgNodeBundleArray[j].id == edge.sourceNode.userData.id) {
+                                this.svgNodeBundleArray[j].linkColors[edge.targetNode.userData.id] = edge.color;
+                            }
+                            // If this node is the Target of the link
+                            if (this.svgNodeBundleArray[j].id == edge.targetNode.userData.id) {
+                                this.svgNodeBundleArray[j].linkColors[edge.sourceNode.userData.id] = edge.color;
+                            }
                         }
                     }
                 }
@@ -325,12 +355,14 @@ class CircularGraph {
         cluster = d3.layout.cluster()
             .size([360, innerRadius])
             .sort(null)
-            .value(function (d) { return d.size; });
+            .value(function (d) { return d.size; })
+            ;
 
         var tree = packages.root(nodeJson);
+        // Tree may have a false root. Remove it.
+        if (tree.children.length === 1) tree = tree.children[0];
+        let groups = tree.children;
         if (attrSort !== "none") {
-            var groups = tree.children[0].children;
-
             if (attrBundle !== "none") {
                 for (var i = 0; i < groups.length; i++) {
                     groups[i].children.sort(function (a, b) {
@@ -345,21 +377,36 @@ class CircularGraph {
                 }
             }
         }
+        if (attrBundle !== "none") {
+            groups.sort((a, b) => a.children[0].bundleSort[attrBundle] - b.children[0].bundleSort[attrBundle]);
+        }
         this.nodes = cluster.nodes(tree);
+        if (attrBundle !== "none") {
+            // Offset nodes bundled by multivalue attributes into concentric rings
+            let offset = radius / 16;
+            let i = this.nodes.length;
+            while (i--) {
+                let n = this.nodes[i];
+                if (!n.bundleHeight) continue;
+                n.y -= offset * n.bundleHeight[attrBundle];
+            }
+        }
+
         this.links = packages.imports(this.nodes);
 
         //-------------------------------------------------------------------------------------------
         // update UI
         var links = this.links;
         var edgeColorMode = this.circularEdgeColorMode;
+        var edgeColorConfig = this.edgeColorConfig;
         var edgeDirectionMode = this.circularEdgeDirectionMode;
         var varSvg = this.svg[0];
         var varNS = varSvg[0].namespaceURI;
         var varDefs = this.svgDefs;
         // use normal color updating style
+        var bundledLinks = bundle(links);
         this.svgAllElements.selectAll(".linkCircular")
             .data(function () {
-                var bundledLinks = bundle(links);
                 if (bundledLinks[0][0].bundleByAttribute == "none") {
                     for (var i = 0; i < bundledLinks.length; i++) {
                         bundledLinks[i][1].y = 70;
@@ -384,8 +431,16 @@ class CircularGraph {
                     var sourceColor = (String)(edgeSettings.directionStartColor);
                     var targetColor = (String)(edgeSettings.directionEndColor);
                 } else if (edgeColorMode === "node") {
-                    var sourceColor = String(l.source.color);
-                    var targetColor = String(l.target.color);
+                    var sourceColor: string;
+                    var targetColor: string;
+                    if (edgeColorConfig && edgeColorConfig.useTransitionColor && (l.source.color !== l.target.color)) {
+                        sourceColor = String(edgeColorConfig.edgeTransitionColor);
+                        targetColor = String(edgeColorConfig.edgeTransitionColor);
+                    }
+                    else {
+                        sourceColor = String(l.source.color);
+                        targetColor = String(l.target.color);
+                    }
                 } else {
                     var sourceColor = String(l.source.linkColors[l.target.id]);
                     var targetColor = String(l.source.linkColors[l.target.id]);
@@ -395,7 +450,7 @@ class CircularGraph {
                     sourceOpacity = 0;
                     targetOpacity = 1;
                 }
-
+                
                 var sourceColorRGBA = CommonUtilities.hexToRgb(sourceColor, sourceOpacity).toString();
                 var targetColorRGBA = CommonUtilities.hexToRgb(targetColor, targetOpacity).toString();
                 var stops = [
@@ -453,7 +508,6 @@ class CircularGraph {
                 var attrArray = attributes.get(colorAttr);
                 var group = d3.select(this);
                 group.selectAll("path").remove();
-                //if (colorAttr === "" || colorAttr === "none") {
                 if (!attributes.info[colorAttr]) {
                     group.selectAll(".path")
                         .data(pie([1]))
@@ -535,6 +589,9 @@ class CircularGraph {
                 nodeObject["label"] = brainLabels[d.id];
             }
 
+            nodeObject["bundleSort"] = {};
+            nodeObject["bundleHeight"] = {};
+
             // for every attributes
             for (var j = 0; j < attributes.columnNames.length; j++) {
 
@@ -557,17 +614,49 @@ class CircularGraph {
                 var scalevalue = attrMap(Math.max.apply(Math, value));
                 nodeObject['scale_' + colname] = scalevalue;
 
+                //TODO: this grouping algorithm could be used in all other graph types
                 if (attributes.info[colname].isDiscrete) { // if the attribute is discrete
-                    // Scale to group attirbutes 
-                    var values = attributes.info[colname].distinctValues;
-                    nodeObject['bundle_group_' + colname] = values.indexOf(Math.max.apply(Math, value));
+                    // If the attribute is discrete then grouping is clear for simple values, but for multivalue attributes we get the position of the largest value
+                    if (value.length > 1) {
+                        //Using heaviest position:
+                        //nodeObject['bundle_group_' + colname] = value.indexOf(Math.max(...value));
 
+                        // Using base-max numeration (e.g. if max is 7, use octal encoding):
+                        let groupValue = 0;
+                        let i = value.length;
+                        while (i--) {
+                            groupValue += (value[i] * Math.pow(max + 1, i));
+                        }
+                        // Add a bundle sorting value using sum of weighted vectors from module positions on circle
+                        let rev = 2 * Math.PI;
+                        let sortValuePos = value.reduce((sum, d, i) => {
+                            let theta = rev * i / value.length;
+                            return {
+                                x: sum.x + Math.sin(theta) * d,
+                                y: sum.y + Math.cos(theta) * d
+                            }
+                        }, {x: 0, y: 0});
+                        let sortValue = Math.atan2(sortValuePos.x, sortValuePos.y);
+                        // Map sortValue from -PI..PI to integers in range 0..attributes.numRecords
+                        sortValue = Math.floor((sortValue < 0 ? sortValue + rev : sortValue) / rev * attributes.numRecords);
+                        nodeObject['bundle_group_' + colname] = groupValue;
+                        nodeObject['bundleSort'][colname] = sortValue;
+                        // Concentric offset is just the number of significant values
+                        nodeObject['bundleHeight'][colname] = value.reduce((acc, d) => d > 0 ? acc + 1 : acc, 0);
+                    }
+                    else {
+                        nodeObject['bundle_group_' + colname] = value[0];
+                        nodeObject['bundleSort'][colname] = value[0];
+                        nodeObject['bundleHeight'][colname] = 1;
+                    }
                 } else { // if the attribute is continuous
-                    // Scale to group attirbutes 
+                    // Scale to group attributes 
                     var bundleGroupMap = d3.scale.linear().domain([min, max]).range([0, 9.99]); // use 9.99 instead of 10 to avoid a group of a single element (that has the max attribute value)
                     var bundleGroup = bundleGroupMap(Math.max.apply(Math, value)); // group
                     bundleGroup = Math.floor(bundleGroup);
                     nodeObject['bundle_group_' + colname] = bundleGroup;
+                    nodeObject['bundleSort'][colname] = bundleGroup;
+                    nodeObject['bundleHeight'][colname] = 1;
                 }
             }
 
@@ -629,13 +718,14 @@ class CircularGraph {
                             }
                         }
                     }
-
                 }
             }
         }
     }
 
     GenerateCircularUI(sortByAttribute: string, bundleByAttribute: string) {
+        // Based on http://bl.ocks.org/mbostock/1044242
+
         let attributes = this.dataSet.attributes;
         let edgeSettings = this.saveObj.edgeSettings;
         let nodeSettings = this.saveObj.nodeSettings;
@@ -652,9 +742,8 @@ class CircularGraph {
         let cluster = d3.layout.cluster()
             .size([360, innerRadius])
             .sort(null) // Using built-in D3 sort destroy the order of the cluster => need to be investigated
-            .value(function (d) {
-                return 180;
-            });
+            .value(function (d) { return d.size; })
+            ;
 
 
         let bundle = d3.layout.bundle();
@@ -667,12 +756,12 @@ class CircularGraph {
 
         // Link path
         let line = d3.svg.line.radial()
-            //.tension(.85)
+            .interpolate("bundle")
+            .tension(.8)
             .radius(function (d) {
                 return d.y;
             })
             .angle(function (d) { return d.x / 180 * Math.PI; })
-            .interpolate("bundle")
         ;
 
         this.svgAllElements.attr("transform", "translate(" + width + "," + height + ")");
@@ -683,8 +772,10 @@ class CircularGraph {
         // An alternative solutions to sorting the children while keeping 
         // the order of the clusters 
         let tree = packages.root(nodeJson);
+        // Tree may have a false root. Remove it.
+        if (tree.children.length === 1) tree = tree.children[0];
+        let groups = tree.children;
         if (sortByAttribute !== "none") {
-            var groups = tree.children[0].children;
             // If  bundle is none, the children are not put into groups
             if (bundleByAttribute !== "none") {
                 for (var i = 0; i < groups.length; i++) {
@@ -700,7 +791,21 @@ class CircularGraph {
                 }
             }
         }
+        if (bundleByAttribute !== "none") {
+            groups.sort((a, b) => a.children[0].bundleSort[bundleByAttribute] - b.children[0].bundleSort[bundleByAttribute]);
+        }
         this.nodes = cluster.nodes(tree);
+        if (bundleByAttribute !== "none") {
+            // Offset nodes bundled by multivalue attributes into concentric rings
+            let offset = radius / 16;
+            let i = this.nodes.length;
+            while (i--) {
+                let n = this.nodes[i];
+                if (!n.bundleHeight) continue;
+                n.y -= offset * n.bundleHeight[bundleByAttribute];
+            }
+        }
+
         this.links = packages.imports(this.nodes);
 
         var varMouseOveredSetNodeID = (id) => { this.mouseOveredSetNodeID(id); }
@@ -715,14 +820,15 @@ class CircularGraph {
         // Add Links to Circular Graph
         var links = this.links;
         var edgeColorMode = this.circularEdgeColorMode;
+        var edgeColorConfig = this.edgeColorConfig;
         var edgeDirectionMode = this.circularEdgeDirectionMode;
         var varSvg = this.svg[0];
         var varNS = varSvg[0].namespaceURI;
         var varDefs = this.svgDefs;
+        var bundledLinks = bundle(links);
 
         this.svgAllElements.selectAll(".linkCircular")
             .data(function () {
-                var bundledLinks = bundle(links);
                 if (bundledLinks[0][0].bundleByAttribute == "none") {
                     for (var i = 0; i < bundledLinks.length; i++) {
                         bundledLinks[i][1].y = 70;
@@ -752,8 +858,16 @@ class CircularGraph {
                     var sourceColor = (String)(edgeSettings.directionStartColor);
                     var targetColor = (String)(edgeSettings.directionEndColor);
                 } else if (edgeColorMode === "node") {
-                    var sourceColor = String(l.source.color);
-                    var targetColor = String(l.target.color);
+                    var sourceColor: string;
+                    var targetColor: string;
+                    if (edgeColorConfig && edgeColorConfig.useTransitionColor && (l.source.color !== l.target.color)) {
+                        sourceColor = String(edgeColorConfig.edgeTransitionColor);
+                        targetColor = String(edgeColorConfig.edgeTransitionColor);
+                    }
+                    else {
+                        sourceColor = String(l.source.color);
+                        targetColor = String(l.target.color);
+                    }
                 } else {
                     var sourceColor = String(l.source.linkColors[l.target.id]);
                     var targetColor = String(l.source.linkColors[l.target.id]);
@@ -931,10 +1045,10 @@ class CircularGraph {
             .on("mouseout", function (d) { varMouseOutedCircularLayout(d); varMouseOutedSetNodeID(); });
 
         // Rearange the menu layout
-        var l = $('#button-circular-layout-histogram-' + this.id).position().left + 5;
-        var t = $('#button-circular-layout-histogram-' + this.id).position().top - $('#div-circular-layout-menu-' + this.id).height() - 15;
-        $('#div-circular-layout-menu-' + this.id).zIndex(1000);
-        $('#div-circular-layout-menu-' + this.id).css({ left: l, top: t, height: 'auto' });
+        //var l = $('#button-circular-layout-histogram-' + this.id).position().left + 5;
+        //var t = $('#button-circular-layout-histogram-' + this.id).position().top - $('#div-circular-layout-menu-' + this.id).height() - 15;
+        //$('#div-circular-layout-menu-' + this.id).zIndex(1000);
+        //$('#div-circular-layout-menu-' + this.id).css({ left: l, top: t, height: 'auto' });
 
         //------------------------------------------------------------------------------------------------------------
         // Add control options for new bar
@@ -953,8 +1067,18 @@ class CircularGraph {
                 `)
         );
         let $pickerDiv = (<any>$(`#input-circular-layout-bar${bar.id}-color`));
-        $pickerDiv.colorpicker();
+        let customClass = `custom-picker-${bar.id}-${this.id}`;
+        $pickerDiv.colorpicker({
+            format: "hex",
+            customClass
+        });
         $pickerDiv.on("changeColor", e => varUpdateCircularBarColor(bar.id, (<any>e).color.toHex()));
+        $pickerDiv.on("showPicker", e => {
+            // May need to adjust if it overflows the window
+            let $pickerPalette = $("." + customClass);
+            $pickerPalette.removeClass("clip-to-bottom");
+            if ($pickerPalette.outerHeight() + $pickerPalette.offset().top > window.innerHeight) $pickerPalette.addClass("clip-to-bottom");
+        });
 
 
         $('#select-circular-layout-attribute-' + bar.id + '-' + this.id).empty();
@@ -1164,7 +1288,7 @@ class CircularGraph {
     }
 
     circularLayoutLabelOnChange(attr: string) {
-        this.circularLableAttribute = attr;
+        this.circularLabelAttribute = attr;
 
         if (attr == "label") {
             this.svgAllElements.selectAll(".nodeCircular")
@@ -1180,8 +1304,9 @@ class CircularGraph {
         }
     }
 
-    circularLayoutEdgeColorModeOnChange(mode: string) {
+    circularLayoutEdgeColorModeOnChange(mode: string, config?) {
         this.circularEdgeColorMode = mode;
+        this.edgeColorConfig = config;
         this.update();
     }
 
@@ -1226,7 +1351,8 @@ class CircularGraph {
     // Handle click on the Options
     circularLayoutHistogramButtonOnClick() {
         var l = $('#button-circular-layout-histogram-' + this.id).position().left + 5;
-        var t = $('#button-circular-layout-histogram-' + this.id).position().top - $('#div-circular-layout-menu-' + this.id).height() - 15;
+        //var t = $('#button-circular-layout-histogram-' + this.id).position().top - $('#div-circular-layout-menu-' + this.id).height() - 15;
+        let b = $('#button-circular-layout-histogram-' + this.id).outerHeight();
 
         for (var barIndex in this.attributeBars) {
             var bar = this.attributeBars[barIndex];
@@ -1239,7 +1365,8 @@ class CircularGraph {
             //$(bar.colorPicker).insertAfter('#select-circular-layout-attribute-'+ bar.id +'-' + this.id);
         }
         $('#div-circular-layout-menu-' + this.id).zIndex(1000);
-        $('#div-circular-layout-menu-' + this.id).css({ left: l, top: t, height: 'auto' });
+        //$('#div-circular-layout-menu-' + this.id).css({ left: l, top: t, height: 'auto' });
+        $('#div-circular-layout-menu-' + this.id).css({ left: l, bottom: b, height: 'auto' });
         $('#div-circular-layout-menu-' + this.id).fadeToggle('fast');
     }
 

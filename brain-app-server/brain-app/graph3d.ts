@@ -1,5 +1,5 @@
 ﻿
-const RENDER_ORDER_EDGE = 0.1;
+const RENDER_ORDER_EDGE = 1.1;
 
 class Graph3D {
     parentObject;
@@ -11,7 +11,6 @@ class Graph3D {
     nodeMeshes: any[];
     nodePositions: number[][];
     nodeInfo: any[];
-    nodeDefaultColor: number[];
     nodeCurrentColor: number[];
 
     // Edges
@@ -29,8 +28,7 @@ class Graph3D {
     visible: boolean = true;
 
 
-    filteredNodeIDs: number[];
-    nodeHasNeighbors: boolean[]; // used for cola graph only
+    filteredNodeIDs: number[] = [];
 
     // Shared for optimisation
     _sphereGeometry: THREE.SphereGeometry = new THREE.SphereGeometry(2, 10, 10);
@@ -53,16 +51,17 @@ class Graph3D {
             };
         })
         
-        this.nodeDefaultColor = nodeColorings.map(a => this.averageColor(a)); // Use average colour
-        this.nodeCurrentColor = this.nodeDefaultColor.slice(0); // clone the array
+        this.nodeCurrentColor = nodeColorings.map(a => this.averageColor(a)); // Use average colour for base, used generally and when restoring from highlights
 
         for (var i = 0; i < adjMatrix.length; ++i) {
             //TODO: Originally using spheres, but can switch to sprites for pie chart representations
             var nodeObject = this.nodeMeshes[i] = new THREE.Mesh(
                 this._sphereGeometry,
                 new THREE.MeshLambertMaterial({
-                    color: this.nodeDefaultColor[i],       // Average colour value needed for material
-                    transparent: true       // Not actually transparent, but need this or three.js will render it before the brain surface
+                    color: this.nodeCurrentColor[i],
+                    transparent: true,       // Not actually transparent, but need this or three.js will render it before the brain surface
+                    depthWrite: false,
+                    depthTest: false
                 })
             );
             nodeObject.renderOrder = RENDER_ORDER_EDGE; // Draw at the same level as edges
@@ -75,8 +74,11 @@ class Graph3D {
             nodeObject.userData.id = i;
             nodeObject.userData.colors = nodeColorings[i];
             nodeObject.userData.filtered = false;
+            nodeObject.userData.highlighted = false;
 
             this.rootObject.add(nodeObject);
+            
+            this.filteredNodeIDs.push(i);
         }
 
         // Create all the edges
@@ -164,13 +166,17 @@ class Graph3D {
         var canvas = document.createElement('canvas');
 
         var context = canvas.getContext('2d');
-        context.font = "Bold " + varFontSize + "px Arial";
+        //context.font = "Bold " + varFontSize + "px Arial";
         
         // Canvas dimensions expected to be a power of 2
-        canvas.width = this.nextPowerOf2(context.measureText(text).width);
+        canvas.width = this.nextPowerOf2(context.measureText(text).width * 2);
         canvas.height = this.nextPowerOf2(varFontSize);
 
         context.font = varFontSize + "px Arial";
+        //context.miterLimit = 2;
+        context.strokeStyle = "rgba(255,255,255,0.5)";
+        context.lineWidth = varFontSize * 0.1;
+        context.strokeText(text, 0, varFontSize);
         context.fillStyle = "rgba(0,0,0,1)";
         context.fillText(text, 0, varFontSize);
 
@@ -181,10 +187,13 @@ class Graph3D {
         // 3. map texture to an object
         var spriteMaterial = new THREE.SpriteMaterial(<any>{
             map: texture,
+            //depthTest: true,
+            depthWrite: false,
             depthTest: false
         });
         var sprite = new THREE.Sprite(spriteMaterial);
         sprite.scale.set(canvas.width / multiplyScale, canvas.height / multiplyScale, 1);
+        sprite.renderOrder = RENDER_ORDER_EDGE;
 
         return sprite;
     }
@@ -243,85 +252,30 @@ class Graph3D {
         return this.visible;
     }
 
-    // used by physioGraph
-    applyNodeFiltering() {
-        for (var i = 0; i < this.nodeMeshes.length; ++i) {
-            this.rootObject.remove(this.nodeMeshes[i]);
-            this.nodeMeshes[i].userData.filtered = true;
-        }
 
-        if (this.filteredNodeIDs) {
-            for (var j = 0; j < this.filteredNodeIDs.length; ++j) {
-                var nodeID = this.filteredNodeIDs[j];
-
-                this.rootObject.add(this.nodeMeshes[nodeID]);
-                this.nodeMeshes[nodeID].userData.filtered = false;
-            }
-        }
-    }
-
-    findNodeConnectivity(filteredAdjMatrix, dissimilarityMatrix, edges: any[]) {
-
-        var hasNeighbours = Array<boolean>(this.nodeMeshes.length);
+    findNodeConnectivity(filteredAdjMatrix, dissimilarityMatrix, edges?: any[]) {
         for (var i = 0; i < this.nodeMeshes.length - 1; ++i) {
             for (var j = i + 1; j < this.nodeMeshes.length; ++j) {
                 if (filteredAdjMatrix[i][j] === 1) {
-                    if (this.filteredNodeIDs) {
-                        if ((this.filteredNodeIDs.indexOf(i) != -1) && (this.filteredNodeIDs.indexOf(j) != -1)) {
-                            var len = dissimilarityMatrix[i][j];
-                            if (edges) edges.push({ source: i, target: j, length: len });
-                            hasNeighbours[i] = true;
-                            hasNeighbours[j] = true;
-                        }
-                    } else {
-                        var len = dissimilarityMatrix[i][j];
-                        if (edges) edges.push({ source: i, target: j, length: len });
-                        hasNeighbours[i] = true;
-                        hasNeighbours[j] = true;
+                    if ((this.filteredNodeIDs.indexOf(i) != -1) && (this.filteredNodeIDs.indexOf(j) != -1)) {
+                        if (edges) edges.push({ source: i, target: j, length: dissimilarityMatrix[i][j] });
                     }
                 } else if (filteredAdjMatrix[j][i] === 1) {
-                    if (this.filteredNodeIDs) {
-                        if ((this.filteredNodeIDs.indexOf(i) != -1) && (this.filteredNodeIDs.indexOf(j) != -1)) {
-                            var len = dissimilarityMatrix[i][j];
-                            if (edges) edges.push({ source: j, target: i, length: len });
-                            hasNeighbours[i] = true;
-                            hasNeighbours[j] = true;
-                        }
-                    } else {
-                        var len = dissimilarityMatrix[i][j];
-                        if (edges) edges.push({ source: j, target: i, length: len });
-                        hasNeighbours[i] = true;
-                        hasNeighbours[j] = true;
+                    if ((this.filteredNodeIDs.indexOf(i) != -1) && (this.filteredNodeIDs.indexOf(j) != -1)) {
+                        if (edges) edges.push({ source: j, target: i, length: dissimilarityMatrix[i][j] });
                     }
                 }
-
             }
         }
-
-        this.nodeHasNeighbors = hasNeighbours.slice(0);
     }
 
-    // used by 
 
     setNodeVisibilities() {
-        if (!this.nodeHasNeighbors) return;
-
-        for (var i = 0; i < this.nodeHasNeighbors.length; ++i) {
-            if (this.nodeHasNeighbors[i]) {
-                if (this.filteredNodeIDs) {
-                    if (this.filteredNodeIDs.indexOf(i) != -1) {
-                        this.rootObject.add(this.nodeMeshes[i]);
-                        this.nodeMeshes[i].userData.filtered = false;
-                    }
-                    else {
-                        this.rootObject.remove(this.nodeMeshes[i]);
-                        this.nodeMeshes[i].userData.filtered = true;
-                    }
-                }
-                else {
-                    this.rootObject.add(this.nodeMeshes[i]);
-                    this.nodeMeshes[i].userData.filtered = false;
-                }
+        let i = this.nodeMeshes.length;
+        while (i--) {
+            if (this.filteredNodeIDs.indexOf(i) != -1) {
+                this.rootObject.add(this.nodeMeshes[i]);
+                this.nodeMeshes[i].userData.filtered = false;
             }
             else {
                 this.rootObject.remove(this.nodeMeshes[i]);
@@ -330,14 +284,25 @@ class Graph3D {
         }
     }
 
+
     highlightSelectedNodes(filteredIDs: number[]) {
         for (var i = 0; i < this.nodeMeshes.length; ++i) {
             if (filteredIDs.indexOf(i) == -1) {
                 this.nodeMeshes[i].material.color.setHex(this.nodeCurrentColor[i]);
+                this.nodeMeshes[i].userData.highlighted = false;
             }
             else {
                 this.nodeMeshes[i].material.color.setHex(0xFFFF00); // highlight color
+                this.nodeMeshes[i].userData.highlighted = true;
             }
+        }
+
+        // Don't forget to keep edges in sync
+        if (this.colorMode === "weight" || this.colorMode === "node") {
+            // update edges' color map
+            this.setEdgeColorConfig(this.colorMode, this.edgeColorConfig);
+        } else {
+            this.setEdgeColorConfig(this.colorMode);
         }
     }
 
@@ -348,10 +313,21 @@ class Graph3D {
     }
 
     setDefaultNodeColor() {
-        this.nodeCurrentColor = this.nodeDefaultColor.slice(0);
-
+        const DEFAULT_COLOR = {
+            color: 0xcfcfcf,
+            portion: 1
+        };
         for (var i = 0; i < this.nodeMeshes.length; ++i) {
-            this.nodeMeshes[i].material.color.setHex(this.nodeDefaultColor[i]);
+            this.nodeCurrentColor[i] = DEFAULT_COLOR.color;
+            this.nodeMeshes[i].material.color.setHex(DEFAULT_COLOR.color);
+            this.nodeMeshes[i].userData.colors = [DEFAULT_COLOR];
+        }
+        // Also reset edge color if set to node
+        if (this.colorMode === "node") {
+            for (var i = 0; i < this.edgeList.length; i++) {
+                var edge = this.edgeList[i];
+                edge.isColorChanged = true;
+            }
         }
     }
 
@@ -497,7 +473,16 @@ class Graph3D {
         } else if (colorMode === "node") {
             for (var i = 0; i < this.edgeList.length; i++) {
                 var edge = this.edgeList[i];
-                edge.colorMode = colorMode;
+
+                if (config && config.useTransitionColor) {
+                    let transitionColor = parseInt(config.edgeTransitionColor.substring(1), 16);
+                    edge.colorMode = "node-transitioning";
+                    edge.transitionColor = transitionColor;
+                }
+                else {
+                    edge.colorMode = colorMode;
+                }
+
                 edge.isColorChanged = true;
             }
         } else {        // (colorMode === "none")
@@ -525,8 +510,7 @@ class Graph3D {
             for (var j = i + 1; j < len; ++j) {
                 if (this.edgeMatrix[i][j] || this.edgeMatrix[j][i]) {
                     var edge = (this.edgeMatrix[i][j]) ? this.edgeMatrix[i][j] : this.edgeMatrix[j][i];
-
-                    if (this.filteredNodeIDs && ((this.filteredNodeIDs.indexOf(i) == -1) || (this.filteredNodeIDs.indexOf(j) == -1))) {
+                    if ((this.filteredNodeIDs.indexOf(i) == -1) || (this.filteredNodeIDs.indexOf(j) == -1)) {
                         edge.setVisible(false);
                     } else if (visMatrix[i][j] === 1 || visMatrix[j][i] === 1) {
                         this.nodeMeshes[i].userData.hasVisibleEdges = true;
@@ -534,6 +518,7 @@ class Graph3D {
                         edge.setVisible(true);
                     } else {
                         edge.setVisible(false);
+                        //console.log("setEdgeVisibilities", this.nodeMeshes[i].userData, this.nodeMeshes[j].userData);///jm
                     }
                 }
 
@@ -549,7 +534,7 @@ class Graph3D {
             }
         }
 
-        if (this.colorMode === "weight") {
+        if (this.colorMode === "weight" || this.colorMode === "node") {
             // update edges' color map
             this.setEdgeColorConfig(this.colorMode, this.edgeColorConfig);
         } else {
@@ -584,20 +569,13 @@ class Graph3D {
     //////////////////////////////////////////////
     /////// Label's Functions ////////////////////
     //////////////////////////////////////////////
-    showAllLabels(ignore3dControl: boolean, bCola: boolean) {
-        this.hideAllLabels();
 
+    showAllLabels(ignore3dControl: boolean) {
+        this.hideAllLabels();
         for (var i = 0; i < this.nodeInfo.length; ++i) {
             if (this.nodeInfo[i]["label"]) {
                 if (!ignore3dControl) {
-                    if (bCola) {
-                        if (this.nodeHasNeighbors[i]) {
-                            this.rootObject.add(this.nodeInfo[i]["label"]);
-                        }
-                    }
-                    else {
-                        this.rootObject.add(this.nodeInfo[i]["label"]);
-                    }
+                    this.rootObject.add(this.nodeInfo[i]["label"]);
                 }
             }
         }
@@ -630,7 +608,7 @@ class Graph3D {
             this.nodeMeshes[i].userData.colors = colorArray[i];
         }
 
-        // also reset edge color:
+        // Also reset edge color if set to node
         if (this.colorMode === "node") {
             for (var i = 0; i < this.edgeList.length; i++) {
                 var edge = this.edgeList[i];
@@ -648,7 +626,8 @@ class Graph3D {
         this.nodeMeshes[id].material.color.setHex(color);
     }
 
-    selectNode(id: number, ignore3dControl: boolean, bCola: boolean) {
+
+    selectNode(id: number, ignore3dControl: boolean) {
 
         if (!this.nodeInfo[id].isSelected) {
             this.nodeInfo[id].isSelected = true;
@@ -660,14 +639,7 @@ class Graph3D {
 
             if (this.allLabels == false) {
                 if (!ignore3dControl) {
-                    if (bCola) {
-                        if (this.nodeHasNeighbors[id]) {
-                            this.rootObject.add(this.nodeInfo[id]["label"]);
-                        }
-                    }
-                    else {
-                        this.rootObject.add(this.nodeInfo[id]["label"]);
-                    }
+                    this.rootObject.add(this.nodeInfo[id]["label"]);
                 }
             }
 
@@ -749,10 +721,12 @@ class Edge {
     directionMode: string; // none, animation, arrow, opacity
 
     // Edge's color
-    colorMode: string; // none, weight, node
+    colorMode: string; // none, weight, node, node-transitioning
     color: string;
     canvas;
     isColorChanged: boolean = false;
+
+    transitionColor = 0xee2211;
 
 
     // by weight
@@ -860,7 +834,8 @@ class Edge {
             vertexShader: this.vertexShader,
             fragmentShader: this.fragmentShader,
             transparent: true,
-            depthWrite: false
+            depthWrite: false,
+            depthTest: false
         });
         this.shape = new THREE.Mesh(this.geometry, material);
         this.shape.renderOrder = RENDER_ORDER_EDGE; // Draw line BEFORE transparent brain model is drawn
@@ -893,7 +868,7 @@ class Edge {
             vertexShader: this.vertexShader,
             fragmentShader: this.fragmentShader,
             transparent: true,
-            depthWrite: false
+            depthWrite: true
         });
         this.shape = new THREE.Line(this.geometry, material);
         this.shape.renderOrder = RENDER_ORDER_EDGE; // Draw line BEFORE transparent brain model is drawn
@@ -916,8 +891,11 @@ class Edge {
 
         // Overwriter current color setting if directionMode is gradient
         if (this.directionMode === "gradient") {
-            var startRGB = CommonUtilities.hexToRgb(this.saveObj.edgeSettings.directionStartColor, 1.0);
-            var endRGB = CommonUtilities.hexToRgb(this.saveObj.edgeSettings.directionEndColor, 1.0);
+            let edgeSettings = this.saveObj.edgeSettings;
+            if (!edgeSettings.directionStartColor) edgeSettings.directionStartColor = "#ff0000";
+            if (!edgeSettings.directionEndColor) edgeSettings.directionEndColor = "#0000ff";
+            var startRGB = CommonUtilities.hexToRgb(edgeSettings.directionStartColor, 1.0);
+            var endRGB = CommonUtilities.hexToRgb(edgeSettings.directionEndColor, 1.0);
             this.uniforms.startColor.value = new THREE.Vector4(
                 startRGB.r / 255,
                 startRGB.g / 255,
@@ -926,7 +904,6 @@ class Edge {
                 endRGB.r / 255,
                 endRGB.g / 255,
                 endRGB.b / 255, 1.0);
-
             return;
         }
 
@@ -935,9 +912,25 @@ class Edge {
             this.uniforms.startColor.value = new THREE.Vector4(color.r, color.g, color.b, 1.0);
             this.uniforms.endColor.value = new THREE.Vector4(color.r, color.g, color.b, 1.0);
 
-        } else if (this.colorMode === "node") {
+        }
+        else if (this.colorMode === "node") {
             var sourceColor = new THREE.Color("#" + this.sourceNode.material.color.getHexString());
             var targetColor = new THREE.Color("#" + this.targetNode.material.color.getHexString());
+
+            this.uniforms.startColor.value = new THREE.Vector4(sourceColor.r, sourceColor.g, sourceColor.b, 1.0);
+            this.uniforms.endColor.value = new THREE.Vector4(targetColor.r, targetColor.g, targetColor.b, 1.0);
+        }
+        else if (this.colorMode === "node-transitioning") {
+            let sourceColor;
+            let targetColor;
+            if (this.sourceNode.material.color.getHex() === this.targetNode.material.color.getHex()) {
+                sourceColor = new THREE.Color(this.sourceNode.material.color.getHex());
+                targetColor = new THREE.Color(this.targetNode.material.color.getHex());
+            }
+            else {
+                sourceColor = new THREE.Color(this.transitionColor);
+                targetColor = new THREE.Color(this.transitionColor);
+            }
 
             this.uniforms.startColor.value = new THREE.Vector4(sourceColor.r, sourceColor.g, sourceColor.b, 1.0);
             this.uniforms.endColor.value = new THREE.Vector4(targetColor.r, targetColor.g, targetColor.b, 1.0);

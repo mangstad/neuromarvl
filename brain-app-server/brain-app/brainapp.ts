@@ -90,17 +90,6 @@ class Loop {
             var deltaTime = (currentTime - this.timeOfLastFrame) / 1000;
             this.timeOfLastFrame = currentTime;
 
-            //TODO: This bit isn't useful now as there is no mechanism to clear apps. It also should be somewhere else.
-            // Kept for now, because app deletion will probably need to be implemented in the future.
-            /*
-            for (var i = 0; i < 4; ++i) {
-                if (apps[i] && apps[i].isDeleted()) {
-                    apps[i] = null;
-                    saveObj.saveApps[i] = null; // create a new instance (if an old instance exists)
-                }
-            }
-            */
-
             // Limit the maximum time step
             if (deltaTime > this.frameTimeLimit)
                 this.loopable.update(this.frameTimeLimit);
@@ -184,7 +173,12 @@ class NeuroMarvl {
         /* 
             Set up jQuery UI layout objects
         */
-        $("[data-toggle='tooltip']").tooltip(<any>{ container: 'body' });
+        if ($("#checkbox-tips").is(":checked")) {
+            $("[data-toggle='tooltip']").tooltip(<any>{ container: 'body' });
+        }
+        else {
+            $("[data-toggle='tooltip']").tooltip("destroy");
+        }
         
         /*
             Upload files buttons
@@ -284,21 +278,22 @@ class NeuroMarvl {
         $("#control-panel-bottom-close").click(this.toggleSplashPage);
 
         // Create color pickers
-        (<any>$("#input-node-color")).colorpicker();
-        (<any>$("#input-surface-color")).colorpicker();
-        (<any>$("#input-min-color")).colorpicker();
-        (<any>$("#input-max-color")).colorpicker();
-        (<any>$("#input-edge-start-color")).colorpicker();
-        (<any>$("#input-edge-end-color")).colorpicker();
-        (<any>$("#input-edge-discretized-0-color")).colorpicker();
-        (<any>$("#input-edge-discretized-1-color")).colorpicker();
-        (<any>$("#input-edge-discretized-2-color")).colorpicker();
-        (<any>$("#input-edge-discretized-3-color")).colorpicker();
-        (<any>$("#input-edge-discretized-4-color")).colorpicker();
-        (<any>$("#input-edge-min-color")).colorpicker();
-        (<any>$("#input-edge-max-color")).colorpicker();
-        (<any>$("#input-edge-color")).colorpicker();
-        (<any>$("#input-context-menu-node-color")).colorpicker();
+        (<any>$("#input-node-color")).colorpicker({ format: "hex" });
+        (<any>$("#input-surface-color")).colorpicker({ format: "hex" });
+        (<any>$("#input-min-color")).colorpicker({ format: "hex" });
+        (<any>$("#input-max-color")).colorpicker({ format: "hex" });
+        (<any>$("#input-edge-start-color")).colorpicker({ format: "hex" });
+        (<any>$("#input-edge-end-color")).colorpicker({ format: "hex" });
+        (<any>$("#input-edge-discretized-0-color")).colorpicker({ format: "hex" });
+        (<any>$("#input-edge-discretized-1-color")).colorpicker({ format: "hex" });
+        (<any>$("#input-edge-discretized-2-color")).colorpicker({ format: "hex" });
+        (<any>$("#input-edge-discretized-3-color")).colorpicker({ format: "hex" });
+        (<any>$("#input-edge-discretized-4-color")).colorpicker({ format: "hex" });
+        (<any>$("#input-edge-min-color")).colorpicker({ format: "hex" });
+        (<any>$("#input-edge-max-color")).colorpicker({ format: "hex" });
+        (<any>$("#input-edge-color")).colorpicker({ format: "hex" });
+        (<any>$("#input-context-menu-node-color")).colorpicker({ format: "hex" });
+        (<any>$("#input-edge-transitional-color")).colorpicker({ format: "hex" });
     }
 
     start = () => {
@@ -362,12 +357,12 @@ class NeuroMarvl {
     initApp = id => {
         // init edge count
         var app = this.saveObj.saveApps[id];
-        if ((app.surfaceModel != null) && (app.surfaceModel.length > 0)) {
+        if (app.surfaceModel) {
             this.apps[id].initEdgeCountSlider(app);
         }
 
         // init cross filter
-        if ((this.saveObj.filteredRecords != null) && (this.saveObj.filteredRecords.length > 0)) {
+        if (this.saveObj.filteredRecords && (this.saveObj.filteredRecords.length > 0)) {
             this.referenceDataSet.attributes.filteredRecords = this.saveObj.filteredRecords.slice(0);
             this.applyFilterButtonOnClick();
         }
@@ -376,7 +371,7 @@ class NeuroMarvl {
         this.apps[id].restart();
 
         // init show network
-        if ((app.surfaceModel != null) && (app.surfaceModel.length > 0)) {
+        if (app.surfaceModel) {
             this.apps[id].initShowNetwork(app);
         }
 
@@ -385,7 +380,7 @@ class NeuroMarvl {
 
     initDataDependantUI = () => {
         // init the node size and color given the current UI. The UI needs to be redesigned.
-        if ((this.saveObj.nodeSettings.nodeSizeOrColor != null) && (this.saveObj.nodeSettings.nodeSizeOrColor.length > 0)) {
+        if (this.saveObj.nodeSettings.nodeSizeOrColor && (this.saveObj.nodeSettings.nodeSizeOrColor.length > 0)) {
             if (this.saveObj.nodeSettings.nodeSizeOrColor == "node-size") {
                 this.initNodeColor();
                 this.initNodeSize();
@@ -397,12 +392,12 @@ class NeuroMarvl {
         }
 
         // init edge size and color.
-        if (this.saveObj.edgeSettings != null) {
+        if (this.saveObj.edgeSettings) {
             this.initEdgeSizeAndColor();
         }
 
         // init Surface Setting
-        if (this.saveObj.surfaceSettings != null) {
+        if (this.saveObj.surfaceSettings) {
             this.initSurfaceSettings();
         }
 
@@ -677,7 +672,6 @@ class NeuroMarvl {
 
         $.get('brain-app/' + sourceLocation + '/' + saveObj.serverFileNameCoord, text => {
             this.parseCoordinates(text);
-            //$('#shared-coords').css({ color: 'green' });
             $('#label-coords')
                 .text("Pre-uploaded data")
                 .css({ color: 'green' });
@@ -690,7 +684,6 @@ class NeuroMarvl {
         });
         $.get('brain-app/' + sourceLocation + '/' + saveObj.serverFileNameMatrix, text => {
             this.parseSimilarityMatrix(text, this.referenceDataSet);
-            //$('#d1-mat').css({ color: 'green' });
             $('#label-similarity-matrix')
                 .text("Pre-uploaded data")
                 .css({ color: 'green' });
@@ -742,8 +735,33 @@ class NeuroMarvl {
 
     }
 
+
+    setupAttributeNodeControls = () => {
+        let sizeOrColor = $('#select-node-size-color').val();
+        let attribute = $('#select-attribute').val();
+
+        if (sizeOrColor == "node-size") {
+            this.setupNodeSizeRangeSlider(attribute);
+        }
+        if (sizeOrColor == "node-color") {
+            if (this.referenceDataSet.attributes.info[attribute].isDiscrete) {
+                $('#div-node-color-mode').show();
+                $('#checkbox-node-color-continuous').prop('checked', false);
+                this.setupColorPickerDiscrete(attribute);
+            }
+            else {
+                $('#div-node-color-mode').hide();
+                this.setupColorPicker();
+            }
+        }
+
+        this.setNodeSizeOrColor();
+    }
+
+
     setupAttributeTab = () => {
         if (this.referenceDataSet && this.referenceDataSet.attributes) {
+
             let $selectAttribute = $('#select-attribute');
 
             let oldAttributeValue = $selectAttribute.val();
@@ -758,11 +776,9 @@ class NeuroMarvl {
             if (gotOldValue) $selectAttribute.val(oldAttributeValue);
 
             $('#div-set-node-scale').show();
-
-            $('#div-node-size').hide();
-            $('#div-node-color-pickers').hide();
-            $('#div-node-color-pickers-discrete').hide();
-
+            
+            this.setupAttributeNodeControls();
+            
             this.setupCrossFilter(this.referenceDataSet.attributes);
         }
     }
@@ -780,11 +796,11 @@ class NeuroMarvl {
             var id = fRecords[i]["index"];
             idArray.push(id);
         }
-
-        if (this.apps[0]) this.apps[0].applyFilter(idArray);
-        if (this.apps[1]) this.apps[1].applyFilter(idArray);
-        if (this.apps[2]) this.apps[2].applyFilter(idArray);
-        if (this.apps[3]) this.apps[3].applyFilter(idArray);
+        
+        this.apps.forEach(app => {
+            app.applyFilter(idArray);
+            app.needUpdate = true;
+        });
 
         this.saveObj.filteredRecords = this.referenceDataSet.attributes.filteredRecords;
     }
@@ -1010,6 +1026,11 @@ class NeuroMarvl {
             if (this.apps[1]) this.apps[1].setNodeDefaultSizeColor();
             if (this.apps[2]) this.apps[2].setNodeDefaultSizeColor();
             if (this.apps[3]) this.apps[3].setNodeDefaultSizeColor();
+
+            // Edge will also need updating if they are set to "node"
+            if (this.commonData.edgeColorMode === "node") {
+                this.setEdgeColorByNode();
+            }
         }
 
         this.saveObj.nodeSettings.nodeSizeOrColor = sizeOrColor;
@@ -1103,7 +1124,7 @@ class NeuroMarvl {
         setTimeout(() => window["URL"].revokeObjectURL(url), 10);
     }
 
-    exportSVG = (viewport, type) => {
+    exportSVG = (viewport, fileType) => {
         var documents = [window.document],
             SVGSources = [];
 
@@ -1114,23 +1135,36 @@ class NeuroMarvl {
         var newSource = this.getSource(viewport, styles);
 
         // Export all svg Graph on the page
-        if (type === "svg") {
+        if (fileType === "svg") {
             this.downloadSVG(newSource);
-        } else if (type === "image") {
+        } else if (fileType === "image") {
             this.downloadSVGImage(newSource);
         }
 
     }
 
     getSource = (id, styles) => {
-        var svgInfo = {},
-            svg = document.getElementById("svgGraph" + id);
+        let svgInfo = {};
+        let svg;
         var doctype = '<?xml version="1.0" standalone="no"?><!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">';
         var prefix = {
             xmlns: "http://www.w3.org/2000/xmlns/",
             xlink: "http://www.w3.org/1999/xlink",
             svg: "http://www.w3.org/2000/svg"
         };
+        let canvas = this.apps[id].getDrawingCanvas();
+        let svgGraph = document.getElementById("svgGraph" + id);
+        if (svgGraph.getAttribute("visibility") === "hidden") {
+            // Not meant to be seen, use a new blank svg
+            svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+            svg.setAttribute('width', canvas.width);
+            svg.setAttribute('height', canvas.height);
+            svg.setAttributeNS("http://www.w3.org/2000/xmlns/", "xmlns:xlink", "http://www.w3.org/1999/xlink");
+        }
+        else {
+            // Use as basis for combined svg
+            svg = <HTMLElement>(document.getElementById("svgGraph" + id).cloneNode(true));
+        }
         svg.setAttribute("version", "1.1");
 
         // insert 3D brain image
@@ -1138,7 +1172,7 @@ class NeuroMarvl {
         var oldImage = document.getElementById('brain3D' + id);
         if (oldImage) oldImage.parentNode.removeChild(oldImage);
 
-        var canvas = this.apps[id].getDrawingCanvas();
+        // 3D canvas
         var image = document.createElement("image");
         svg.insertBefore(image, svg.firstChild);
         image.setAttribute('y', '0');
@@ -1148,6 +1182,19 @@ class NeuroMarvl {
         image.setAttribute('width', canvas.width);
         image.setAttribute('height', canvas.height);
         image.removeAttribute('xmlns');
+        // 2D canvas
+        var canvas2d = <HTMLCanvasElement>$(`#div-graph-${id} div.graph2dContainer canvas[data-id='layer2-node']`).get(0);
+        if (canvas2d && (canvas2d.getAttribute("visibility") !== "hidden")) {
+            var image2d = document.createElement("image");
+            svg.insertBefore(image2d, svg.firstChild);
+            image2d.setAttribute('y', '0');
+            image2d.setAttribute('x', '0');
+            image2d.setAttribute('id', 'brain2D' + id);
+            image2d.setAttribute('xlink:href', canvas2d.toDataURL());
+            image2d.setAttribute('width', canvas2d.width.toString());
+            image2d.setAttribute('height', canvas2d.height.toString());
+            image2d.removeAttribute('xmlns');
+        }
 
         // insert defs
         var defsEl = document.createElement("defs");
@@ -1165,7 +1212,6 @@ class NeuroMarvl {
         svg.removeAttribute("xlink");
 
         // These are needed for the svg
-
         if (!svg.hasAttributeNS(prefix.xmlns, "xmlns:xlink")) {
             svg.setAttributeNS(prefix.xmlns, "xmlns:xlink", prefix.xlink);
         }
@@ -1189,16 +1235,8 @@ class NeuroMarvl {
     }
 
     downloadSVG = source => {
-        var filename = "untitled";
+        var filename = window.document.title.replace(/[^a-z0-9]/gi, '-').toLowerCase();
         var body = document.body;
-
-        if (source.id) {
-            filename = source.id;
-        } else if (source.class) {
-            filename = source.class;
-        } else if (window.document.title) {
-            filename = window.document.title.replace(/[^a-z0-9]/gi, '-').toLowerCase();
-        }
 
         var url = window["URL"].createObjectURL(new Blob(source.source, { "type": "text\/xml" }));
 
@@ -1213,31 +1251,28 @@ class NeuroMarvl {
         setTimeout(() => window["URL"].revokeObjectURL(url), 10);
     }
 
+
     downloadSVGImage = source => {
-        var filename = "untitled";
+        var filename = window.document.title.replace(/[^a-z0-9]/gi, '-').toLowerCase();
 
-        if (source.id) {
-            filename = source.id;
-        } else if (source.class) {
-            filename = source.class;
-        } else if (window.document.title) {
-            filename = window.document.title.replace(/[^a-z0-9]/gi, '-').toLowerCase();
-        }
-
-        var image = new Image();
-        image.src = 'data:image/svg+xml;base64,' + window.btoa(extra.unescape(encodeURIComponent(source.source)))
+        // Adapted from https://bl.ocks.org/biovisualize/8187844
+        let canvas = document.createElement('canvas');
+        let context = canvas.getContext('2d');
+        let image = new Image();
+        let svgBlob = new Blob(source.source, { type: "image/svg+xml;charset=utf-8" });
         image.onload = () => {
-            var canvas = document.createElement('canvas');
             canvas.width = image.width;
             canvas.height = image.height;
-            var context = canvas.getContext('2d');
+            context.fillStyle = "#ffffff";
+            context.fillRect(0, 0, canvas.width, canvas.height);
             context.drawImage(image, 0, 0);
 
             var a = document.createElement("a");
-            a.setAttribute("download", filename + ".png");
-            a.setAttribute("href", canvas.toDataURL('image/png'));
+            a.setAttribute("download", filename + ".jpg");
+            a.setAttribute("href", canvas.toDataURL('image/jpeg', 0.7));
             a.click();
         }
+        image.src = URL.createObjectURL(svgBlob);
     }
 
     getStyles = doc => {
@@ -1313,27 +1348,24 @@ class NeuroMarvl {
         $('#div-node-color-pickers').hide();
         $('#div-node-color-pickers-discrete').hide();
         $("#div-node-size").show();
-
+        
         var scaleArray = this.getNodeScaleArray(attribute);
         if (!scaleArray) return;
-
-        var minScale = Math.min.apply(Math, scaleArray);
-        var maxScale = Math.max.apply(Math, scaleArray);
-        //TODO: Do we really need to call setNodeSizeOrColor for all these events?
+        
+        var minScale = this.saveObj.nodeSettings.nodeSizeMin || Math.min.apply(Math, scaleArray);
+        var maxScale = this.saveObj.nodeSettings.nodeSizeMax || Math.max.apply(Math, scaleArray);
         var slider = $("#div-node-size-slider")['bootstrapSlider']({
             range: true,
             min: 0.1,
             max: 10,
             step: 0.1,
-            value: [minScale, maxScale],
-            change: this.setNodeSizeOrColor,
+            value: [minScale, maxScale]
         });
         slider.on("slide", () => {
             var values = $("#div-node-size-slider")['bootstrapSlider']().data('bootstrapSlider').getValue();
             $("#label_node_size_range").text(values[0] + " - " + values[1]);
             this.setNodeSizeOrColor();
         });
-        slider.on("change", this.setNodeSizeOrColor);
         $("#label_node_size_range").text(minScale + " - " + maxScale);
     }
 
@@ -1422,11 +1454,11 @@ class NeuroMarvl {
                     idArray.push(id);
                 }
             }
-
-            if (this.apps[0]) this.apps[0].highlightSelectedNodes(idArray);
-            if (this.apps[1]) this.apps[1].highlightSelectedNodes(idArray);
-            if (this.apps[2]) this.apps[2].highlightSelectedNodes(idArray);
-            if (this.apps[3]) this.apps[3].highlightSelectedNodes(idArray);
+            
+            this.apps.forEach(app => {
+                app.highlightSelectedNodes(idArray);
+                app.needUpdate = true;
+            });
         }
     }
 
@@ -1525,7 +1557,6 @@ class NeuroMarvl {
             // Get a dataset from the default example
             this.loadExampleData(() => this.apps[id].setDataSet(this.referenceDataSet));
         } else {
-            if (!this.referenceDataSet.verify()) return;
             this.apps[id].setDataSet(this.referenceDataSet);
         }
     }
@@ -1552,10 +1583,12 @@ class NeuroMarvl {
             this.setEdgeNoColor();
             this.commonData.edgeColorMode = "none";
             $("#div-edge-color-pickers").hide();
+            $("#div-edge-color-by-node-picker").hide();
 
         } else if (value === "weight") {
             this.commonData.edgeColorMode = "weight";
             $("#div-edge-color-pickers").show();
+            $("#div-edge-color-by-node-picker").hide();
 
             // check if discrete for all apps
             CommonUtilities.launchAlertMessage(CommonUtilities.alertType.WARNING, "Current version of application assumes all view port shares the same dataset");
@@ -1619,6 +1652,7 @@ class NeuroMarvl {
             this.commonData.edgeColorMode = "node";
             this.setEdgeColorByNode();
             $("#div-edge-color-pickers").hide();
+            $("#div-edge-color-by-node-picker").show();
         }
     }
 
@@ -1794,7 +1828,7 @@ class NeuroMarvl {
     }
 
     initNodeSize = () => {
-        if ((this.saveObj.nodeSettings.nodeSizeAttribute != null) && (this.saveObj.nodeSettings.nodeSizeAttribute.length > 0)) {
+        if (this.saveObj.nodeSettings.nodeSizeAttribute) {
             $('#select-node-size-color').val("node-size");
             $('#select-attribute').val(this.saveObj.nodeSettings.nodeSizeAttribute);
             
@@ -1807,7 +1841,7 @@ class NeuroMarvl {
     }
 
     initNodeColor = () => {
-        if ((this.saveObj.nodeSettings.nodeColorAttribute != null) && (this.saveObj.nodeSettings.nodeColorAttribute.length > 0)) {
+        if (this.saveObj.nodeSettings.nodeColorAttribute) {
             $('#select-node-size-color').val("node-color");
             $('#select-attribute').val(this.saveObj.nodeSettings.nodeColorAttribute);
 
@@ -1856,10 +1890,8 @@ class NeuroMarvl {
     // NOTE: The loaded model cannot be used in more than one WebGL context (scene) at a time - the geometry and materials must be .cloned() into
     // new THREE.Mesh() objects by the application wishing to use the model.
     loadBrainModel = (model: string, callback) => {
-        let file = (model === 'ch2') && 'BrainMesh_ch2.obj'
-            || (model === 'ch2_inflated') && 'BrainMesh_Ch2_Inflated.obj'
+        let file = (model === 'ch2') && 'BrainMesh_Ch2withCerebellum.obj'
             || (model === 'icbm') && 'BrainMesh_ICBM152.obj'
-            || (model === 'ch2_cerebellum') && 'BrainMesh_Ch2withCerebellum.obj'
             ;
         if (!file) {
             callback();
@@ -1876,6 +1908,7 @@ class NeuroMarvl {
         });
     }
 
+
     setBrainSurfaceColor = (color: string) => {
         this.saveObj.surfaceSettings.color = color;
 
@@ -1884,6 +1917,27 @@ class NeuroMarvl {
         if (this.apps[2]) this.apps[2].setSurfaceColor(color);
         if (this.apps[3]) this.apps[3].setSurfaceColor(color);
     }
+
+
+    setEdgeTransitionColor = (color: string) => {
+        this.saveObj.edgeSettings.edgeColorByNodeTransitionColor = color;
+
+        if (this.apps[0]) this.apps[0].setEdgeTransitionColor(color);
+        if (this.apps[1]) this.apps[1].setEdgeTransitionColor(color);
+        if (this.apps[2]) this.apps[2].setEdgeTransitionColor(color);
+        if (this.apps[3]) this.apps[3].setEdgeTransitionColor(color);
+    }
+
+
+    setUseTransitionColor = (useColor: boolean) => {
+        this.saveObj.edgeSettings.edgeColorByNodeTransition = useColor;
+
+        if (this.apps[0]) this.apps[0].setUseTransitionColor(useColor);
+        if (this.apps[1]) this.apps[1].setUseTransitionColor(useColor);
+        if (this.apps[2]) this.apps[2].setUseTransitionColor(useColor);
+        if (this.apps[3]) this.apps[3].setUseTransitionColor(useColor);
+    }
+
 
     // Load the similarity matrix for the specified dataSet
     //TODO: Move into DataSet class
@@ -2051,6 +2105,7 @@ class NeuroMarvl {
             this.setEdgeColorByWeight()
         });
         $("#input-context-menu-node-color").on("changeColor", e => this.setNodeColorInContextMenu((<any>e).color.toHex()));
+        $("#input-edge-transitional-color").on("changeColor", e => this.setEdgeTransitionColor((<any>e).color.toHex()));
 
 
         $('#button-select-matrix').click(() => $("#select-matrix").click());
@@ -2160,8 +2215,8 @@ class NeuroMarvl {
                 reader.readAsText(file);
             }
         });
-        
-        $('#load-example-data').button().click(() => this.loadExampleData(() => { }));
+
+        $('#load-example-data').button().click(() => this.loadExampleData(() => this.apps.forEach(app => app.setDataSet(this.referenceDataSet))));
 
         $('#button-apply-filter').button().click(this.applyFilterButtonOnClick);
 
@@ -2184,39 +2239,24 @@ class NeuroMarvl {
             this.setNodeSizeOrColor();
         });
 
-        $('#select-attribute').on('change', () => {
-            var sizeOrColor = $('#select-node-size-color').val();
-            var attribute = $('#select-attribute').val();
-
-            if (sizeOrColor == "node-size") {
-                this.setupNodeSizeRangeSlider(attribute);
-            }
-            if (sizeOrColor == "node-color") {
-                if (this.referenceDataSet.attributes.info[attribute].isDiscrete) {
-                    $('#div-node-color-mode').show();
-                    $('#checkbox-node-color-continuous').prop('checked', false);
-                    this.setupColorPickerDiscrete(attribute);
-                }
-                else {
-                    $('#div-node-color-mode').hide();
-                    this.setupColorPicker();
-                }
-            }
-
-            this.setNodeSizeOrColor();
+        $("#checkbox-color-transitional-edges").on("change", () => {
+            let useTransitionColor = $('#checkbox-color-transitional-edges').is(":checked");
+            this.setUseTransitionColor(useTransitionColor);
         });
+
+        $('#select-attribute').on('change', this.setupAttributeNodeControls);
 
         $('#select-node-key').on('change', () => {
             var key = $('#select-node-key').val();
 
             var keySelection = <any>document.getElementById('select-node-key');
-
+            
             for (var i = 0; i < keySelection.length; i++) {
                 if (keySelection.options[i].value == key) {
                     var color = keySelection.options[i].style.backgroundColor;
                     var hex = this.colorToHex(color);
                     (<any>$("#input-node-color")).colorpicker("setValue", hex);
-
+                    
                     break;
                 }
             }

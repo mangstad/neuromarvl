@@ -12,7 +12,7 @@ class Graph2D {
 
     groupNodesBy = "none";
     colorMode: string;
-    directionMode: string;
+    directionMode: string;      // arrow, animation, opacity, gradient, none
     mouseDownEventListenerAdded;
     layout = "cola";
 
@@ -23,10 +23,10 @@ class Graph2D {
     links: any[];
 
     // Style constants
-    BASE_RADIUS = 5;
-    BASE_EDGE_WEIGHT = 1.5;
-    BASE_BORDER_WIDTH = 1;
-    BASE_LABEL_SIZE = 4;
+    BASE_RADIUS = 7;
+    BASE_EDGE_WEIGHT = 2;
+    BASE_BORDER_WIDTH = 2;
+    BASE_LABEL_SIZE = 8;
 
     cy;
 
@@ -49,8 +49,6 @@ class Graph2D {
     }
     
     updateGraph() {
-        CommonUtilities.launchAlertMessage(CommonUtilities.alertType.INFO, `Generating a 2D ${this.layout} layout...`);
-
         // Use this.dataSet to build the elements for the cytoscape graph.
         // Include default values that are input to style fuctions.
         
@@ -104,6 +102,7 @@ class Graph2D {
             nodeObject["color"] = "#".concat(node.material.color.getHexString());
             nodeObject["radius"] = node.scale.x;
             nodeObject["colors"] = d.colors;
+            nodeObject["highlighted"] = d.highlighted;
 
             // Use projection of colaGraph to screen space to initialise positions
             let position = (new THREE.Vector3()).setFromMatrixPosition(node.matrixWorld);
@@ -133,8 +132,9 @@ class Graph2D {
                 }
                 else {
                     // "node"
-                    let colorVectorSource = edge.uniforms.startColor.value;
-                    linkObject["color"] = `rgb(${colorVectorSource.x * 255}, ${colorVectorSource.y * 255}, ${colorVectorSource.z * 255})`;
+                    //TODO: use gradient to colour edges - this needs a change to cytoscape.js
+                    let colorVector = (new THREE.Vector4()).lerpVectors(edge.uniforms.startColor.value, edge.uniforms.endColor.value, 0.5);
+                    linkObject["color"] = `rgb(${colorVector.x * 255}, ${colorVector.y * 255}, ${colorVector.z * 255})`;
                 }
 
                 linkObject["width"] = edge.shape.scale.x;
@@ -190,13 +190,14 @@ class Graph2D {
                     radius: d.radius * this.scale * this.BASE_RADIUS,
                     border: d.radius * this.scale * this.BASE_BORDER_WIDTH,
                     labelSize: d.radius * this.scale * this.BASE_LABEL_SIZE,
-                    label: this.dataSet.brainLabels[d.id] || d.id
+                    label: this.dataSet.brainLabels[d.id] || d.id,
+                    highlighted: d.highlighted
                 },
                 position: {
                     x: d.x,
                     y: d.y
                 },
-                classes: "child"
+                classes: "child" + (d.highlighted ? " highlighted" : "")
             };
         });
         let edges = this.links.map(d => ({
@@ -205,7 +206,7 @@ class Graph2D {
                 source: "n_" + d.source.id,
                 target: "n_" + d.target.id,
                 color: d.color,
-                highlight: false,
+                hover: false,
                 edgeWeight: d.width,
                 edgeListIndex: d.edgeListIndex,
                 weight: d.width * this.scale * this.BASE_EDGE_WEIGHT
@@ -227,7 +228,8 @@ class Graph2D {
                         radius: 10,
                         border: 2
                     },
-                    classes: "cluster"
+                    classes: "cluster",
+                    selectable: false
                 }))
                 ;
         }
@@ -249,12 +251,19 @@ class Graph2D {
         switch (this.layout) {
             case "cose":
                 // This layout gets something very wrong with the boundingBox, possibly ignoring node radii, so we need to compensate
+                layoutOptions.fit = true;
                 layoutOptions.boundingBox.w *= this.BASE_RADIUS;
                 layoutOptions.boundingBox.h *= this.BASE_RADIUS;
                 layoutOptions.numIter = 100;
+                layoutOptions.nestingFactor = 2;
+                layoutOptions.gravity = 200;
+                layoutOptions.nodeOverlap = this.BASE_RADIUS * 4;
+                layoutOptions.idealEdgeLength = edge => (edge.source().data("radius") + edge.target().data("radius")) * 2;
                 break;
             case "cose-bilkent":
+                layoutOptions.fit = true;
                 layoutOptions.numIter = 15;
+                layoutOptions.idealEdgeLength = this.BASE_RADIUS * 4;
                 break;
             case "cola":
                 layoutOptions.fit = true;
@@ -263,7 +272,8 @@ class Graph2D {
                 layoutOptions.ungrabifyWhileSimulating = true;
                 layoutOptions.maxSimulationTime = 4000;        // Only starts counting after the layout startup, which can take some time by itself. 0 actually works well.
                 layoutOptions.handleDisconnected = true;
-                layoutOptions.avoidOverlap = false;
+                layoutOptions.avoidOverlap = true;
+                layoutOptions.nodeSpacing = node => node.data("radius") * 0.5;
                 
                 layoutOptions.unconstrIter = 15;
                 layoutOptions.userConstIter = 0;
@@ -349,39 +359,60 @@ class Graph2D {
                     }
                 },
                 {
-                    selector: "node.child.highlight",
+                    selector: "node.child.highlighted",
                     style: {
-                        'label': 'data(label)',
-                        "border-opacity": 0.5
+                        "border-color": "#ffff00",
+                        "border-opacity": 1.0
                     }
                 },
                 {
-                    selector: "node.select",
+                    selector: "node.child.hover",
+                    style: {
+                        'label': 'data(label)',
+                        "border-opacity": 0.3
+                    }
+                },
+                {
+                    selector: "node.child.hover-neighbour",
+                    style: {
+                        "border-opacity": 0.3
+                    }
+                },
+                {
+                    selector: "node:selected",
+                    style: {
+                        "border-opacity": 0.3,
+                        //"border-style": "double",
+                        //"border-width": e => e.data("border") * 2
+                    }
+                },
+                {
+                    selector: "node.chosen",
                     style: {
                         'label': 'data(label)',
                         "border-opacity": 1.0
                     }
                 },
                 {
-                    selector: "node.cluster.highlight",
+                    selector: "node.cluster.hover",
                     style: {
-                        "background-opacity": 0.5,
-                        "border-width": 1
+                        "background-opacity": 0.3,
+                        "border-width": 2
                     }
                 },
                 {
                     selector: "edge",
                     style: {
                         "width": "data(weight)",
-                        "opacity": 0.5,
+                        "opacity": 0.6,
                         'line-color': 'data(color)',
                         'mid-target-arrow-color': 'data(color)',
+                        "mid-target-arrow-shape": (this.directionMode === "arrow") ? "triangle" : "none"
                     }
                 },
                 {
-                    selector: "edge.highlight",
+                    selector: "edge.hover",
                     style: {
-                        "mid-target-arrow-shape": "triangle",
                         opacity: 1
                     }
                 }
@@ -394,11 +425,11 @@ class Graph2D {
 
         let commonData = this.commonData;
         let cy = this.cy;
-        cy.on("mouseover", "node.cluster", function (e) {
-            this.addClass("highlight");
+        cy.on("mousemove", "node.cluster", function (e) {
+            this.addClass("hover");
         });
         cy.on("mouseout", "node.cluster", function (e) {
-            this.removeClass("highlight");
+            this.removeClass("hover");
         });
         cy.on("mouseover", "node.child", function (e) {
             commonData.nodeIDUnderPointer[4] = this.data("sourceId");
@@ -409,10 +440,10 @@ class Graph2D {
         cy.on("tap", "node.child", function (e) {
             let oldSelected = commonData.selectedNode;
             if (oldSelected > -1) {
-                cy.elements("node").removeClass("select");
+                cy.elements("node").removeClass("chosen");
             }
             let newSelected = this.data("sourceId");
-            this.addClass("select");
+            this.addClass("chosen");
         });
         cy.on("layoutstop", e => {
             // Some layouts need to pan/zoom after layout is done
@@ -422,7 +453,6 @@ class Graph2D {
                 y: container.offsetHeight * 0.2
             });
             cy.zoom(cy.zoom() * 0.6);
-            CommonUtilities.launchAlertMessage(CommonUtilities.alertType.SUCCESS, `New 2D ${this.layout} layout created`);
         });
         cy.fit();
         if (this.layout === "concentric") {
@@ -444,22 +474,25 @@ class Graph2D {
 
     updateInteractive() {
         // Minor update, no layout recalculation but will have redraw, e.g. for selected node change
+        if (!this.cy) return;
+
         this.cy.batch(() => {
             // Hover and selection
-            this.cy.elements(".highlight").removeClass("highlight");
-            this.cy.elements("node.select").removeClass("select");
+            this.cy.elements(".hover").removeClass("hover");
+            this.cy.elements(".hover-neighbour").removeClass("hover-neighbour");
+            this.cy.elements("node.chosen").removeClass("chosen");
             this.cy.elements(`node[sourceId=${this.commonData.nodeIDUnderPointer[0]}]`)
-                .addClass("highlight")
+                .addClass("hover")
                 .neighborhood()
-                .addClass("highlight")
+                .addClass("hover-neighbour")
                 ;
             this.cy.elements(`node[sourceId=${this.commonData.nodeIDUnderPointer[4]}]`)
-                .addClass("highlight")
+                .addClass("hover")
                 .neighborhood()
-                .addClass("highlight")
+                .addClass("hover-neighbour")
                 ;
 
-            this.cy.elements(`node[sourceId=${this.commonData.selectedNode}]`).addClass("select");
+            this.cy.elements(`node[sourceId=${this.commonData.selectedNode}]`).addClass("chosen");
 
             // Edge colour setting changes
             if ((this.graph3d.colorMode === "weight") || (this.graph3d.colorMode === "none")) {
@@ -472,8 +505,9 @@ class Graph2D {
                 // "node"
                 this.cy.elements("edge").each((i, e) => {
                     let colorVectorSource = this.graph3d.edgeList[e.data("edgeListIndex")].uniforms.startColor.value;
-                    let color = `rgb(${colorVectorSource.x * 255}, ${colorVectorSource.y * 255}, ${colorVectorSource.z * 255})`;
-                    e.data("color", color);
+                    let colorVectorTarget = this.graph3d.edgeList[e.data("edgeListIndex")].uniforms.endColor.value;
+                    let colorVector = (new THREE.Vector4()).lerpVectors(colorVectorSource, colorVectorTarget, 0.5);
+                    e.data("color", `rgb(${colorVector.x * 255}, ${colorVector.y * 255}, ${colorVector.z * 255})`);
                 });
             }
 
@@ -485,7 +519,7 @@ class Graph2D {
                 let radius = node.scale.x * this.scale * this.BASE_RADIUS
                 e.data("radius", radius);
 
-                //Colour
+                // Colour
                 let d = node.userData;
                 e.data("color0", d.colors[0] ? "#" + d.colors[0].color.toString(16) : "black");
                 e.data("color1", d.colors[1] ? "#" + d.colors[1].color.toString(16) : "black");
@@ -503,6 +537,14 @@ class Graph2D {
                 e.data("portion5", d.colors[5] ? d.colors[5].portion * 100 : 0);
                 e.data("portion6", d.colors[6] ? d.colors[6].portion * 100 : 0);
                 e.data("portion7", d.colors[7] ? d.colors[7].portion * 100 : 0);
+
+                // Filter highlighting
+                if (d.highlighted) {
+                    e.addClass("highlighted");
+                }
+                else {
+                    e.removeClass("highlighted");
+                }
             });
         });
     }
@@ -513,6 +555,11 @@ class Graph2D {
             this.cy.userZoomingEnabled(isOn);
             this.cy.boxSelectionEnabled(isOn);
         }
+    }
+
+    setDirectionMode(directionMode: string) {
+        this.directionMode = directionMode;
+        if (this.cy) this.cy.style().selector("edge").style("mid-target-arrow-shape", (this.directionMode === "arrow") ? "triangle" : "none");
     }
 
 
@@ -535,11 +582,11 @@ class Graph2D {
     }
 
     menuButtonOnClick() {
-        var l = $('#button-graph2d-option-menu-' + this.id).position().left + 5;
-        var t = $('#button-graph2d-option-menu-' + this.id).position().top - $('#div-graph2d-layout-menu-' + this.id).height() - 15;
+        let l = $('#button-graph2d-option-menu-' + this.id).position().left + 5;
+        let b = $('#button-graph2d-option-menu-' + this.id).outerHeight();
         
         $('#div-graph2d-layout-menu-' + this.id).zIndex(1000);
-        $('#div-graph2d-layout-menu-' + this.id).css({ left: l, top: t, height: 'auto' });
+        $('#div-graph2d-layout-menu-' + this.id).css({ left: l, bottom: b, height: 'auto' });
         $('#div-graph2d-layout-menu-' + this.id).fadeToggle('fast');
     }
 
@@ -559,6 +606,7 @@ class Graph2D {
         };
 
         var varGroupNodesOnChange = groupBy => {
+            CommonUtilities.launchAlertMessage(CommonUtilities.alertType.INFO, `Updating grouping for ${this.layout} layout...`);
             this.groupNodesBy = groupBy;
             this.updateGraph();
         }
@@ -566,16 +614,20 @@ class Graph2D {
         var varMenuButtonOnClick = () => { this.menuButtonOnClick(); };
 
         var changeLayout = layout => {
+            CommonUtilities.launchAlertMessage(CommonUtilities.alertType.INFO, `Updating ${this.layout} layout...`);
             this.layout = layout;
             this.updateGraph();
         }
 
         // Setting Options
         // option button
-        this.jDiv.append($('<button id="button-graph2d-option-menu-' + this.id + '" class="' + this.graph2DClass + ' btn  btn-sm btn-primary" ' +
-            'data-toggle="tooltip" data-placement="top" title="Show side-by-side graph representation">Options</button>')
-            .css({ 'position': 'relative', 'margin-left': '5px', 'font-size': '12px', 'z-index': 1000 })
-            .click(function () { varMenuButtonOnClick(); }));
+        let $button = $('<button id="button-graph2d-option-menu-' + this.id + '" class="' + this.graph2DClass + ' btn  btn-sm btn-primary" ' +
+            'data-toggle="tooltip" data-placement="right" title="Configure 2D layout">Options</button>')
+        ;
+        if ($("#checkbox-tips").is(":checked")) $button.tooltip(<any>{ container: 'body' });
+        $button.css({ 'position': 'relative', 'margin-left': '5px', 'font-size': '12px', 'z-index': 500 })
+        this.jDiv.find("#div-graph-controls").append($button);
+        $button.click(function () { varMenuButtonOnClick(); });
 
 
         //------------------------------------------------------------------------
@@ -590,47 +642,18 @@ class Graph2D {
             }));
 
         //------------------------------------------------------------------------
-        // menu - scale
-        $('#div-graph2d-layout-menu-' + this.id).append('<div>Scale elements<div/>');
-        $('#div-graph2d-layout-menu-' + this.id).append($('<input id="div-scale-slider-alt-' + this.id + '" class=' + this.graph2DClass + 'data-slider-id="surface-opacity-slider" type="text"' +
-            'data-slider-min="1" data-slider-max="10" data-slider-step="0.5" data-slider-value="5" />')
-            .css({ 'position': 'relative', 'width': '150px' }));
-
-        $("#div-scale-slider-alt-" + this.id)['bootstrapSlider']();
-        $("#div-scale-slider-alt-" + this.id)['bootstrapSlider']().on('change', varEdgeLengthOnChange);
-        
-
-        // menu - group nodes
-        $('#div-graph2d-layout-menu-' + this.id).append('<div id="div-graph2d-group-' + this.id + '">bundle: </div>');
-        $('#div-graph2d-group-' + this.id).append($('<select id="select-graph2d-group-' + this.id + '" class=' + this.graph2DClass + '></select>')
-            .css({ 'margin-left': '5px', 'margin-bottom': '5px', 'font-size': '12px', 'width': '80px', 'background-color': '#feeebd' })
-            .on("change", function () { varGroupNodesOnChange($(this).val()); }));
-
-        $('#select-graph2d-group-' + this.id).empty();
-
-        var option = document.createElement('option');
-        option.text = 'none';
-        option.value = 'none';
-        $('#select-graph2d-group-' + this.id).append(option);
-
-        // Add descrete attribute to list
-        for (var i = 0; i < this.dataSet.attributes.columnNames.length; ++i) {
-            var columnName = this.dataSet.attributes.columnNames[i];
-            if (this.dataSet.attributes.info[columnName].isDiscrete) {
-                $('#select-graph2d-group-' + this.id).append('<option value = "' + columnName + '">' + columnName + '</option>');
-            }
-
-        }
-        
         // menu - layouts
-        $('#div-graph2d-layout-menu-' + this.id).append('<div id="div-graph2d-layout-' + this.id + '">layout: </div>');
-        $('#div-graph2d-layout-' + this.id).append($('<select id="select-graph2d-layout-' + this.id + '" class=' + this.graph2DClass + '></select>')
+        let $divLayout = $('<div id="div-graph2d-layout-' + this.id + '" data-toggle="tooltip" data-placement="left" title="Select layout generation method">Layout </div>');
+        $('#div-graph2d-layout-menu-' + this.id).append($divLayout);
+        $divLayout.append($('<select id="select-graph2d-layout-' + this.id + '" class=' + this.graph2DClass + '></select>')
             .css({ 'margin-left': '5px', 'margin-bottom': '5px', 'font-size': '12px', 'width': '80px', 'background-color': '#feeebd' })
-            .on("change", function () { changeLayout($(this).val()); }));
+            .on("change", function () { changeLayout($(this).val()); })
+        );
+        if ($("#checkbox-tips").is(":checked")) $divLayout.tooltip(<any>{ container: 'body' });
 
         $('#select-graph2d-layout-' + this.id).empty();
 
-        // Full layout options: ["cose", "cose-bilkent", "cola", "cola-flow", "grid", "circle", "concentric", "breadthfirst", "random"]
+        // Full possible layout options: ["cose", "cose-bilkent", "cola", "cola-flow", "grid", "circle", "concentric", "breadthfirst", "random"]
         for (let layout of ["cola", "cose", "cose-bilkent", "grid", "concentric"]) {
             var option = document.createElement('option');
             option.text = layout;
@@ -638,6 +661,49 @@ class Graph2D {
             $('#select-graph2d-layout-' + this.id).append(option);
         }
         (<any>document.getElementById("select-graph2d-layout-" + this.id)).value = this.layout;
+        $('#select-graph2d-layout-' + this.id).val(this.layout);
+
+
+        // menu - group nodes
+        let $divBundle = $('<div id="div-graph2d-group-' + this.id + '" data-toggle="tooltip" data-placement="left" title="Group nodes by a given attribute">Bundle </div>');
+        $('#div-graph2d-layout-menu-' + this.id).append($divBundle);
+        $divBundle.append(
+            $('<select id="select-graph2d-group-' + this.id + '" class=' + this.graph2DClass + '></select>')
+                .css({ 'margin-left': '5px', 'margin-bottom': '5px', 'font-size': '12px', 'width': '80px', 'background-color': '#feeebd' })
+                .on("change", function () { varGroupNodesOnChange($(this).val()); })
+        );
+        if ($("#checkbox-tips").is(":checked")) $divBundle.tooltip(<any>{ container: 'body' });
+
+        $('#select-graph2d-group-' + this.id).empty();
+
+        var option = document.createElement('option');
+        option.text = 'none';
+        option.value = 'none';
+        $('#select-graph2d-group-' + this.id).append(option);
+        
+        // Add descrete attribute to list
+        for (var i = 0; i < this.dataSet.attributes.columnNames.length; ++i) {
+            var columnName = this.dataSet.attributes.columnNames[i];
+            if (this.dataSet.attributes.info[columnName].isDiscrete) {
+                $('#select-graph2d-group-' + this.id).append('<option value = "' + columnName + '">' + columnName + '</option>');
+            }
+        }
+        $('#select-graph2d-group-' + this.id).val(this.groupNodesBy);
+
+
+        // menu - scale
+        let $divScale = $('<div data-toggle="tooltip" data-placement="left" title="Adjust node radius and edge thickness">Scale elements<div/>');
+        $('#div-graph2d-layout-menu-' + this.id).append($divScale);
+        if ($("#checkbox-tips").is(":checked")) $divScale.tooltip(<any>{ container: 'body' });
+        $('#div-graph2d-layout-menu-' + this.id).append($('<input id="div-scale-slider-alt-' + this.id + '" class=' + this.graph2DClass + 'data-slider-id="surface-opacity-slider" type="text"' +
+            'data-slider-min="1" data-slider-max="10" data-slider-step="0.5" data-slider-value="5" />')
+            .css({ 'position': 'relative', 'width': '150px' }));
+
+        $("#div-scale-slider-alt-" + this.id)['bootstrapSlider']({ tooltip_position: "bottom" });
+        $("#div-scale-slider-alt-" + this.id)['bootstrapSlider']().on('change', varEdgeLengthOnChange);
+        
+        $("#div-scale-slider-alt-" + this.id)['bootstrapSlider']("setValue", this.scale);
+
 
         let targetClass = this.graph2DClass;
         if (!this.mouseDownEventListenerAdded) {

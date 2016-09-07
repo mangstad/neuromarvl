@@ -14,6 +14,8 @@ class CommonData {
     public edgeColorMode = "none";
     public edgeWeightColorMode = "";
     public edgeForceContinuous = false;
+    //public edgeColorByNodeTransition = false;
+    //public edgeColorByNodeTransitionColor = "#ee2211";
 
     coordCallbacks: Array<() => void> = new Array();
     labelCallbacks: Array<() => void> = new Array();
@@ -45,12 +47,11 @@ class DataSet {
     public simMatrix: number[][] = [];
     public brainCoords: number[][] = [[]];
     public brainLabels: string[] = [];
-    //public attributes: Attributes = null;
     public attributes = new Attributes();
     public info;
     public sortedSimilarities = [];
-    simCallbacks: Array<() => void> = new Array();
-    attCallbacks: Array<() => void> = new Array();
+    simCallback: () => void;
+    attCallback: () => void;
 
     constructor() {
 
@@ -65,38 +66,43 @@ class DataSet {
     }
 
     verify() {
-        //if (this.simMatrix.length === 0) {
-        //    CommonUtilities.launchAlertMessage(CommonUtilities.alertType.ERROR, "Similarity Matrix is not loaded!");
-        //    return false;
-        //}
+        // Give a boolean result that indicates whether there is enough data to produce an interactive model.
+        // Note that incomplete data will sometimes be progressively loaded, so error alerts should be less
+        // dramatic and more informative in these cases.
 
-        //if (!this.attributes) {
-        //    CommonUtilities.launchAlertMessage(CommonUtilities.alertType.ERROR, "Attributes are not loaded!");
-        //    return false;
-        //}
+        if (!this.brainCoords[0].length) {
+            // Can't do much, but empty data is still technically OK
+            CommonUtilities.launchAlertMessage(CommonUtilities.alertType.INFO, "Node coordinates are empty. Load a valid coordinates file.");
+            return true;
+        }
 
-        //if (this.brainCoords.length === 0) {
-        //    CommonUtilities.launchAlertMessage(CommonUtilities.alertType.ERROR, "Node Coordinates is not loaded!");
-        //    return false;
-        //}
+        let isValid = true;
 
         if (this.brainCoords[0].length !== this.attributes.numRecords) {
-            CommonUtilities.launchAlertMessage(
-                CommonUtilities.alertType.ERROR,
-                `Attributes and Coordinates files do not match! (${this.attributes.numRecords} attributes for ${this.brainCoords[0].length} columns)`
-            );
-            return false;
+            if (!this.attributes.numRecords) {
+                CommonUtilities.launchAlertMessage(CommonUtilities.alertType.INFO, "Attributes are empty. Load a valid attributes file.");
+            }
+            else {
+                CommonUtilities.launchAlertMessage(
+                    CommonUtilities.alertType.ERROR, `Attribute and coordinate files do not match! (${this.attributes.numRecords} attributes for ${this.brainCoords[0].length} columns)`
+                );
+            }
+            isValid = false;
         }
 
         if (this.brainCoords[0].length !== this.simMatrix.length) {
-            CommonUtilities.launchAlertMessage(
-                CommonUtilities.alertType.ERROR,
-                `Similarity Matrix and Coordinates files do not match! (lengths ${this.brainCoords[0].length} and ${this.simMatrix.length})`
-            );
-            return false;
+            if (!this.simMatrix.length) {
+                CommonUtilities.launchAlertMessage(CommonUtilities.alertType.INFO, "Similarity matrix is empty. Load a valid matrix file.");
+            }
+            else {
+                CommonUtilities.launchAlertMessage(
+                    CommonUtilities.alertType.ERROR, `Similarity matrix and coordinates files do not match! (lengths ${this.brainCoords[0].length} and ${this.simMatrix.length})`
+                );
+            }
+            isValid = false;
         }
 
-        return true;
+        return isValid;
     }
 
     clone() {
@@ -134,10 +140,9 @@ class DataSet {
         newDataset.info = newInfo;
 
         return newDataset;
-
     }
 
-    //
+    
     adjMatrixWithoutEdgesCrossHemisphere(count: number) {
         var max = this.info.nodeCount * (this.info.nodeCount - 1) / 2;
         if (count > max) count = max;
@@ -184,7 +189,6 @@ class DataSet {
         for (var i = 0; i < this.info.nodeCount; ++i) {
             adjMatrix[i] = new Array<number>(this.info.nodeCount);
         }
-
 
         for (var i = 0; i < this.info.nodeCount - 1; ++i) {
 
@@ -260,17 +264,17 @@ class DataSet {
     }
 
     regNotifySim(callback: () => void) {
-        this.simCallbacks.push(callback);
+        this.simCallback = callback;
     }
     regNotifyAttributes(callback: () => void) {
-        this.attCallbacks.push(callback);
+        this.attCallback = callback;
     }
     // TODO: add deregistration capability
     notifySim() {
-        this.simCallbacks.forEach(function (c) { c() });
+        if (this.simCallback) this.simCallback();
     }
     notifyAttributes() {
-        this.attCallbacks.forEach(function (c) { c() });
+        if (this.attCallback) this.attCallback();
     }
 }
 
@@ -316,14 +320,16 @@ class SaveFile {
                     colorArray: [],
                     valueArray: []
                 }
-            }
+            },
+            edgeColorByNodeTransition: false,
+            edgeColorByNodeTransitionColor: "#ee2211"
         };
 
         this.nodeSettings = (sourceObject && sourceObject.nodeSettings) || {
             nodeSizeOrColor: '',
             nodeSizeAttribute: '',
             nodeSizeMin: 1,
-            nodeSizeMax: 5,
+            nodeSizeMax: 2,
             nodeColorAttribute: '',
             nodeColorMode: "discrete",
             nodeColorDiscrete: ["#1f77b4", "#a2b0e8", "#ff7f0e", "#fffb87", "#2ca02c"],
@@ -446,6 +452,7 @@ class SaveFile {
         }
     }
 }
+
 class SaveApp {
     //determine which brain surface model
     surfaceModel: string;
