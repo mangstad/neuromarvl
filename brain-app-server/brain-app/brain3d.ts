@@ -1340,7 +1340,7 @@ class Brain3DApp implements Application, Loopable {
         this.svgNeedsUpdate = true;
     }
 
-    showNetwork(switchNetworkType: boolean) {
+    showNetwork(switchNetworkType: boolean, callback?) {
         if (!this.brainObject || !this.colaObject || !this.physioGraph || !this.colaGraph || !this.networkType || !this.dataSet.brainCoords.length || !this.dataSet.brainCoords[0].length) return;
 
         CommonUtilities.launchAlertMessage(CommonUtilities.alertType.INFO, "Generating new graph layout...");
@@ -1375,12 +1375,9 @@ class Brain3DApp implements Application, Loopable {
             }
 
             var varType = this.networkType;
-            var getLength = function (e) {
-                return 1;
-            }
             
             // Create the distance matrix that Cola needs
-            var distanceMatrix = (new cola.shortestpaths.Calculator(this.dataSet.info.nodeCount, edges, getSourceIndex, getTargetIndex, getLength)).DistanceMatrix();
+            var distanceMatrix = (new cola.shortestpaths.Calculator(this.dataSet.info.nodeCount, edges, getSourceIndex, getTargetIndex, e => 1)).DistanceMatrix();
             var D = cola.Descent.createSquareMatrix(this.dataSet.info.nodeCount, (i, j) => {
                 return distanceMatrix[i][j] * this.colaLinkDistance;
             });
@@ -1465,6 +1462,8 @@ class Brain3DApp implements Application, Loopable {
             }
 
             CommonUtilities.launchAlertMessage(CommonUtilities.alertType.INFO, "Graph layout done");
+
+            if (callback) callback();
         }, 0)
     }
 

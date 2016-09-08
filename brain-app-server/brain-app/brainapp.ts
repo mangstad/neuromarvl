@@ -404,39 +404,57 @@ class NeuroMarvl {
         this.selectView(TL_VIEW);
     }
 
+    
     batchProcess = (i, numberOfFiles, attributes, matrices) => {
+        console.log("batchProcess", i, numberOfFiles, attributes, matrices);///jm
+        document.getElementById("alertModalMessage").innerHTML = "Started load of " + numberOfFiles + " file pairs...";
+
+        let gotAttributes = false;
+        let gotMatrix = false;
+        let onLoaded = (i, numberOfFiles, attributes, matrices) => {
+            console.log("onLoaded", i, numberOfFiles, attributes, matrices);///jm
+            if (!gotAttributes || !gotMatrix) return;
+            
+            // Load the new dataset to the app (always use the first viewport - top left);
+            this.setDataset(TL_VIEW);
+
+            // refresh the visualisation with current settings and new data
+            this.apps[0].showNetwork(false, () => {
+                this.setEdgeColor();
+                this.setNodeSizeOrColor();
+                this.apps[0].update(0);
+
+                // Capture and download the visualisation
+                this.exportSVG(0, "svg");
+                //this.exportSVG(0, "image");
+
+                // update status
+                i++;
+                var percentage = (i / numberOfFiles) * 100;
+                $("#progressBar").css({
+                    "width": percentage + "%"
+                });
+                document.getElementById("alertModalMessage").innerHTML = "Processing " + (i + 1) + " in " + numberOfFiles + " pairs.";
+
+                if (i < numberOfFiles) {
+                    this.batchProcess(i, numberOfFiles, attributes, matrices);
+                } else {
+                    $("#alertModal")["modal"]('hide');
+                }
+            });
+        };
+        
         // Load pair of files into dataset
-        this.loadAttributes(attributes[i], this.referenceDataSet);
-        this.loadSimilarityMatrix(matrices[i], this.referenceDataSet);
-
-        // Load the new dataset to the app (always use the first viewport - top left);
-        this.setDataset(TL_VIEW);
-
-        // refresh the visualisation with current settings and new data
-        this.apps[0].showNetwork(false);
-        this.setEdgeColor();
-        this.setNodeSizeOrColor();
-        this.apps[0].update(0);
-
-        // Capture and download the visualisation
-        this.exportSVG(0, "svg");
-
-        // update status
-        i++;
-        var percentage = (i / numberOfFiles) * 100;
-        $("#progressBar").css({
-            "width": percentage + "%"
+        this.loadAttributes(attributes[i], this.referenceDataSet, () => {
+            gotAttributes = true;
+            onLoaded(i, numberOfFiles, attributes, matrices);
         });
-        document.getElementById("alertModalMessage").innerHTML = "Processing " + (i + 1) + " in " + numberOfFiles + " pairs.";
-
-        if (i < numberOfFiles) {
-            setTimeout(function () {
-                this.batchProcess(i, numberOfFiles, attributes, matrices)
-            }, 1000);
-        } else {
-            $("#alertModal")["modal"]('hide');
-        }
+        this.loadSimilarityMatrix(matrices[i], this.referenceDataSet, () => {
+            gotMatrix = true;
+            onLoaded(i, numberOfFiles, attributes, matrices);
+        });
     }
+
 
     uploadCoords = () => {
         var file = (<any>$('#select-coords').get(0)).files[0];
@@ -1941,9 +1959,12 @@ class NeuroMarvl {
 
     // Load the similarity matrix for the specified dataSet
     //TODO: Move into DataSet class
-    loadSimilarityMatrix = (file, dataSet: DataSet) => {
+    loadSimilarityMatrix = (file, dataSet: DataSet, callback?) => {
         var reader = new FileReader();
-        reader.onload = () => this.parseSimilarityMatrix(reader.result, dataSet);
+        reader.onload = () => {
+            this.parseSimilarityMatrix(reader.result, dataSet);
+            if (callback) callback();
+        };
         reader.readAsText(file);
     }
 
@@ -1961,11 +1982,12 @@ class NeuroMarvl {
 
     // Load the attributes for the specified dataSet
     //TODO: Move into DataSet class
-    loadAttributes = (file, dataSet: DataSet) => {
+    loadAttributes = (file, dataSet: DataSet, callback?) => {
         var reader = new FileReader();
         reader.onload = () => {
             this.parseAttributes(reader.result, dataSet);
             dataSet.notifyAttributes();
+            if (callback) callback();
         };
         reader.readAsText(file);
     }
