@@ -528,6 +528,36 @@
         </div>
     </div>
 
+    <div id="modal-help-layouts" class="modal fade" role="dialog">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                    <h4 class="modal-title">2D graph layouts</h4>
+                </div>
+                <div class="modal-body">
+                    <p>The 2D graph layout can use a selection of layout algorithms</p>
+                    <dl>
+                        <dt>cola</dt>
+                        <dd>Produces the most attractive layout for most graphs</dd>
+                        <dt>cose</dt>
+                        <dd>Faster results for large, complex graphs</dd>
+                        <dt>cose-bilkent</dt>
+                        <dd>A variation on the cose layout that aims for a good balance between looks and speed</dd>
+                        <dt>grid</dt>
+                        <dd>Simple gridwise positioning with no meaningful edge handling</dd>
+                        <dt>concentric</dt>
+                        <dd>Simple positioning into concentric circles</dd>
+                    </dl>
+                    <p>The bundling options is handled differently by each layout option, but generally attempts to group nodes of the same value for the given attribute.</p>
+                    <p>Use shift + click or shift + drag to select multiple nodes, which can then be moved together.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <div class="modal" id="alertModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
         <div class="modal-dialog">

@@ -453,6 +453,7 @@ class Graph2D {
                 y: container.offsetHeight * 0.2
             });
             cy.zoom(cy.zoom() * 0.6);
+            console.log("layoutstop");///jm
         });
         cy.fit();
         if (this.layout === "concentric") {
@@ -469,6 +470,7 @@ class Graph2D {
             });
         }
         cy.zoom(cy.zoom() * 0.7);
+        console.log("update done");///jm
 
     }
 
@@ -659,6 +661,15 @@ class Graph2D {
             option.text = layout;
             option.value = layout;
             $('#select-graph2d-layout-' + this.id).append(option);
+
+            //let tip = "";
+            //switch (layout) {
+            //    case "cola":
+            //        tip = "Generate layout using colajs";
+            //}
+            //let $option = $(`<option value="${layout}" data-toggle="tooltip" data-placement="right" title="${tip}" >${layout}</option>`);
+            //$('#select-graph2d-layout-' + this.id).append($option);
+            //if ($("#checkbox-tips").is(":checked")) $option.tooltip(<any>{ container: 'body' });
         }
         (<any>document.getElementById("select-graph2d-layout-" + this.id)).value = this.layout;
         $('#select-graph2d-layout-' + this.id).val(this.layout);
@@ -703,6 +714,11 @@ class Graph2D {
         $("#div-scale-slider-alt-" + this.id)['bootstrapSlider']().on('change', varEdgeLengthOnChange);
         
         $("#div-scale-slider-alt-" + this.id)['bootstrapSlider']("setValue", this.scale);
+
+        
+        // Help modal
+        //$('#div-graph2d-layout-menu-' + this.id).append('<div style={float: right}><button type="button" class="btn btn-primary btn-sm" data-toggle="modal" data-target="#modal-help-layouts">?</button></div>');
+        $('#div-graph2d-layout-menu-' + this.id).append('<a href="#" style="display: block; text-align: right"><span class="badge" data-toggle="modal" data-target="#modal-help-layouts">?</span></a>');
 
 
         let targetClass = this.graph2DClass;
