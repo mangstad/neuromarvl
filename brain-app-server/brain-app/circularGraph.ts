@@ -304,7 +304,7 @@ class CircularGraph {
 
         //------------------------------------------------------------------------------------------------
         // Update Nodes and edges data
-        // update color of the nodes
+        // update colour of the nodes
         for (var nodeIndex in this.svgNodeBundleArray) {
             var node = this.svgNodeBundleArray[nodeIndex];
             node.color = this.colaGraph.nodeMeshes[node.id].material.color.getHexString();
@@ -403,7 +403,7 @@ class CircularGraph {
         var varSvg = this.svg[0];
         var varNS = varSvg[0].namespaceURI;
         var varDefs = this.svgDefs;
-        // use normal color updating style
+        // use normal colour updating style
         var bundledLinks = bundle(links);
         this.svgAllElements.selectAll(".linkCircular")
             .data(function () {
@@ -949,7 +949,6 @@ class CircularGraph {
                 var attrArray = attributes.get(colorAttr);
                 var group = d3.select(this);
                 group.selectAll("path").remove();
-                //if (colorAttr === "" || colorAttr === "none") {
                 if (!attributes.info[colorAttr]) {
                     group.selectAll(".path")
                         .data(pie([1]))
@@ -1026,7 +1025,7 @@ class CircularGraph {
         let id = this.attributeBars.length;
         let bar = {
             id: id,
-            color: "#bdc3c7", // default color
+            color: "#bdc3c7", // default colour
             attribute: "none", // default attribute
             isGradientOn: false
         }
@@ -1094,7 +1093,7 @@ class CircularGraph {
         }
     }
 
-    // Differences between update and set circular bar color
+    // Differences between update and set circular bar colour
     updateCircularBarColor(barID: number, color: string) {
         this.circularBarColorChange = true;
 
@@ -1108,12 +1107,10 @@ class CircularGraph {
         var rgbtext;
         var delta;
 
-        //var varLightenColor = (rgb: string, delta: number) => { this.lightenColor(rgb, delta); };
-
         if (bar.isGradientOn) {
             var attr = $('#select-circular-layout-attribute-' + bar.id + '-' + this.id).val();
 
-            // Change all color of the first bar
+            // Change all colour of the first bar
             this.svgAllElements.selectAll(".rect" + bar.id + "Circular")
                 .style("fill", function (d) {
 
@@ -1254,7 +1251,7 @@ class CircularGraph {
                 })
         }
 
-        // Update the bar color base on the value in the object
+        // Update the bar colour base on the value in the object
         this.updateCircularBarColor(bar.id, bar.color);
 
         // move the label
@@ -1361,11 +1358,8 @@ class CircularGraph {
                 // saved in the object for future saving feature
                 //bar.colorPicker = $('#span-circular-layout-bar'+ bar.id +'-color-picker').detach();
             }
-
-            //$(bar.colorPicker).insertAfter('#select-circular-layout-attribute-'+ bar.id +'-' + this.id);
         }
         $('#div-circular-layout-menu-' + this.id).zIndex(1000);
-        //$('#div-circular-layout-menu-' + this.id).css({ left: l, top: t, height: 'auto' });
         $('#div-circular-layout-menu-' + this.id).css({ left: l, bottom: b, height: 'auto' });
         $('#div-circular-layout-menu-' + this.id).fadeToggle('fast');
     }

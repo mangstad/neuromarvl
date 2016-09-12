@@ -366,7 +366,7 @@ class SaveFile {
         var yamlObj = {};
         
         yamlObj["Edge Settings"] = {
-            "Color By": this.edgeSettings.colorBy,
+            "Colour By": this.edgeSettings.colorBy,
             "Size": this.edgeSettings.size
         };
 
@@ -375,15 +375,15 @@ class SaveFile {
                 "Type": this.edgeSettings.weight.type
             }
             if (this.edgeSettings.weight.type === "discrete") {
-                yamlObj["Edge Settings"]["Weight"]["Color List"] = this.edgeSettings.weight.discreteSetting.colorArray;
+                yamlObj["Edge Settings"]["Weight"]["Colour List"] = this.edgeSettings.weight.discreteSetting.colorArray;
                 yamlObj["Edge Settings"]["Weight"]["Value List"] = this.edgeSettings.weight.discreteSetting.valueArray;
             } else if (this.edgeSettings.weight.type === "continuous-discretized") {
                 yamlObj["Edge Settings"]["Weight"]["Number of Category"] = this.edgeSettings.weight.discretizedSetting.numCategory;
                 yamlObj["Edge Settings"]["Weight"]["Domain List"] = this.edgeSettings.weight.discretizedSetting.domainArray;
-                yamlObj["Edge Settings"]["Weight"]["Color List"] = this.edgeSettings.weight.discretizedSetting.colorArray;
+                yamlObj["Edge Settings"]["Weight"]["Colour List"] = this.edgeSettings.weight.discretizedSetting.colorArray;
             } else if (this.edgeSettings.weight.type === "continuous-normal") {
-                yamlObj["Edge Settings"]["Weight"]["Max Value Color"] = this.edgeSettings.weight.continuousSetting.maxColor;
-                yamlObj["Edge Settings"]["Weight"]["Min Value Color"] = this.edgeSettings.weight.continuousSetting.minColor;
+                yamlObj["Edge Settings"]["Weight"]["Max Value Colour"] = this.edgeSettings.weight.continuousSetting.maxColor;
+                yamlObj["Edge Settings"]["Weight"]["Min Value Colour"] = this.edgeSettings.weight.continuousSetting.minColor;
             }
         }
 
@@ -410,22 +410,22 @@ class SaveFile {
     fromYaml(yaml) {
         var yamlObj = jsyaml.safeLoad(yaml);
         
-        this.edgeSettings.colorBy = yamlObj["edge settings"]["color by"];
+        this.edgeSettings.colorBy = yamlObj["edge settings"]["colour by"];
         this.edgeSettings.size = yamlObj["edge settings"]["size"];
 
         if (this.edgeSettings.colorBy === "weight") {
             this.edgeSettings.weight.type = yamlObj["edge settings"]["weight"]["type"];
 
             if (this.edgeSettings.weight.type === "discrete") {
-                this.edgeSettings.weight.discreteSetting.colorArray = yamlObj["edge settings"]["weight"]["color list"];
+                this.edgeSettings.weight.discreteSetting.colorArray = yamlObj["edge settings"]["weight"]["colour list"];
                 this.edgeSettings.weight.discreteSetting.valueArray = yamlObj["edge settings"]["weight"]["value list"];
             } else if (this.edgeSettings.weight.type === "continuous-discretized") {
                 this.edgeSettings.weight.discretizedSetting.numCategory = yamlObj["edge settings"]["weight"]["number of category"];
                 this.edgeSettings.weight.discretizedSetting.domainArray = yamlObj["edge settings"]["weight"]["domain list"];
-                this.edgeSettings.weight.discretizedSetting.colorArray = yamlObj["edge settings"]["weight"]["color list"];
+                this.edgeSettings.weight.discretizedSetting.colorArray = yamlObj["edge settings"]["weight"]["colour list"];
             } else if (this.edgeSettings.weight.type === "continuous-normal") {
-                this.edgeSettings.weight.continuousSetting.maxColor = yamlObj["edge settings"]["weight"]["max value color"];
-                this.edgeSettings.weight.continuousSetting.minColor = yamlObj["edge settings"]["weight"]["min value color"];
+                this.edgeSettings.weight.continuousSetting.maxColor = yamlObj["edge settings"]["weight"]["max value colour"];
+                this.edgeSettings.weight.continuousSetting.minColor = yamlObj["edge settings"]["weight"]["min value colour"];
             }
         }
 
@@ -435,10 +435,10 @@ class SaveFile {
             nodeSizeMin: yamlObj["node settings"]["max size"],
             nodeSizeMax: yamlObj["node settings"]["min size"],
 
-            nodeColorAttribute: yamlObj["node settings"]["color attribute"],
-            nodeColorContinuousMin: yamlObj["node settings"]["continuous color min"],
-            nodeColorContinuousMax: yamlObj["node settings"]["continuous color max"],
-            nodeColorDiscrete: yamlObj["node settings"]["discrete color list"]
+            nodeColorAttribute: yamlObj["node settings"]["colour attribute"],
+            nodeColorContinuousMin: yamlObj["node settings"]["continuous colour min"],
+            nodeColorContinuousMax: yamlObj["node settings"]["continuous colour max"],
+            nodeColorDiscrete: yamlObj["node settings"]["discrete colour list"]
         };
 
         this.surfaceSettings.opacity = yamlObj["brain settings"]["transparency"];

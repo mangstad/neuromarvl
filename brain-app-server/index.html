@@ -132,7 +132,7 @@
         <div class="tab-content" style="height: 100%; ">
             <div id="tab-1" class="tab-pane active">
                 <br/>
-                <label class="control-label" data-toggle="tooltip" data-placement="right" title="Set the 3D brain model to a preset option or upload new model file">Model</label>
+                <label class="control-label" data-toggle="tooltip" data-placement="right" title="Set the 3D brain model to a preset option, or upload a new model geometry file in Wavefront OBJ (.obj) format">Model</label>
                 <select id="select-brain3d-model" class="form-control input-sm">
                     <option value="icbm">ICBM152</option>
                     <option value="ch2">CH2</option>
@@ -140,7 +140,7 @@
                     <option value="none">None</option>
                 </select>
                 <br />
-                <label class="control-label" data-toggle="tooltip" data-placement="right" title="Open colour picker for the brain model surface">Color</label>
+                <label class="control-label" data-toggle="tooltip" data-placement="right" title="Open colour selection palette for the brain model surface">Color</label>
                 <p style="margin-bottom: 0;">
                     <div id="input-surface-color" class="input-group colorpicker-component">
                         <input type="text" value="E3E3E3" class="form-control" />
@@ -183,10 +183,10 @@
                     <div id="div-set-data-tab" class="tab-pane active">
                         <br />
                         <button id="load-example-data" class="btn btn-sm btn-primary" data-toggle="tooltip" data-placement="top" title="Immediately load default data">Load default data</button>
-                        <a id="download-example-data" class="btn btn-sm btn-primary" data-toggle="tooltip" data-placement="top" title="Download example files to create custom data..." href="brain-app/data/example.zip">Get example files</a>
+                        <a id="download-example-data" class="btn btn-sm btn-primary" data-toggle="tooltip" data-placement="top" title="Download input files used for default data, to get an example of the format of the input files..." href="brain-app/data/example.zip">Get example files</a>
                         <br />
                         <br />
-                        <label class="control-label" data-toggle="tooltip" data-placement="right" title="Coordinates of areas (or nodes) in the brain">Node coordinates</label>
+                        <label class="control-label" data-toggle="tooltip" data-placement="right" title="Spatial coordinates of each node. This file should be a matrix comprising N rows and 3 columns, where N is the number of nodes and the columns represent the [x y z] coordinates of each node. The file can be space, tab or comma delimited.">Node coordinates</label>
                         <input id="select-coords" style="display:none;" type="file" />
                         <div class="input-group input-group-sm">
                             <div class="input-group-addon glyphicon glyphicon glyphicon-info-sign status-changed" id="coords-status"
@@ -195,7 +195,7 @@
                         </div>
                         <br />
                         <br />
-                        <label class="control-label" data-toggle="tooltip" data-placement="right" title="Measured similarities (in activity) between nodes">Connectivity matrix</label>
+                        <label class="control-label" data-toggle="tooltip" data-placement="right" title="An N*N adjacency or connectivity matrix, where N is the number of nodes. Can be tab, space or comma delimited. Order of rows/columns should correspond to the row order of the node coordinates.">Connectivity matrix</label>
                         <input id="select-matrix" style="display:none;" type="file" />
                         <div class="input-group input-group-sm">
                             <div class="input-group-addon glyphicon glyphicon glyphicon-info-sign status-changed" id="matrix-status"
@@ -204,7 +204,11 @@
                         </div>
                         <br />
                         <br />
-                        <label class="control-label" data-toggle="tooltip" data-placement="right" title="Numerical attributes for each node">Node attributes</label>
+                        <label class="control-label" data-toggle="tooltip" data-placement="right" title="Attributes measures for each node. Should comprise N+1 rows and M columns. The first row should contain strings representing column headings (i.e., the name of each attribute). Each column represents a different attribute measured at each node (e.g., degree, clustering, module affiliation, etc.). If column names are not specified in the first row, default attribute labels will be assigned. The order of the rows should correspond to the node ordering in the other input files. If one of the attributes represents module affiliation for an overlapping module decomposition (i.e., a node can belong to more than one module), the module identities should be separated by pipes. e.g., in the following example, node 1 (first row) belongs to modules 1, 2, 5 and 6; node 2 (second row) to modules 2, 3, and 4; and node 3 (third row) to modules 4 and 5.  
+
+1|2|5|6
+2|3|4
+4|5">Node attributes</label>
                         <input id="select-attrs" style="display:none;" type="file" />
                         <div class="input-group input-group-sm">
                             <div class="input-group-addon glyphicon glyphicon glyphicon-info-sign status-changed" id="attrs-status"
@@ -213,7 +217,12 @@
                         </div>
                         <br />
                         <br />
-                        <label class="control-label" data-toggle="tooltip" data-placement="right" title="Node names">Node labels (optional)</label>
+                        <label class="control-label" data-toggle="tooltip" data-placement="right" title="A file with N rows, each containing a number of string that is a label for each individual node. e.g.,
+
+L Hippocampus
+R Hippocampus
+L Amygdala
+R Amygdala ">Node labels (optional)</label>
                         <input id="select-labels" style="display:none;" type="file" />
                         <div class="input-group input-group-sm">
                             <div class="input-group-addon glyphicon glyphicon glyphicon-info-sign status-changed" id="labels-status"
@@ -223,10 +232,8 @@
                         <br />
                     </div>
                     <div id="div-batching-tab" class="tab-pane">
-                       
-                        
                         <br/>
-                        <label class="control-label" data-toggle="tooltip" data-placement="right" title="Select 1 (or more) input matrix files">Connectivity matrices</label>
+                        <label class="control-label" data-toggle="tooltip" data-placement="right" title="Batch mode allows you to apply a given display setting to multiple networks. First, you can select one dataset and generate a particular visualisation. Then you use this button to select a set of other matrices that the visualisation will be applied to. The matrices must have the same dimensions as the original. The app will then generate these visualisations and save them as separate files to your desktop.">Connectivity matrices</label>
                         <input id="select-matrices-batching" style="display:none;" type="file" multiple/>
                         <div id="div-batching-tab" class="tab-pane">
                             <div class="input-group input-group-sm">
@@ -237,7 +244,7 @@
                         </div>
                         <br />
                         <br />
-                        <label class="control-label" data-toggle="tooltip" data-placement="right" title="Select 1 (or more) input attribute files">Node attributes</label>
+                        <label class="control-label" data-toggle="tooltip" data-placement="right" title="Select a corresponding attribute file for the connectivity matrices. There should be one attribute file for each matrix. They should be listed in the same order as the matrices.">Node attributes</label>
                         <input id="select-attrs-batching" style="display:none;" type="file" multiple/>
                         <div class="input-group input-group-sm">
                             <div class="input-group-addon glyphicon glyphicon glyphicon-info-sign status-changed" id="attrs-batching-status"
@@ -267,19 +274,19 @@
                     <div id="div-node-attribute-tab" class="tab-pane active">
                         <div>
                             <div id="div-set-node-scale" style="display: none; margin-bottom: 5px; ">
-                                <label class="control-label" data-toggle="tooltip" data-placement="right" title="Physical property to assign">Set</label>
+                                <label class="control-label" data-toggle="tooltip" data-placement="right" title="Select node property to change">Set</label>
                                 <select id="select-node-size-color" class="form-control input-sm">
                                     <option value="node-size">Size</option>
-                                    <option value="node-color">Color</option>
+                                    <option value="node-color">Colour</option>
                                     <option value="node-default">None</option>
                                 </select>
-                                <label class="control-label" data-toggle="tooltip" data-placement="right" title="Corresponding attribute from the data">by</label>
+                                <label class="control-label" data-toggle="tooltip" data-placement="right" title="Change node property according to one of the following attributes">by</label>
                                 <select id="select-attribute" class="form-control input-sm"></select>
                             </div>
                         </div>
                         <div id="div-node-size" style="display:none; margin-top: 20px; margin-left: 20px;">
                             <p>
-                                <label class="control-label">range:</label>
+                                <label class="control-label" data-toggle="tooltip" data-placement="right" title="Scale range of node sizes">range:</label>
                                 <label id="label_node_size_range"></label>
                             </p>
                             <input id="div-node-size-slider" data-slider-id='node-size-slider' type="text"
@@ -335,7 +342,7 @@
                         </p>
                         
                         <p style="margin-top: 5px; margin-bottom: 0;">
-                            <div class="form-group" data-toggle="tooltip" data-placement="right" title="Set a visual indicator of edge direction">
+                            <div class="form-group" data-toggle="tooltip" data-placement="right" title="Set a visual indicator of edge direction. Only appropriate for directed networks.">
                                 <label for="select-edge-direction">Edge direction</label>
                                 <select class="form-control" id="select-edge-direction">
                                     <option value="none">None</option>
@@ -364,8 +371,8 @@
                         </div>
                         <div id="div-edge-color">
                             <p style="margin-top: 5px; margin-bottom: 0;">
-                                <div class="form-group" data-toggle="tooltip" data-placement="right" title="Set edge color to match either the connected nodes orcolor range scaled to strength value">
-                                    <label for="select-edge-color">Color edges by</label>
+                                <div class="form-group" data-toggle="tooltip" data-placement="right" title="Set edge colour either to the colour of the connecting nodes or a colour scale that represents variations in edge weight. If edges are coloured by nodes, you have the option to select a colour for edge attached to nodes of two different colours (e.g., inter-module edges).">
+                                    <label for="select-edge-color">Colour edges by</label>
                                     <select class="form-control" id="select-edge-color">
                                         <option value="none">None</option>
                                         <option value="node">Node</option>
@@ -373,10 +380,10 @@
                                     </select>
                                 </div>
                             </p>
-                            <div id="div-edge-color-by-node-picker" style="display: none; margin-top: 30px; margin-left: 40px;" data-toggle="tooltip" data-placement="right" title="Set an alternative color for edges with end nodes of different values">
-                                <p><input type="checkbox" id="checkbox-color-transitional-edges" style="width: 12px;"><strong> Customize inter-cluster edges</strong></p>
+                            <div id="div-edge-color-by-node-picker" style="display: none; margin-top: 30px; margin-left: 40px;" data-toggle="tooltip" data-placement="right" title="Set an alternative colour for edges with end nodes of different values">
+                                <p><input type="checkbox" id="checkbox-color-transitional-edges" style="width: 12px;"><strong> Customise inter-cluster edges</strong></p>
                                 <p>
-                                    <label for="pick-color-intercluster">Color</label>
+                                    <label for="pick-color-intercluster">Colour</label>
                                     <div id="input-edge-transitional-color" class="input-group colorpicker-component">
                                         <input id="pick-color-intercluster" type="text" value="ee2211" class="form-control" />
                                         <span class="input-group-addon"><i></i></span>
@@ -388,10 +395,10 @@
                             <div id="div-edge-color-pickers" style="display: none; margin-top: 30px; margin-left: 40px;">
                                 <p><input type="checkbox" id="checkbox-edge-color-force-continuous" style="display:none; width: 12px;"><strong>Treat as continuous</strong></p>
                                 <div id="div-edge-color-continuous">
-                                    <p data-toggle="tooltip" data-placement="right" title="Set specific colors for value ranges">
-                                        <input type="checkbox" id="checkbox-edge-color-discretized" style="width: 12px;"><strong> Discretize continuous values</strong>
+                                    <p data-toggle="tooltip" data-placement="right" title="Set specific colours for value ranges">
+                                        <input type="checkbox" id="checkbox-edge-color-discretized" style="width: 12px;"><strong> Discretise continuous values</strong>
                                     </p>
-                                    <div id="div-edge-color-continuous-discretized" data-toggle="tooltip" data-placement="right" title="Set the number and color of divisions based on value ranges">
+                                    <div id="div-edge-color-continuous-discretized" data-toggle="tooltip" data-placement="right" title="Set the number and colour of divisions based on value ranges">
 
                                         <strong>Select number of divisions </strong>
                                         <select id="select-edge-color-number-discretized-category" class="form-control" style="margin-bottom: 10px;">
@@ -518,7 +525,7 @@
         <div id="context-menu-attributes">
         </div>
         <div id="div-context-menu-color-picker" style="visibility:hidden;">
-            color:
+            colour:
             <div id="input-context-menu-node-color" class="input-group colorpicker-component" 
                  style="width: 12em; background-color: #feeebd; border: 1px solid grey; "
             >
@@ -648,7 +655,7 @@
 
     <script src="extern/cola.v3.min.js"></script>
     <!--<script src="extern/cola.v3.js"></script>-->
-    <script src="extern/d3adaptor.js"></script>
+    <!--<script src="extern/d3adaptor.js"></script>-->
 
     <script src="extern/cytoscape.min.js"></script>
     <script src="extern/cytoscape-cola.js"></script>

@@ -202,7 +202,7 @@ class InputTargetManager {
             console.log("Connection to Leap failed: " + e);
         }
 
-        // Initialize finger smoothing variables
+        // Initialise finger smoothing variables
         this.fingerPositions = new Array(this.fingerSmoothingLevel);
         for (var i = 0; i < this.fingerSmoothingLevel; ++i)
             this.fingerPositions[i] = [1, 1, 1];
@@ -300,7 +300,7 @@ class InputTargetManager {
                 this.rightClickLabel.style.padding = '5px';
                 this.rightClickLabel.style.borderRadius = '5px';
                 this.rightClickLabel.style.zIndex = '1';    
-                this.rightClickLabel.style.backgroundColor = '#feeebd'; // the color of the control panel
+                this.rightClickLabel.style.backgroundColor = '#feeebd'; // the colour of the control panel
 
                 // the first attribute is node id
                 this.selectedNodeID = record.id;

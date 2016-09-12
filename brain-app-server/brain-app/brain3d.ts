@@ -7,10 +7,8 @@
 
 // GLOBAL VARIABLES
 declare var d3;
-declare var jscolor;
 declare var numeric;
 declare var packages;
-declare function d3adaptor(): string;
 
 var colans = <any>cola;
 var sliderSpace = 70; // The number of pixels to reserve at the bottom of the div for the slider
@@ -88,7 +86,6 @@ class Brain3DApp implements Application, Loopable {
     svgNeedsUpdate: boolean = false;
     d3Zoom = d3.behavior.zoom();
 
-    //nodeColorings: number[]; // Stores the colorings associated with the groups
     dissimilarityMatrix: number[][] = []; // An inversion of the similarity matrix, used for Cola graph distances
 
     // State
@@ -209,7 +206,7 @@ class Brain3DApp implements Application, Loopable {
         if (!this.loop)
             this.loop = new Loop(this, 0.03);
 
-        // Initialize Graph Objects
+        // Initialise Graph Objects
         this.circularGraph = new CircularGraph( this.id, this.jDiv, this.dataSet,
                                                 this.svg, this.svgDefs, this.svgAllElements,
                                                 this.d3Zoom, this.commonData, this.saveObj);
@@ -320,7 +317,7 @@ class Brain3DApp implements Application, Loopable {
 
 
     getNodeColorsEmpty(): { color: number, portion: number }[][] {
-        /* Get a minimal practical color array
+        /* Get a minimal practical colour array
             [
                 // Empty values are a minimal set of grey
                 [
@@ -363,7 +360,7 @@ class Brain3DApp implements Application, Loopable {
 
         var varShowProcessingNotification = () => { this.showProcessingNotification(); };
 
-        // Set the background color
+        // Set the background colour
         jDiv.css({ backgroundColor: '#ffffff' });
 
         // Set up renderer, and add the canvas and the slider to the div
@@ -379,31 +376,31 @@ class Brain3DApp implements Application, Loopable {
             //.append($('<span id="close-brain-app-' + this.id + '" title="Close" class="view-panel-span"  data-toggle="tooltip" data-placement="bottom">x</span>')
             //.css({ 'right': '6px', 'top': '10px', 'font-size': '12px', 'z-index': 1000 })
             //.click(function () { varCloseBrainAppOnClick(); }))
-            .append($('<span id="top-view-' + this.id + '" title="Top View" class="view-panel-span" data-toggle="tooltip" data-placement="left">T</span>')
+            .append($('<span id="top-view-' + this.id + '" title="Top view" class="view-panel-span" data-toggle="tooltip" data-placement="left">T</span>')
                 .css({ 'right': '6px', 'top': '30px', 'z-index': 1000 })
                 .click(function () { varDefaultOrientationsOnClick("top"); }))
-            .append($('<span id="bottom-view-' + this.id + '" title="Bottom View" class="view-panel-span" data-toggle="tooltip" data-placement="left">B</span>')
+            .append($('<span id="bottom-view-' + this.id + '" title="Bottom view" class="view-panel-span" data-toggle="tooltip" data-placement="left">B</span>')
                 .css({ 'right': '6px', 'top': '50px', 'z-index': 1000 })
                 .click(function () { varDefaultOrientationsOnClick("bottom"); }))
-            .append($('<span id="left-view-' + this.id + '" title="Left View" class="view-panel-span" data-toggle="tooltip" data-placement="left">L</span>')
+            .append($('<span id="left-view-' + this.id + '" title="Left view" class="view-panel-span" data-toggle="tooltip" data-placement="left">L</span>')
                 .css({ 'right': '6px', 'top': '70px', 'z-index': 1000 })
                 .click(function () { varDefaultOrientationsOnClick("left"); }))
-            .append($('<span id="right-view-' + this.id + '" title="Right View" class="view-panel-span" data-toggle="tooltip" data-placement="left">R</span>')
+            .append($('<span id="right-view-' + this.id + '" title="Right view" class="view-panel-span" data-toggle="tooltip" data-placement="left">R</span>')
                 .css({ 'right': '6px', 'top': '90px', 'z-index': 1000 })
                 .click(function () { varDefaultOrientationsOnClick("right"); }))
-            .append($('<span id="front-view-' + this.id + '" title="Front View" class="view-panel-span" data-toggle="tooltip" data-placement="left">F</span>')
+            .append($('<span id="front-view-' + this.id + '" title="Front view" class="view-panel-span" data-toggle="tooltip" data-placement="left">F</span>')
                 .css({ 'right': '6px', 'top': '110px', 'z-index': 1000 })
                 .click(function () { varDefaultOrientationsOnClick("front"); }))
-            .append($('<span id="back-view-' + this.id + '" title="Back View" class="view-panel-span" data-toggle="tooltip" data-placement="left">B</span>')
+            .append($('<span id="back-view-' + this.id + '" title="Back view" class="view-panel-span" data-toggle="tooltip" data-placement="left">B</span>')
                 .css({ 'right': '6px', 'top': '130px', 'z-index': 1000 })
                 .click(function () { varDefaultOrientationsOnClick("back"); }))
-            .append($('<span id="all-labels-' + this.id + '" title="All Labels" class="view-panel-span" data-toggle="tooltip" data-placement="left">&#8704</span>')
+            .append($('<span id="all-labels-' + this.id + '" title="Show/hide all node labels" class="view-panel-span" data-toggle="tooltip" data-placement="left">&#8704</span>')
                 .css({ 'right': '6px', 'top': '150px', 'z-index': 1000 })
                 .click(function () { varAllLabelsOnChange(); }))
-            .append($('<span id="top-view-' + this.id + '" title="Split Brain" class="view-panel-span" data-toggle="tooltip" data-placement="left">M</span>')
+            .append($('<span id="top-view-' + this.id + '" title="Split brain" class="view-panel-span" data-toggle="tooltip" data-placement="left">M</span>')
                 .css({ 'right': '6px', 'top': '170px', 'z-index': 1000 })
                 .click(function () { varBrainSurfaceModeOnChange(); }))
-            .append($('<span id="anti-auto-rotation-' + this.id + '" title="Anticlockwise Auto Rotation" class="view-panel-span" data-toggle="tooltip" data-placement="left">&#8634</span>')
+            .append($('<span id="anti-auto-rotation-' + this.id + '" title="Anticlockwise auto-rotation" class="view-panel-span" data-toggle="tooltip" data-placement="left">&#8634</span>')
                 .css({ 'right': '6px', 'top': '190px', 'z-index': 1000 })
                 .click(function () { varAutoRotationOnChange("anticlockwise"); }))
 
@@ -424,13 +421,13 @@ class Brain3DApp implements Application, Loopable {
 
                 // Select Network Type button group
                 .append($(`<div id="select-network-type-${this.id}" class="btn-group" data-toggle="buttons">
-                    <label id="select-network-type-${this.id}-3D" class="btn btn-primary btn-sm" data-toggle="tooltip" data-placement="top" title="3D topology with improved layout">
+                    <label id="select-network-type-${this.id}-3D" class="btn btn-primary btn-sm" data-toggle="tooltip" data-placement="top" title="3D topological projection based on the cola method, as provided by WebCola">
                         <input class="select-network-type-input" type="radio" name="select-network-type-${this.id}" value="3D" autocomplete="off">3D
                     </label>
-                    <label id="select-network-type-${this.id}-2D" class="btn btn-primary btn-sm" data-toggle="tooltip" data-placement="top" title="2D graph with multiple layout types">
+                    <label id="select-network-type-${this.id}-2D" class="btn btn-primary btn-sm" data-toggle="tooltip" data-placement="top" title="2D topological projection generated according to one of several different algorithms. See Options for details.">
                         <input class="select-network-type-input" type="radio" name="select-network-type-${this.id}" value="2D" autocomplete="off">2D
                     </label>
-                    <label id="select-network-type-${this.id}-circular" class="btn btn-primary btn-sm" data-toggle="tooltip" data-placement="top" title="Circular layout with additional attribute visualisation">
+                    <label id="select-network-type-${this.id}-circular" class="btn btn-primary btn-sm" data-toggle="tooltip" data-placement="top" title="Circular layout with additional attribute visualisation. See Options for details.">
                         <input class="select-network-type-input" type="radio" name="select-network-type-${this.id}" value="circular" autocomplete="off">Circular
                     </label>
                     <label id="select-network-type-${this.id}-none" class="btn btn-primary btn-sm" data-toggle="tooltip" data-placement="top" title="Remove the secondary view">
@@ -539,7 +536,7 @@ class Brain3DApp implements Application, Loopable {
 
             var quat = new THREE.Quaternion();
             var axis = new THREE.Vector3(0, -1, 0);
-            quat.setFromAxisAngle(axis, this.rotationSpeed * deltaTime); // axis must be normalized, angle in radians
+            quat.setFromAxisAngle(axis, this.rotationSpeed * deltaTime); // axis must be normalised, angle in radians
             this.brainObject.quaternion.multiplyQuaternions(quat, this.brainObject.quaternion);
             this.colaObject.quaternion.multiplyQuaternions(quat, this.colaObject.quaternion);
         });
@@ -548,7 +545,7 @@ class Brain3DApp implements Application, Loopable {
 
             var quat = new THREE.Quaternion();
             var axis = new THREE.Vector3(0, 1, 0);
-            quat.setFromAxisAngle(axis, this.rotationSpeed * deltaTime); // axis must be normalized, angle in radians
+            quat.setFromAxisAngle(axis, this.rotationSpeed * deltaTime); // axis must be normalised, angle in radians
             this.brainObject.quaternion.multiplyQuaternions(quat, this.brainObject.quaternion);
             this.colaObject.quaternion.multiplyQuaternions(quat, this.colaObject.quaternion);
         });
@@ -557,7 +554,7 @@ class Brain3DApp implements Application, Loopable {
 
             var quat = new THREE.Quaternion();
             var axis = new THREE.Vector3(-1, 0, 0);
-            quat.setFromAxisAngle(axis, this.rotationSpeed * deltaTime); // axis must be normalized, angle in radians
+            quat.setFromAxisAngle(axis, this.rotationSpeed * deltaTime); // axis must be normalised, angle in radians
             this.brainObject.quaternion.multiplyQuaternions(quat, this.brainObject.quaternion);
             this.colaObject.quaternion.multiplyQuaternions(quat, this.colaObject.quaternion);
         });
@@ -566,7 +563,7 @@ class Brain3DApp implements Application, Loopable {
 
             var quat = new THREE.Quaternion();
             var axis = new THREE.Vector3(1, 0, 0);
-            quat.setFromAxisAngle(axis, this.rotationSpeed * deltaTime); // axis must be normalized, angle in radians
+            quat.setFromAxisAngle(axis, this.rotationSpeed * deltaTime); // axis must be normalised, angle in radians
             this.brainObject.quaternion.multiplyQuaternions(quat, this.brainObject.quaternion);
             this.colaObject.quaternion.multiplyQuaternions(quat, this.colaObject.quaternion);
         });
@@ -592,13 +589,13 @@ class Brain3DApp implements Application, Loopable {
 
                     var quatX = new THREE.Quaternion();
                     var axisX = new THREE.Vector3(0, 1, 0);
-                    quatX.setFromAxisAngle(axisX, dx / pixelAngleRatio); // axis must be normalized, angle in radians
+                    quatX.setFromAxisAngle(axisX, dx / pixelAngleRatio); // axis must be normalised, angle in radians
                     this.brainObject.quaternion.multiplyQuaternions(quatX, this.brainObject.quaternion);
                     this.colaObject.quaternion.multiplyQuaternions(quatX, this.colaObject.quaternion);
 
                     var quatY = new THREE.Quaternion();
                     var axisY = new THREE.Vector3(1, 0, 0);
-                    quatY.setFromAxisAngle(axisY, dy / pixelAngleRatio); // axis must be normalized, angle in radians
+                    quatY.setFromAxisAngle(axisY, dy / pixelAngleRatio); // axis must be normalised, angle in radians
                     this.brainObject.quaternion.multiplyQuaternions(quatY, this.brainObject.quaternion);
                     this.colaObject.quaternion.multiplyQuaternions(quatY, this.colaObject.quaternion);
                 }
@@ -995,8 +992,7 @@ class Brain3DApp implements Application, Loopable {
 
     setEdgeTransitionColor(color: string) {
         if ((!this.physioGraph) || (!this.colaGraph)) return;
-
-        //this.edgeTransitionColor = parseInt(color.substring(1), 16);
+        
         this.edgeTransitionColor = color;
 
         this.physioGraph.setEdgeColorConfig(this.colorMode, {
@@ -1286,7 +1282,7 @@ class Brain3DApp implements Application, Loopable {
         this.jDivProcessingNotification.style.padding = '5px';
         this.jDivProcessingNotification.style.borderRadius = '2px';
         this.jDivProcessingNotification.style.zIndex = '1';
-        this.jDivProcessingNotification.style.backgroundColor = '#feeebd'; // the color of the control panel
+        this.jDivProcessingNotification.style.backgroundColor = '#feeebd'; // the colour of the control panel
 
         var text = document.createElement('div');
         text.innerHTML = "Processing...";
@@ -1641,7 +1637,7 @@ class Brain3DApp implements Application, Loopable {
     }
 
     setNodeDefaultSizeColor() {
-        // set default node color and scale
+        // set default node colour and scale
         this.physioGraph.setDefaultNodeColor();
         this.colaGraph.setDefaultNodeColor();
 
@@ -1684,14 +1680,14 @@ class Brain3DApp implements Application, Loopable {
         let colorArray = this.getNodeColors(attribute, parseInt(minColor.replace("#", "0x")), parseInt(maxColor.replace("#", "0x")));
 
         if (!colorArray) {
-            throw "Encountered error in generating color array.";
+            throw "Encountered error in generating colour array.";
         }
 
         // update graphs
         if (this.physioGraph) this.physioGraph.setNodesColor(colorArray);
         if (this.colaGraph) this.colaGraph.setNodesColor(colorArray);
 
-        this.svgNeedsUpdate = true; // update to change node color
+        this.svgNeedsUpdate = true; // update to change node colour
     }
 
     setNodeColorDiscrete(attribute: string, keyArray: number[], colorArray: string[]) {
@@ -1829,7 +1825,7 @@ class Brain3DApp implements Application, Loopable {
         }
     }
 
-    // Initialize or re-initialize the visualisation.
+    // Initialise or re-initialise the visualisation.
     restart() {
         if (!this.dataSet || !this.dataSet.verify()) return;
         console.log("Restarted view: " + this.id);
@@ -1842,7 +1838,7 @@ class Brain3DApp implements Application, Loopable {
             }));
         }
 
-        // Set up the node colorings
+        // Set up the node colourings
         let nSettings = this.saveObj.nodeSettings;
         let colorAttribute = nSettings.nodeColorAttribute;
         let nodeColors;
@@ -1881,7 +1877,7 @@ class Brain3DApp implements Application, Loopable {
         
         this.canvasGraph = new Graph2D(this.id, this.jDiv, this.dataSet, this.graph2dContainer, this.commonData, this.saveObj, this.physioGraph, this.camera, this.edgeCountSliderValue);
 
-        // Initialize the filtering
+        // Initialise the filtering
         if (this.brainSurfaceMode === 0) {
             this.filteredAdjMatrix = this.dataSet.adjMatrixFromEdgeCount(Number(this.edgeCountSliderValue));
         } else {
@@ -2094,13 +2090,13 @@ class Brain3DApp implements Application, Loopable {
 
             var quatX = new THREE.Quaternion();
             var axisX = new THREE.Vector3(0, 1, 0);
-            quatX.setFromAxisAngle(axisX, this.mouse.dx / pixelAngleRatio); // axis must be normalized, angle in radians
+            quatX.setFromAxisAngle(axisX, this.mouse.dx / pixelAngleRatio); // axis must be normalised, angle in radians
             this.brainObject.quaternion.multiplyQuaternions(quatX, this.brainObject.quaternion);
             this.colaObject.quaternion.multiplyQuaternions(quatX, this.colaObject.quaternion);
 
             var quatY = new THREE.Quaternion();
             var axisY = new THREE.Vector3(1, 0, 0);
-            quatY.setFromAxisAngle(axisY, this.mouse.dy / pixelAngleRatio); // axis must be normalized, angle in radians
+            quatY.setFromAxisAngle(axisY, this.mouse.dy / pixelAngleRatio); // axis must be normalised, angle in radians
             this.brainObject.quaternion.multiplyQuaternions(quatY, this.brainObject.quaternion);
             this.colaObject.quaternion.multiplyQuaternions(quatY, this.colaObject.quaternion);
         }

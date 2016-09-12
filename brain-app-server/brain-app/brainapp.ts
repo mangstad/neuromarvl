@@ -159,7 +159,7 @@ class NeuroMarvl {
     */
 
     initUI = () => {
-        // Initialize the view sizes and pin location
+        // Initialise the view sizes and pin location
         this.viewWidth = $('#outer-view-panel').width();
         this.viewHeight = $('#outer-view-panel').height();
         this.pinWidth = $('#pin').width();
@@ -277,7 +277,7 @@ class NeuroMarvl {
         $("#overlay-close").click(this.toggleSplashPage);
         $("#control-panel-bottom-close").click(this.toggleSplashPage);
 
-        // Create color pickers
+        // Create colour pickers
         (<any>$("#input-node-color")).colorpicker({ format: "hex" });
         (<any>$("#input-surface-color")).colorpicker({ format: "hex" });
         (<any>$("#input-min-color")).colorpicker({ format: "hex" });
@@ -379,7 +379,7 @@ class NeuroMarvl {
     }
 
     initDataDependantUI = () => {
-        // init the node size and color given the current UI. The UI needs to be redesigned.
+        // init the node size and colour given the current UI. The UI needs to be redesigned.
         if (this.saveObj.nodeSettings.nodeSizeOrColor && (this.saveObj.nodeSettings.nodeSizeOrColor.length > 0)) {
             if (this.saveObj.nodeSettings.nodeSizeOrColor == "node-size") {
                 this.initNodeColor();
@@ -391,7 +391,7 @@ class NeuroMarvl {
             }
         }
 
-        // init edge size and color.
+        // init edge size and colour.
         if (this.saveObj.edgeSettings) {
             this.initEdgeSizeAndColor();
         }
@@ -936,7 +936,7 @@ class NeuroMarvl {
     }
 
     setEdgeColorByNode = () => {
-        // save edge color setting
+        // save edge colour setting
         this.saveObj.edgeSettings.colorBy = "node";
 
         if (this.apps[0]) this.apps[0].setEdgeColorByNode();
@@ -946,7 +946,7 @@ class NeuroMarvl {
     }
 
     setEdgeNoColor = () => {
-        // save edge color setting 
+        // save edge colour setting 
         this.saveObj.edgeSettings.colorBy = "none";
 
         if (this.apps[0]) this.apps[0].setEdgeNoColor();
@@ -1892,7 +1892,7 @@ class NeuroMarvl {
         this.divLoadingNotification.style.padding = '5px';
         this.divLoadingNotification.style.borderRadius = '2px';
         this.divLoadingNotification.style.zIndex = '1';
-        this.divLoadingNotification.style.backgroundColor = '#feeebd'; // the color of the control panel
+        this.divLoadingNotification.style.backgroundColor = '#feeebd'; // the colour of the control panel
 
         var text = document.createElement('div');
         text.innerHTML = "Loading...";
@@ -2289,7 +2289,7 @@ class NeuroMarvl {
 
             var keySelection = <any>document.getElementById('select-edge-key');
 
-            // find the coressponding key and retrieve color data
+            // find the coressponding key and retrieve colour data
             for (var i = 0; i < keySelection.length; i++) {
                 if (keySelection.options[i].value == key) {
                     var color = keySelection.options[i].style.backgroundColor;
