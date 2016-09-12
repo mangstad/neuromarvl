@@ -406,7 +406,6 @@ class NeuroMarvl {
 
     
     batchProcess = (i, numberOfFiles, attributes, matrices) => {
-        console.log("batchProcess");///jm
         document.getElementById("alertModalMessage").innerHTML = "Started load of " + numberOfFiles + " file pairs...";
 
         let gotAttributes = false;
@@ -419,17 +418,14 @@ class NeuroMarvl {
 
             // refresh the visualisation with current settings and new data
             this.apps[0].showNetwork(false, () => {
-                console.log("showNetwork callback");///jm
-                //this.setEdgeColor();
-                //this.setNodeSizeOrColor();
+                this.setNodeSizeOrColor();
+                this.setEdgeColor();
                 this.apps[0].update(0);
 
                 // Capture and download the visualisation
                 this.exportSVG(0, "svg");
-                //this.exportSVG(0, "image");
 
                 // update status
-                console.log("update status", i);///jm
                 i++;
                 var percentage = (i / numberOfFiles) * 100;
                 $("#progressBar").css({
@@ -1163,7 +1159,6 @@ class NeuroMarvl {
     }
 
     getSource = (id, styles) => {
-        console.log("getSource");///jm
         let svgInfo = {};
         let svg;
         var doctype = '<?xml version="1.0" standalone="no"?><!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">';
@@ -1194,12 +1189,10 @@ class NeuroMarvl {
 
         // 3D canvas
         var image = document.createElement("image");
-        image.onload = () => console.log("image.onload");///jm
         svg.insertBefore(image, svg.firstChild);
         image.setAttribute('y', '0');
         image.setAttribute('x', '0');
         image.setAttribute('id', 'brain3D' + id);
-        console.log("canvas.toDataURL");///jm
         image.setAttribute('xlink:href', canvas.toDataURL());
         image.setAttribute('width', canvas.width);
         image.setAttribute('height', canvas.height);
@@ -1208,14 +1201,14 @@ class NeuroMarvl {
         var canvas2d = <HTMLCanvasElement>$(`#div-graph-${id} div.graph2dContainer canvas[data-id='layer2-node']`).get(0);
         if (canvas2d && (canvas2d.getAttribute("visibility") !== "hidden")) {
             var image2d = document.createElement("image");
-            image2d.onload = () => console.log("image2d.onload");///jm
             svg.insertBefore(image2d, svg.firstChild);
             image2d.setAttribute('crossOrigin', 'anonymous');
             image2d.setAttribute('y', '0');
             image2d.setAttribute('x', '0');
             image2d.setAttribute('id', 'brain2D' + id);
-            console.log("canvas2d.toDataURL");///jm
-            image2d.setAttribute('xlink:href', canvas2d.toDataURL());
+            image2d.setAttribute('xlink:href', this.apps[0].canvasGraph.cy.png({
+                full: true
+            }));
             image2d.setAttribute('width', canvas2d.width.toString());
             image2d.setAttribute('height', canvas2d.height.toString());
             image2d.removeAttribute('xmlns');
@@ -1260,7 +1253,6 @@ class NeuroMarvl {
     }
 
     downloadSVG = source => {
-        console.log("downloadSVG");///jm
         var filename = window.document.title.replace(/[^a-z0-9]/gi, '-').toLowerCase();
         var body = document.body;
 

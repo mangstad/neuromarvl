@@ -453,7 +453,6 @@ class Graph2D {
                 y: container.offsetHeight * 0.2
             });
             cy.zoom(cy.zoom() * 0.6);
-            console.log("layoutstop");///jm
         });
         cy.fit();
         if (this.layout === "concentric") {
@@ -470,7 +469,6 @@ class Graph2D {
             });
         }
         cy.zoom(cy.zoom() * 0.7);
-        console.log("update done");///jm
 
     }
 
