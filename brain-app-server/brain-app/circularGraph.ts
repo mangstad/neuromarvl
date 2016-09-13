@@ -260,6 +260,10 @@ class CircularGraph {
             }, false);
         }
 
+        
+        // Help modal
+        $('#div-circular-layout-menu-' + this.id).append('<a href="#" style="display: block; text-align: right"><span class="badge" data-toggle="modal" data-target="#modal-help-circular">?</span></a>');
+
     }
 
     toggleDirectionArrow(isShown: boolean) {

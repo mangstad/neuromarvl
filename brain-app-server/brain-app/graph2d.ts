@@ -715,7 +715,6 @@ class Graph2D {
 
         
         // Help modal
-        //$('#div-graph2d-layout-menu-' + this.id).append('<div style={float: right}><button type="button" class="btn btn-primary btn-sm" data-toggle="modal" data-target="#modal-help-layouts">?</button></div>');
         $('#div-graph2d-layout-menu-' + this.id).append('<a href="#" style="display: block; text-align: right"><span class="badge" data-toggle="modal" data-target="#modal-help-layouts">?</span></a>');
 
 

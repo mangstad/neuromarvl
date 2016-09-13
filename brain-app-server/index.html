@@ -235,7 +235,7 @@ R Amygdala ">Node labels (optional)</label>
                     </div>
                     <div id="div-batching-tab" class="tab-pane">
                         <br/>
-                        <label class="control-label" data-toggle="tooltip" data-placement="right" title="Batch mode allows you to apply a given display setting to multiple networks. First, you can select one dataset and generate a particular visualisation. Then you use this button to select a set of other matrices that the visualisation will be applied to. The matrices must have the same dimensions as the original. The app will then generate these visualisations and save them as separate files to your desktop.">Connectivity matrices</label>
+                        <label class="control-label" data-toggle="tooltip" data-placement="right" title="Batch mode allows you to apply a given display setting to multiple networks. First, you can select one dataset and generate a particular visualisation. Then you use this button to select a set of other matrices that the visualisation will be applied to. The matrices must have the same dimensions as the original, but may represent different connections. The app will then generate these visualisations and save them as separate files to your desktop.">Connectivity matrices</label>
                         <input id="select-matrices-batching" style="display:none;" type="file" multiple/>
                         <div id="div-batching-tab" class="tab-pane">
                             <div class="input-group input-group-sm">
@@ -545,21 +545,54 @@ R Amygdala ">Node labels (optional)</label>
                     <h4 class="modal-title">2D graph layouts</h4>
                 </div>
                 <div class="modal-body">
-                    <p>The 2D graph layout can use a selection of layout algorithms</p>
-                    <dl>
-                        <dt>cola</dt>
-                        <dd>Produces the most attractive layout for most graphs</dd>
-                        <dt>cose</dt>
-                        <dd>Faster results for large, complex graphs</dd>
-                        <dt>cose-bilkent</dt>
-                        <dd>A variation on the cose layout that aims for a good balance between looks and speed</dd>
-                        <dt>grid</dt>
-                        <dd>Simple gridwise positioning with no meaningful edge handling</dd>
-                        <dt>concentric</dt>
-                        <dd>Simple positioning into concentric circles</dd>
-                    </dl>
-                    <p>The bundling options is handled differently by each layout option, but generally attempts to group nodes of the same value for the given attribute.</p>
+                    <h2>Layout</h2>
+                    <p>The 2D graph layout can use a selection of layout algorithms to achieve different visual results, in some cases having very different running times.</p>
+                    <h3>cola</h3>
+                    <p>Produces the most attractive layout for most graphs.</p>
+                    <p>The CoLa layout algorithm is implemented with <a href="http://marvl.infotech.monash.edu/webcola/">WebCola</a>, developed by Tim Dwyer of the Monash Adaptive Visualisation Lab (<a href="http://marvl.infotech.monash.edu.au/">MArVL</a>).</p>
+                    <h3>cose</h3>
+                    <p>The <a href="http://js.cytoscape.org/#layouts/cose">COSE</a> (Compound Spring Embedder) layout algortithm is a physics-based method that produces fast results for large, complex graphs. </p>
+                    <h3>cose-bilkent</h3>
+                    <p>A <a href="https://github.com/cytoscape/cytoscape.js-cose-bilkent">variation</a> on the cose layout developed by the <a href="http://cs.bilkent.edu.tr/~ivis/">i-Vis group</a> of Bilkent University. It aims for a good balance between looks and speed</p>
+                    <h3>grid</h3>
+                    <p>Simple gridwise positioning with no meaningful edge handling. This will provide the fastest possible result, but will have limited utility for complex graphs.</p>
+                    <h3>concentric</h3>
+                    <p>Simple positioning into concentric circles. It has similar performance and drawbacks to the grid layout.</p>
+                    <h2>Bundle</h2>
+                    <p>The bundling option is handled differently by each layout option, but generally attempts to group nodes of the same value for the given attribute.</p>
+                    <h2>Controls</h2>
                     <p>Use shift + click or shift + drag to select multiple nodes, which can then be moved together.</p>
+                    <p>Nodes that have been bundled together can be moved as a group by hovering with their area until a box around the group is visible, then dragging.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-help-circular" class="modal fade" role="dialog">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                    <h4 class="modal-title">Circular layout</h4>
+                </div>
+                <div class="modal-body">
+                    <p>This visualisation places nodes around a circular arrangement, with edges crossing the circle and optionally bundled by value.</p>
+                    <h2>Options</h2>
+                    <h3>Display all nodes</h3>
+                    <p>Toggle whether to include or exclude nodes with no connected edges under the current filter and edge visibility settings.</p>
+                    <h3>Bundle</h3>
+                    <p>Group nodes together based on the given attribute value. Edges wil also be bundled together to better differentiate connectivity between bundle groups.</p>
+                    <p>For continuous values this will group into bands.</p>
+                    <p>In the case of multi-value attributes, such as nodes in multiple modules, the grouping is for exactly the same composition of values. Nodes with more values will additionally be placed on concentric circles closer to the centre.</p>
+                    <h3>Sort</h3>
+                    <p>Assign an attribute used to determine the order of nodes around the cirle. If bundling is applied, this will affect the order within a bunle, but not the bundles themselves.</p>
+                    <h3>Label</h3>
+                    <p>Set the node label to the label data, or alternatively the value of a given attribute.</p>
+                    <h3>Histogram</h3>
+                    <p>The histogram option allows for the addition of a bar graph representation of node attributes to be added on the circle's outer edge. Set the number and assignment of attributes, and use the colour palette to set the respective colours.</p>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
