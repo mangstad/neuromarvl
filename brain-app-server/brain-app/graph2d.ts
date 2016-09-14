@@ -584,7 +584,12 @@ class Graph2D {
                 .each((i, e) => e.data("radius", e.data("nodeRadius") * this.scale * this.BASE_RADIUS))
                 ;
             this.cy.elements("edge")
-                .each((i, e) => e.data("weight", e.data("edgeWeight") * this.scale * this.BASE_EDGE_WEIGHT))
+                .each((i, e) => {
+                    let width = this.graph3d.edgeList[e.data("edgeListIndex")].shape.scale.x;
+                    this.links[i].width = width;
+                    e.data("edgeWeight", width);
+                    e.data("weight", width * this.scale * this.BASE_EDGE_WEIGHT);
+                })
                 ;
         });
     }

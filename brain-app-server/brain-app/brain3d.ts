@@ -2071,6 +2071,7 @@ class Brain3DApp implements Application, Loopable {
             if (this.ignore3dControl && this.svgNeedsUpdate) {
                 if (this.networkType == '2D') {
                     if (this.canvasGraph) {
+                        this.canvasGraph.settingOnChange();
                         this.canvasGraph.updateInteractive();
                     }
                 }
