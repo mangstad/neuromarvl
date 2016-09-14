@@ -582,8 +582,8 @@ class Brain3DApp implements Application, Loopable {
         this.input.regMouseDragCallback((dx: number, dy: number, mode: number) => {
             if (this.isControllingGraphOnly) return;
 
-            // left button: rotation
-            if (mode == 1) {
+            // right button: rotation
+            if (mode == 3) {
                 if (this.autoRotation == false) {
                     var pixelAngleRatio = 50;
 
@@ -604,8 +604,8 @@ class Brain3DApp implements Application, Loopable {
                     this.mouse.dy = dy;
                 }
             }
-            // right button: pan
-            else if (mode == 3) {
+            // left button: pan
+            else if (mode == 1) {
                 var pixelDistanceRatio = 1.6; // with: defaultCameraFov = 25; defaultViewWidth = 800;
                 var defaultCameraFov = 25
                 var defaultViewWidth = 800;
@@ -618,8 +618,6 @@ class Brain3DApp implements Application, Loopable {
 
                 var prevQuaternion = this.brainContainer.quaternion.clone();
                 this.brainContainer.lookAt(this.camera.position);
-                
-
             }
         });
 
