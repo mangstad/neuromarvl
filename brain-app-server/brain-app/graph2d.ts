@@ -265,6 +265,14 @@ class Graph2D {
                 layoutOptions.numIter = 15;
                 layoutOptions.idealEdgeLength = this.BASE_RADIUS * 4;
                 break;
+                
+            case "cola-flow":
+                layoutOptions.name = "cola";
+                layoutOptions.flow = { 
+                    axis: 'y', 
+                    minSeparation: this.BASE_RADIUS * 3
+                };
+                // No break, uses same other options as cola
             case "cola":
                 layoutOptions.fit = true;
 
@@ -279,7 +287,7 @@ class Graph2D {
                 layoutOptions.userConstIter = 0;
                 layoutOptions.allConstIter = 5;
 
-                layoutOptions.flow = false;
+                //layoutOptions.flow = false;
 
                 break;
             case "grid":
@@ -654,7 +662,7 @@ class Graph2D {
         $('#select-graph2d-layout-' + this.id).empty();
 
         // Full possible layout options: ["cose", "cose-bilkent", "cola", "cola-flow", "grid", "circle", "concentric", "breadthfirst", "random"]
-        for (let layout of ["cola", "cose", "cose-bilkent", "grid", "concentric"]) {
+        for (let layout of ["cola", "cola-flow", "cose", "cose-bilkent", "grid", "concentric"]) {
             var option = document.createElement('option');
             option.text = layout;
             option.value = layout;
