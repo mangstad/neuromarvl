@@ -1976,7 +1976,22 @@ class NeuroMarvl {
             if (line.length > 0) {
                 simMatrix.push(line.split(' ').map(parseFloat));
             }
-        })
+        });
+        // Normalise values to range 0...1, files can have very different value ranges
+        let max = simMatrix[0][0];
+        let min = simMatrix[0][0];
+        let i = simMatrix.length;
+        while (i--) {
+            let j = simMatrix[i].length;
+            while (j--) {
+                let weight = simMatrix[i][j];
+                max = Math.max(max, weight);
+                min = Math.min(min, weight);
+            }
+        }
+        let scale = d3.scale.linear().domain([min, max]).range([0, 1]);
+        simMatrix = simMatrix.map(row => row.map(scale));
+
         dataSet.setSimMatrix(simMatrix);
     }
 
