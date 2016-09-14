@@ -115,6 +115,14 @@ class Graph2D {
                 let value = this.dataSet.attributes.get(this.groupNodesBy)[d.id];
                 nodeObject['bundle'] = getGroup(value);
             }
+            //if (this.groupNodesBy === "none") {
+            //    // Group nodes with no connections
+            //    nodeObject['bundle'] = d.hasVisibleEdges ? undefined : "unconnected";
+            //}
+            //else {
+            //    let value = this.dataSet.attributes.get(this.groupNodesBy)[d.id];
+            //    nodeObject['bundle'] = getGroup(value);
+            //}
 
             this.nodes.push(nodeObject);
         }
@@ -167,6 +175,7 @@ class Graph2D {
                 data: {
                     id: "n_" + d.id,
                     parent: "c_" + (d.bundle || ""),
+                    //parent: d.bundle ? "c_" + d.bundle : undefined,
                     bundle: d.bundle,
                     sourceId: d.id,
                     color: d.color || "#cfcfcf",
@@ -214,25 +223,42 @@ class Graph2D {
         }));
         // Compound nodes for grouping - only for use with layouts that support it well
         let compounds = [];
-        if (this.groupNodesBy !== "none") {
-            compounds = nodes
-                .reduce((acc, d) => {
-                    let i = acc.length;
-                    while (i--) if (acc[i] === d.data.parent) return acc;
-                    acc.push(d.data.parent);
-                    return acc;
-                }, [])
-                .map(d => ({
-                    data: {
-                        id: d,
-                        radius: 10,
-                        border: 2
-                    },
-                    classes: "cluster",
-                    selectable: false
-                }))
-                ;
-        }
+        //if (this.groupNodesBy !== "none") {
+        //    compounds = nodes
+        //        .reduce((acc, d) => {
+        //            let i = acc.length;
+        //            while (i--) if (acc[i] === d.data.parent) return acc;
+        //            acc.push(d.data.parent);
+        //            return acc;
+        //        }, [])
+        //        .map(d => ({
+        //            data: {
+        //                id: d,
+        //                radius: 10,
+        //                border: 2
+        //            },
+        //            classes: "cluster",
+        //            selectable: false
+        //        }))
+        //        ;
+        //}
+        compounds = nodes
+            .reduce((acc, d) => {
+                let i = acc.length;
+                while (i--) if (acc[i] === d.data.parent) return acc;
+                acc.push(d.data.parent);
+                return acc;
+            }, [])
+            .map(d => ({
+                data: {
+                    id: d,
+                    radius: 10,
+                    border: 2
+                },
+                classes: "cluster",
+                selectable: false
+            }))
+        ;
         
 
         let elements = nodes.concat(<any>edges).concat(<any>compounds);
@@ -268,9 +294,10 @@ class Graph2D {
                 
             case "cola-flow":
                 layoutOptions.name = "cola";
+                layoutOptions.unconstrIter = 5;     // Slower than non-flow cola
                 layoutOptions.flow = { 
                     axis: 'y', 
-                    minSeparation: this.BASE_RADIUS * 3
+                    minSeparation: this.BASE_RADIUS * 5
                 };
                 // No break, uses same other options as cola
             case "cola":
