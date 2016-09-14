@@ -223,42 +223,42 @@ class Graph2D {
         }));
         // Compound nodes for grouping - only for use with layouts that support it well
         let compounds = [];
-        //if (this.groupNodesBy !== "none") {
-        //    compounds = nodes
-        //        .reduce((acc, d) => {
-        //            let i = acc.length;
-        //            while (i--) if (acc[i] === d.data.parent) return acc;
-        //            acc.push(d.data.parent);
-        //            return acc;
-        //        }, [])
-        //        .map(d => ({
-        //            data: {
-        //                id: d,
-        //                radius: 10,
-        //                border: 2
-        //            },
-        //            classes: "cluster",
-        //            selectable: false
-        //        }))
-        //        ;
-        //}
-        compounds = nodes
-            .reduce((acc, d) => {
-                let i = acc.length;
-                while (i--) if (acc[i] === d.data.parent) return acc;
-                acc.push(d.data.parent);
-                return acc;
-            }, [])
-            .map(d => ({
-                data: {
-                    id: d,
-                    radius: 10,
-                    border: 2
-                },
-                classes: "cluster",
-                selectable: false
-            }))
-        ;
+        if (this.groupNodesBy !== "none") {
+            compounds = nodes
+                .reduce((acc, d) => {
+                    let i = acc.length;
+                    while (i--) if (acc[i] === d.data.parent) return acc;
+                    acc.push(d.data.parent);
+                    return acc;
+                }, [])
+                .map(d => ({
+                    data: {
+                        id: d,
+                        radius: 10,
+                        border: 2
+                    },
+                    classes: "cluster",
+                    selectable: false
+                }))
+                ;
+        }
+        //compounds = nodes
+        //    .reduce((acc, d) => {
+        //        let i = acc.length;
+        //        while (i--) if (acc[i] === d.data.parent) return acc;
+        //        acc.push(d.data.parent);
+        //        return acc;
+        //    }, [])
+        //    .map(d => ({
+        //        data: {
+        //            id: d,
+        //            radius: 10,
+        //            border: 2
+        //        },
+        //        classes: "cluster",
+        //        selectable: false
+        //    }))
+        //;
         
 
         let elements = nodes.concat(<any>edges).concat(<any>compounds);
