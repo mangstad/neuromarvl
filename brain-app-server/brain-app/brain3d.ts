@@ -422,10 +422,10 @@ class Brain3DApp implements Application, Loopable {
                 // Select Network Type button group
                 .append($(`<div id="select-network-type-${this.id}" class="btn-group" data-toggle="buttons">
                     <label id="select-network-type-${this.id}-3D" class="btn btn-primary btn-sm" data-toggle="tooltip" data-placement="top" title="3D topological projection based on the cola method, as provided by WebCola">
-                        <input class="select-network-type-input" type="radio" name="select-network-type-${this.id}" value="3D" autocomplete="off">3D
+                        <input class="select-network-type-input" type="radio" name="select-network-type-${this.id}" value="3d" autocomplete="off">3D
                     </label>
                     <label id="select-network-type-${this.id}-2D" class="btn btn-primary btn-sm" data-toggle="tooltip" data-placement="top" title="2D topological projection generated according to one of several different algorithms. See Options for details.">
-                        <input class="select-network-type-input" type="radio" name="select-network-type-${this.id}" value="2D" autocomplete="off">2D
+                        <input class="select-network-type-input" type="radio" name="select-network-type-${this.id}" value="2d" autocomplete="off">2D
                     </label>
                     <label id="select-network-type-${this.id}-circular" class="btn btn-primary btn-sm" data-toggle="tooltip" data-placement="top" title="Circular layout with additional attribute visualisation. See Options for details.">
                         <input class="select-network-type-input" type="radio" name="select-network-type-${this.id}" value="circular" autocomplete="off">Circular
@@ -652,7 +652,7 @@ class Brain3DApp implements Application, Loopable {
                             if (varNodeID == d.id) varMouseOutedCircularLayout(d);
                         });
                 }
-                else if (this.networkType == "2D") {
+                else if (this.networkType == "2d") {
                     this.svgNeedsUpdate = true;
                 }
 
@@ -675,7 +675,7 @@ class Brain3DApp implements Application, Loopable {
                             if (varNodeID == d.id) varMouseOveredCircularLayout(d);
                         });
                 }
-                else if (this.networkType == "2D") {
+                else if (this.networkType == "2d") {
                     this.svgNeedsUpdate = true;
                 }
             }
@@ -1049,10 +1049,20 @@ class Brain3DApp implements Application, Loopable {
         if (this.circularGraph) {
             app.circularBundleAttribute = this.circularGraph.circularBundleAttribute;
             app.circularSortAttribute = this.circularGraph.circularSortAttribute;
-            app.circularLableAttribute = this.circularGraph.circularLabelAttribute;
+            app.circularLabelAttribute = this.circularGraph.circularLabelAttribute;
             app.circularAttributeBars = this.circularGraph.attributeBars;
-        } else {
+        }
+        else {
             console.log("ERROR: circularGraph is NULL");
+        }
+
+        if (this.canvasGraph) {
+            app.layout2d = this.canvasGraph.layout;
+            app.bundle2d = this.canvasGraph.groupNodesBy;
+            app.scale2d = this.canvasGraph.scale;
+        }
+        else {
+            console.log("ERROR: canvasGraph is NULL");
         }
     } 
 
@@ -1061,7 +1071,7 @@ class Brain3DApp implements Application, Loopable {
         $('#edge-count-slider-' + this.id)['bootstrapSlider']("setValue", parseInt(<any>app.edgeCount));
     }
 
-    initShowNetwork(app: SaveApp) {        
+    initShowNetwork(app: SaveApp) {
         if (app.showingTopologyNetwork) {
             $(`#select-network-type-${this.id}-${app.networkType}`).addClass("active");
 
@@ -1070,7 +1080,7 @@ class Brain3DApp implements Application, Loopable {
             if (app.networkType == "circular") {
                 $('#select-circular-layout-bundle-' + this.id).val(app.circularBundleAttribute);
                 $('#select-circular-layout-sort-' + this.id).val(app.circularSortAttribute);
-                $('#select-circular-label-' + this.id).val(app.circularLableAttribute);
+                $('#select-circular-label-' + this.id).val(app.circularLabelAttribute);
                 $('#checkbox-circular-edge-gradient-' + this.id).prop('checked', app.circularEdgeGradient);
 
                 if (app.circularAttributeBars && app.circularAttributeBars.length > 0) {
@@ -1088,10 +1098,19 @@ class Brain3DApp implements Application, Loopable {
 
                 this.circularGraph.circularBundleAttribute = app.circularBundleAttribute;
                 this.circularGraph.circularSortAttribute = app.circularSortAttribute;
-                this.circularGraph.circularLabelAttribute = app.circularLableAttribute;
+                this.circularGraph.circularLabelAttribute = app.circularLabelAttribute;
                 this.circularGraph.updateAllAttributeBars();
+            }
+            else if (app.networkType == "2d") {
+                $('#select-graph2d-layout-' + this.id).val(app.layout2d);
+                $('#select-graph2d-group-' + this.id).val(app.bundle2d);
+                $("#div-scale-slider-alt-" + this.id)['bootstrapSlider']("setValue", app.scale2d);
 
-                //this.showNetwork(true);
+                this.canvasGraph.layout = app.layout2d;
+                this.canvasGraph.groupNodesBy = app.bundle2d;
+                this.canvasGraph.scale = app.scale2d;
+                this.canvasGraph.updateGraph();
+                this.canvasGraph.settingOnChange();
             }
         }
         else {
@@ -1132,7 +1151,7 @@ class Brain3DApp implements Application, Loopable {
             $('#button-circular-layout-histogram-' + this.id).hide();
         }
 
-        if (type === "2D" && this.canvasGraph) {
+        if (type === "2d" && this.canvasGraph) {
             this.canvasGraph.setupOptionMenuUI(); // add options button to the page
             this.svg.attr("visibility", "hidden");
             $(this.graph2dContainer).show();
@@ -1442,12 +1461,12 @@ class Brain3DApp implements Application, Loopable {
                 this.circularGraph.setColaGraph(this.physioGraph);
                 this.circularGraph.create();
 
-            } else if (this.networkType == '2D') {
+            } else if (this.networkType == '2d') {
                 // Also not animated
                 this.ignore3dControl = true;
                 this.canvasGraph.updateGraph();
                 this.colaGraph.setVisible(false);
-            } else if (this.networkType == '3D') {
+            } else if (this.networkType == '3d') {
                 // Set up a coroutine to do the animation
                 var origin = new THREE.Vector3(this.brainContainer.position.x, this.brainContainer.position.y, this.brainContainer.position.z);
                 var target = new THREE.Vector3(this.brainContainer.position.x + 2 * this.graphOffset, this.brainContainer.position.y, this.brainContainer.position.z);
@@ -1952,7 +1971,7 @@ class Brain3DApp implements Application, Loopable {
     }
 
     getBoundingSphereUnderPointer(pointer) {
-        if ((this.networkType == '2D') || (this.networkType == 'circular')) {
+        if ((this.networkType == '2d') || (this.networkType == 'circular')) {
             var raycaster = new THREE.Raycaster();
             raycaster.setFromCamera(pointer, this.camera);
             
@@ -2027,7 +2046,7 @@ class Brain3DApp implements Application, Loopable {
                                 if (varNodeID == d.id) varMouseOveredCircularLayout(d);
                             });
                     }
-                    else if (this.networkType == "2D") {
+                    else if (this.networkType == "2d") {
                         this.svgNeedsUpdate = true;
                     }
                 } else {
@@ -2043,7 +2062,7 @@ class Brain3DApp implements Application, Loopable {
                                     if (varNodeID == d.id) varMouseOutedCircularLayout(d);
                                 });
                         }
-                        else if (this.networkType == "2D") {
+                        else if (this.networkType == "2d") {
                             this.svgNeedsUpdate = true;
                         }
 
@@ -2067,7 +2086,7 @@ class Brain3DApp implements Application, Loopable {
             this.scene.updateMatrixWorld();
 
             if (this.ignore3dControl && this.svgNeedsUpdate) {
-                if (this.networkType == '2D') {
+                if (this.networkType == '2d') {
                     if (this.canvasGraph) {
                         this.canvasGraph.settingOnChange();
                         this.canvasGraph.updateInteractive();

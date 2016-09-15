@@ -399,11 +399,13 @@ class SaveFile {
         yamlObj["Brain Settings"] = {
             "Transparency": this.surfaceSettings.opacity
         };
-        
-        for (let i in this.saveApps) {
-            yamlObj["viewport" + i] = this.saveApps[i].toYaml();
-        }
 
+        //TODO: Restore when multiple views is reimplemented
+        //for (let i in this.saveApps) {
+        //    yamlObj["viewport" + i] = this.saveApps[i].toYaml();
+        //}
+        yamlObj["viewport0"] = this.saveApps[0].toYaml();
+        
         return jsyaml.safeDump(yamlObj);
     }
 
@@ -443,12 +445,18 @@ class SaveFile {
 
         this.surfaceSettings.opacity = yamlObj["brain settings"]["transparency"];
 
-
+        //TODO: restore this when reinstating multiple viewports
+        /*
         for (var i = 0; i < 4; i++) {
             if (yamlObj["viewport" + i]) {
                 this.saveApps[i] = new SaveApp({});
                 this.saveApps[i].fromYaml(yamlObj["viewport" + i]);
             }
+        }
+        */
+        if (yamlObj["viewport0"]) {
+            this.saveApps[0] = new SaveApp({});
+            this.saveApps[0].fromYaml(yamlObj["viewport0"]);
         }
     }
 }
@@ -474,9 +482,14 @@ class SaveApp {
     // extra option for circular layout:
     circularBundleAttribute: string;
     circularSortAttribute: string;
-    circularLableAttribute: string;
+    circularLabelAttribute: string;
     circularEdgeGradient: boolean;
     circularAttributeBars;
+
+    // Options for 2D layout
+    layout2d: string;
+    bundle2d: string;
+    scale2d: number;
 
     constructor(sourceObject) {
         this.surfaceModel = (sourceObject && sourceObject.surfaceModel) || "";
@@ -486,12 +499,15 @@ class SaveApp {
         //this.setDataSetView = (sourceObject && sourceObject.setDataSetView) || "";
         this.edgeCount = (sourceObject && sourceObject.edgeCount) || 20;
         this.showingTopologyNetwork = (sourceObject && sourceObject.showingTopologyNetwork) || false;
-        this.networkType = (sourceObject && sourceObject.networkType) || "";
+        this.networkType = (sourceObject && sourceObject.networkType && sourceObject.networkType.toLowerCase()) || "";
         this.circularBundleAttribute = (sourceObject && sourceObject.circularBundleAttribute) || "";
         this.circularSortAttribute = (sourceObject && sourceObject.circularSortAttribute) || "";
-        this.circularLableAttribute = (sourceObject && sourceObject.circularLableAttribute) || "";
+        this.circularLabelAttribute = (sourceObject && sourceObject.circularLabelAttribute) || "";
         this.circularEdgeGradient = (sourceObject && sourceObject.circularEdgeGradient) || false;
         this.circularAttributeBars = (sourceObject && sourceObject.circularAttributeBars) || "";
+        this.layout2d = (sourceObject && sourceObject.layout2d) || "cola";
+        this.bundle2d = (sourceObject && sourceObject.bundle2d) || "none";
+        this.scale2d = (sourceObject && sourceObject.scale2d) || 5;
     }
 
 
@@ -509,10 +525,17 @@ class SaveApp {
             yamlObj["circular settings"] = {
                 "Bundle Attribute": this.circularBundleAttribute,
                 "Sort Attribute": this.circularSortAttribute,
-                "Label Attribute": this.circularLableAttribute,
+                "Label Attribute": this.circularLabelAttribute,
                 "Attribute Bars": this.circularAttributeBars
             }
         }
+        else if (this.networkType === "2d") {
+            yamlObj["2d settings"] = {
+                "layout": this.layout2d,
+                "bundle attribute": this.bundle2d,
+                "scale": this.scale2d
+            }
+        };
 
         return yamlObj;
     }
@@ -524,12 +547,17 @@ class SaveApp {
         this.showingTopologyNetwork = (yamlObj["show graph"] === "yes");
         this.networkType = yamlObj["network type"];
 
-        if (this.networkType = "circular") {
+        if (this.networkType === "circular") {
             this.circularBundleAttribute = yamlObj["circular settings"]["bundle attribute"];
             this.circularSortAttribute = yamlObj["circular settings"]["sort attribute"];
-            this.circularLableAttribute = yamlObj["circular settings"]["label attribute"];
+            this.circularLabelAttribute = yamlObj["circular settings"]["label attribute"];
             this.circularAttributeBars = yamlObj["circular settings"]["attribute bars"];
         }
+        else if (this.networkType === "2d") {
+            this.layout2d = yamlObj["2d settings"]["layout"];
+            this.bundle2d = yamlObj["2d settings"]["bundle attribute"];
+            this.scale2d = yamlObj["2d settings"]["scale"];
+        };
     }
 }
 
