@@ -456,7 +456,7 @@ class Brain3DApp implements Application, Loopable {
         let $checkboxTips = $("#checkbox-tips");
         let onToggleTips = () => {
             if ($checkboxTips.is(":checked")) {
-                $("[data-toggle='tooltip']").tooltip(<any>{ container: 'body' });
+                $("[data-toggle='tooltip']").tooltip(<any>{ container: 'body', trigger: 'hover' });
             }
             else {
                 $("[data-toggle='tooltip']").tooltip("destroy");

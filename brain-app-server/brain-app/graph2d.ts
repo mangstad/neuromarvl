@@ -664,7 +664,7 @@ class Graph2D {
         let $button = $('<button id="button-graph2d-option-menu-' + this.id + '" class="' + this.graph2DClass + ' btn  btn-sm btn-primary" ' +
             'data-toggle="tooltip" data-placement="right" title="Configure 2D layout">Options</button>')
         ;
-        if ($("#checkbox-tips").is(":checked")) $button.tooltip(<any>{ container: 'body' });
+        if ($("#checkbox-tips").is(":checked")) $button.tooltip(<any>{ container: 'body', trigger: 'hover' });
         $button.css({ 'position': 'relative', 'margin-left': '5px', 'font-size': '12px', 'z-index': 500 })
         this.jDiv.find("#div-graph-controls").append($button);
         $button.click(function () { varMenuButtonOnClick(); });
@@ -689,7 +689,7 @@ class Graph2D {
             .css({ 'margin-left': '5px', 'margin-bottom': '5px', 'font-size': '12px', 'width': '80px', 'background-color': '#feeebd' })
             .on("change", function () { changeLayout($(this).val()); })
         );
-        if ($("#checkbox-tips").is(":checked")) $divLayout.tooltip(<any>{ container: 'body' });
+        if ($("#checkbox-tips").is(":checked")) $divLayout.tooltip(<any>{ container: 'body', trigger: 'hover' });
 
         $('#select-graph2d-layout-' + this.id).empty();
 
@@ -707,7 +707,7 @@ class Graph2D {
             //}
             //let $option = $(`<option value="${layout}" data-toggle="tooltip" data-placement="right" title="${tip}" >${layout}</option>`);
             //$('#select-graph2d-layout-' + this.id).append($option);
-            //if ($("#checkbox-tips").is(":checked")) $option.tooltip(<any>{ container: 'body' });
+            //if ($("#checkbox-tips").is(":checked")) $option.tooltip(<any>{ container: 'body', trigger: 'hover' });
         }
         (<any>document.getElementById("select-graph2d-layout-" + this.id)).value = this.layout;
         $('#select-graph2d-layout-' + this.id).val(this.layout);
@@ -721,7 +721,7 @@ class Graph2D {
                 .css({ 'margin-left': '5px', 'margin-bottom': '5px', 'font-size': '12px', 'width': '80px', 'background-color': '#feeebd' })
                 .on("change", function () { varGroupNodesOnChange($(this).val()); })
         );
-        if ($("#checkbox-tips").is(":checked")) $divBundle.tooltip(<any>{ container: 'body' });
+        if ($("#checkbox-tips").is(":checked")) $divBundle.tooltip(<any>{ container: 'body', trigger: 'hover' });
 
         $('#select-graph2d-group-' + this.id).empty();
 
@@ -743,7 +743,7 @@ class Graph2D {
         // menu - scale
         let $divScale = $('<div data-toggle="tooltip" data-placement="left" title="Adjust node radius and edge thickness">Scale elements<div/>');
         $('#div-graph2d-layout-menu-' + this.id).append($divScale);
-        if ($("#checkbox-tips").is(":checked")) $divScale.tooltip(<any>{ container: 'body' });
+        if ($("#checkbox-tips").is(":checked")) $divScale.tooltip(<any>{ container: 'body', trigger: 'hover' });
         $('#div-graph2d-layout-menu-' + this.id).append($('<input id="div-scale-slider-alt-' + this.id + '" class=' + this.graph2DClass + 'data-slider-id="surface-opacity-slider" type="text"' +
             'data-slider-min="1" data-slider-max="10" data-slider-step="0.5" data-slider-value="5" />')
             .css({ 'position': 'relative', 'width': '150px' }));

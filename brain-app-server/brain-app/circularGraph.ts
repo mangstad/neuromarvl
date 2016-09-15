@@ -124,7 +124,7 @@ class CircularGraph {
         let $button = $('<button id="button-circular-layout-histogram-' + this.id + '" class="' + this.circularCSSClass + ' btn  btn-sm btn-primary" ' +
                 'data-toggle="tooltip" data-placement="right" title="Configure circular layout">Options</button>')
         ;
-        if ($("#checkbox-tips").is(":checked")) $button.tooltip(<any>{ container: 'body' });
+        if ($("#checkbox-tips").is(":checked")) $button.tooltip(<any>{ container: 'body', trigger: 'hover' });
         $button.css({ 'position': 'relative', 'margin-left': '5px', 'font-size': '12px', 'z-index': 500 });
         this.jDiv.find("#div-graph-controls").append($button);
         $button.click(function () { varCircularLayoutHistogramButtonOnClick(); })
@@ -150,14 +150,14 @@ class CircularGraph {
         let $spanDisplayAll = $('<span data-toggle="tooltip" data-placement="top" '
             + 'title="Toggle exclusion of nodes that are disconnected for the current filter and edge count">Display all nodes</span>');
         $('#div-circular-layout-menu-' + this.id).append($spanDisplayAll);
-        if ($("#checkbox-tips").is(":checked")) $spanDisplayAll.tooltip(<any>{ container: 'body' });
+        if ($("#checkbox-tips").is(":checked")) $spanDisplayAll.tooltip(<any>{ container: 'body', trigger: 'hover' });
         
 
         //------------------------------------------------------------------------
         // menu - bundle
         let $divBundle = $('<div id="div-circular-bundle-' + this.id + '" data-toggle="tooltip" data-placement="left" title="Group nodes by value of given attribute">Bundle </div>');
         $('#div-circular-layout-menu-' + this.id).append($divBundle);
-        if ($("#checkbox-tips").is(":checked")) $divBundle.tooltip(<any>{ container: 'body' });
+        if ($("#checkbox-tips").is(":checked")) $divBundle.tooltip(<any>{ container: 'body', trigger: 'hover' });
         $divBundle.append($('<select id="select-circular-layout-bundle-' + this.id + '" class=' + this.circularCSSClass + '></select>')
             .css({ 'margin-left': '5px', 'margin-bottom': '5px', 'font-size': '12px', 'width': '80px', 'background-color': '#feeebd' })
             .on("change", function () { varCircularLayoutBundleOnChange($(this).val()); }));
@@ -180,7 +180,7 @@ class CircularGraph {
         // menu - sort
         let $divSort = $('<div id="div-circular-sort-' + this.id + '" data-toggle="tooltip" data-placement="left" title="Sort nodes within group by attribute value">Sort </div>');
         $('#div-circular-layout-menu-' + this.id).append($divSort);
-        if ($("#checkbox-tips").is(":checked")) $divSort.tooltip(<any>{ container: 'body' });
+        if ($("#checkbox-tips").is(":checked")) $divSort.tooltip(<any>{ container: 'body', trigger: 'hover' });
         $divSort.append($('<select id="select-circular-layout-sort-' + this.id + '" class=' + this.circularCSSClass + '></select>')
             .css({ 'margin-left': '5px', 'margin-bottom': '5px', 'font-size': '12px', 'width': '80px', 'background-color': '#feeebd' })
             .on("change", function () { varCircularLayoutSortOnChange($(this).val()); }));
@@ -203,7 +203,7 @@ class CircularGraph {
         // menu - label
         let $divLabel = $('<div id="div-circular-label-' + this.id + '" data-toggle="tooltip" data-placement="left" title="Specify attribute for node label">Label </div>');
         $('#div-circular-layout-menu-' + this.id).append($divLabel);
-        if ($("#checkbox-tips").is(":checked")) $divLabel.tooltip(<any>{ container: 'body' });
+        if ($("#checkbox-tips").is(":checked")) $divLabel.tooltip(<any>{ container: 'body', trigger: 'hover' });
         $divLabel.append($('<select id="select-circular-label-' + this.id + '" class=' + this.circularCSSClass + '></select>')
             .css({ 'margin-left': '5px', 'margin-bottom': '5px', 'font-size': '12px', 'width': '80px', 'background-color': '#feeebd' })
             .on("change", function () { varCircularLayoutLabelOnChange($(this).val()); }));
@@ -235,7 +235,7 @@ class CircularGraph {
         // menu - histogram
         let $divHisto = $('<div data-toggle="tooltip" data-placement="left" title="Apply histogram bars for node attributes">Histogram</div>');
         $('#div-circular-layout-menu-' + this.id).append($divHisto);
-        if ($("#checkbox-tips").is(":checked")) $divHisto.tooltip(<any>{ container: 'body' });
+        if ($("#checkbox-tips").is(":checked")) $divHisto.tooltip(<any>{ container: 'body', trigger: 'hover' });
         $('#div-circular-layout-menu-' + this.id).append($('<button id="button-circular-add-bar-' + this.id + '" class=' + this.circularCSSClass + '>Add more</button>')
             .css({ 'margin-left': '5px', 'font-size': '12px' })
             .click(function () { varCircularAddMoreButtonOnClick(); }));

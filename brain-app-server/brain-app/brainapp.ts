@@ -174,7 +174,7 @@ class NeuroMarvl {
             Set up jQuery UI layout objects
         */
         if ($("#checkbox-tips").is(":checked")) {
-            $("[data-toggle='tooltip']").tooltip(<any>{ container: 'body' });
+            $("[data-toggle='tooltip']").tooltip(<any>{ container: 'body', trigger: 'hover' });
         }
         else {
             $("[data-toggle='tooltip']").tooltip("destroy");
