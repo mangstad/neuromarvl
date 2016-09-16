@@ -1199,7 +1199,7 @@ class NeuroMarvl {
         image.removeAttribute('xmlns');
         // 2D canvas
         var canvas2d = <HTMLCanvasElement>$(`#div-graph-${id} div.graph2dContainer canvas[data-id='layer2-node']`).get(0);
-        if (canvas2d && (canvas2d.getAttribute("visibility") !== "hidden")) {
+        if (canvas2d && (canvas2d.getAttribute("visibility") !== "hidden") && this.apps[0].canvasGraph.cy) {
             var image2d = document.createElement("image");
             svg.insertBefore(image2d, svg.firstChild);
             image2d.setAttribute('crossOrigin', 'anonymous');

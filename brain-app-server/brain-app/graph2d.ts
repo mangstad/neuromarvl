@@ -8,13 +8,13 @@ class Graph2D {
     graph2DClass: string;
 
     // Options menu
-    scale: number = 5;
+    scale: number;
 
-    groupNodesBy = "none";
+    groupNodesBy: string;
     colorMode: string;
     directionMode: string;      // arrow, animation, opacity, gradient, none
     mouseDownEventListenerAdded;
-    layout = "cola";
+    layout: string;
 
     // Data
     config;
@@ -43,9 +43,11 @@ class Graph2D {
     ) {
         this.nodes = [];
         this.links = [];
-                
-        // Use nice layout by default, but switch to faster alternative if graph is too complex
-        if (complexity > 750) this.layout = "cose";
+
+        // Use saved options, if available
+        this.scale = saveObj.saveApps[id].scale2d || 5;
+        this.layout = saveObj.saveApps[id].layout2d || (complexity > 750 ? "cose" : "cola");        // Use nice layout by default, but switch to faster alternative if graph is too complex
+        this.groupNodesBy = saveObj.saveApps[id].bundle2d || "none";
     }
     
     updateGraph() {
@@ -642,12 +644,14 @@ class Graph2D {
         // Function variables response to changes in settings
         var varEdgeLengthOnChange = () => {
             this.scale = $("#div-scale-slider-alt-" + this.id)['bootstrapSlider']().data('bootstrapSlider').getValue();
+            this.saveObj.saveApps[this.id].scale2d = this.scale;
             this.settingOnChange();
         };
 
         var varGroupNodesOnChange = groupBy => {
             CommonUtilities.launchAlertMessage(CommonUtilities.alertType.INFO, `Updating grouping for ${this.layout} layout...`);
             this.groupNodesBy = groupBy;
+            this.saveObj.saveApps[this.id].bundle2d = groupBy;
             this.updateGraph();
         }
 
@@ -656,6 +660,7 @@ class Graph2D {
         var changeLayout = layout => {
             CommonUtilities.launchAlertMessage(CommonUtilities.alertType.INFO, `Updating ${this.layout} layout...`);
             this.layout = layout;
+            this.saveObj.saveApps[this.id].layout2d = layout;
             this.updateGraph();
         }
 
