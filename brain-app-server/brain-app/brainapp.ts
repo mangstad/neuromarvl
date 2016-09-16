@@ -1207,7 +1207,7 @@ class NeuroMarvl {
             image2d.setAttribute('x', '0');
             image2d.setAttribute('id', 'brain2D' + id);
             image2d.setAttribute('xlink:href', this.apps[0].canvasGraph.cy.png({
-                full: true
+                full: false
             }));
             image2d.setAttribute('width', canvas2d.width.toString());
             image2d.setAttribute('height', canvas2d.height.toString());
@@ -1287,7 +1287,7 @@ class NeuroMarvl {
 
             var a = document.createElement("a");
             a.setAttribute("download", filename + ".jpg");
-            a.setAttribute("href", canvas.toDataURL('image/jpeg', 0.7));
+            a.setAttribute("href", canvas.toDataURL('image/jpeg', 0.9));
             a.click();
         }
         image.src = URL.createObjectURL(svgBlob);
