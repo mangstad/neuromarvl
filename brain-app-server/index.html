@@ -132,6 +132,7 @@
         <div class="tab-content" style="height: 100%; ">
             <div id="tab-1" class="tab-pane active">
                 <br/>
+                <a href="#" style="display: block; text-align: right"><span class="badge" data-toggle="modal" data-target="#modal-help-model">?</span></a>
                 <label class="control-label" data-toggle="tooltip" data-placement="right" title="Set the 3D brain model to a preset option, or upload a new model geometry file in Wavefront OBJ (.obj) format">Model</label>
                 <select id="select-brain3d-model" class="form-control input-sm">
                     <option value="icbm">ICBM152</option>
@@ -597,6 +598,27 @@ R Amygdala ">Node labels (optional)</label>
                     <p>Set the node label to the label data, or alternatively the value of a given attribute.</p>
                     <h3>Histogram</h3>
                     <p>The histogram option allows for the addition of a bar graph representation of node attributes to be added on the circle's outer edge. Set the number and assignment of attributes, and use the colour palette to set the respective colours.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-help-model" class="modal fade" role="dialog">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                    <h4 class="modal-title">Brain surface model</h4>
+                </div>
+                <div class="modal-body">
+                    <p>The model used to represent the brain surface can changed to a preset model or from a custom model file uploaded by the user.</p>
+                    <p>To use a custom model, select the "Upload" option, specify the file to use with the "Choose File" button, and finally press "Upload" to transfer and apply the new model.</p>
+                    <p>The model must be in <a href="http://paulbourke.net/dataformats/obj/" target="_blank">Wavefront OBJ</a> (.obj) format. Some 3D modelling software such as <a href="http://www.autodesk.com/products/3ds-max/overview", target="_blank">3ds Max</a> can import and export to this format.</p>
+                    <br />
+                    <a id="download-example-model" class="btn btn-sm btn-primary" data-toggle="tooltip" data-placement="top" title="Download an example model file, to get an example of the format..." href="examples/graphdata/BrainMesh_ICBM152.obj">Get example model</a>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
