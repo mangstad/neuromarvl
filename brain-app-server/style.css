@@ -318,6 +318,7 @@ input.select-network-type-input {
 
 .tooltip-inner {
     white-space:pre-wrap;
+    text-align: left;
 }
 
 

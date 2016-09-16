@@ -108,7 +108,7 @@
             <div id="button-save-settings" class="btn btn-primary" data-toggle="tooltip" data-placement="top" title="Save settings for reload in another session">
                 <span class="glyphicon glyphicon glyphicon-floppy-save" aria-hidden="true"></span>
             </div>
-            <div id="button-load-settings" class="btn btn-primary" data-toggle="tooltip" data-placement="top" title="Load settings from a previously saved session file">
+            <div id="button-load-settings" class="btn btn-primary" data-toggle="tooltip" data-placement="top" title="Load settings from a previously saved session file. Will work best when the basic characteristics of the current and initial dataset (e.g., number of nodes, node labels, etc) are the same.">
                 <span class="glyphicon glyphicon glyphicon-floppy-open" aria-hidden="true"></span>
             </div>
             <div id="button-save-app" class="btn btn-primary" data-toggle="tooltip" data-placement="top" title="Share visualisation as a web link">
@@ -162,10 +162,11 @@
                 </div>
 
                 <br />
-                <div style="margin-left: 0px; margin-bottom: 10px;">
+                <!-- TODO: Bring back yoking with multi-view -->
+                <!--<div style="margin-left: 0px; margin-bottom: 10px;">
                     view:
                     <input type="checkbox" id="checkbox_yoking_view" style="width: 12px;">yoking orientation
-                </div>
+                </div>-->
 
             </div>
             <div id="tab-2" class="tab-pane">
@@ -204,7 +205,7 @@
                         </div>
                         <br />
                         <br />
-                        <label class="control-label" data-toggle="tooltip" data-placement="right" title="Attributes measures for each node. Should comprise N+1 rows and M columns. The first row should contain strings representing column headings (i.e., the name of each attribute). Each column represents a different attribute measured at each node (e.g., degree, clustering, module affiliation, etc.). If column names are not specified in the first row, default attribute labels will be assigned. The order of the rows should correspond to the node ordering in the other input files. 
+                        <label class="control-label" data-toggle="tooltip" data-placement="right" title="Attributes measured for each node. Should comprise N+1 rows and M columns. The first row should contain strings representing column headings (i.e., the name of each attribute). Each column represents a different attribute measured at each node (e.g., degree, clustering, module affiliation, etc.). If column names are not specified in the first row, default attribute labels will be assigned. The order of the rows should correspond to the node ordering in the other input files. 
                                
 If one of the attributes represents module affiliation for an overlapping module decomposition (i.e., a node can belong to more than one module), the module identities should be separated by pipes. e.g., in the following example, node 1 (first row) belongs to modules 1, 2, 5 and 6; node 2 (second row) to modules 2, 3, and 4; and node 3 (third row) to modules 4 and 5 with a stronger affiliation to module 5.  
 
@@ -219,7 +220,7 @@ If one of the attributes represents module affiliation for an overlapping module
                         </div>
                         <br />
                         <br />
-                        <label class="control-label" data-toggle="tooltip" data-placement="right" title="A file with N rows, each containing a number of string that is a label for each individual node. e.g.,
+                        <label class="control-label" data-toggle="tooltip" data-placement="right" title="A file with N rows, each containing a string that is a label for each individual node. e.g.,
 
 L Hippocampus
 R Hippocampus
@@ -549,11 +550,13 @@ R Amygdala ">Node labels (optional)</label>
                     <p>The 2D graph layout can use a selection of layout algorithms to achieve different visual results, in some cases having very different running times.</p>
                     <h3>cola</h3>
                     <p>Produces the most attractive layout for most graphs.</p>
-                    <p>The CoLa layout algorithm is implemented with <a href="http://marvl.infotech.monash.edu/webcola/">WebCola</a>, developed by Tim Dwyer of the Monash Adaptive Visualisation Lab (<a href="http://marvl.infotech.monash.edu.au/">MArVL</a>).</p>
+                    <p>The CoLa layout algorithm is implemented with <a href="http://marvl.infotech.monash.edu/webcola/" target="_blank">WebCola</a>, developed by Tim Dwyer of the Monash Adaptive Visualisation Lab (<a href="http://marvl.infotech.monash.edu.au/" target="_blank">MArVL</a>).</p>
+                    <h3>cola-flow</h3>
+                    <p>A variation on the CoLa layout for directed graphs, which will arrange nodes so that edges run generally downward.</p>
                     <h3>cose</h3>
-                    <p>The <a href="http://js.cytoscape.org/#layouts/cose">COSE</a> (Compound Spring Embedder) layout algortithm is a physics-based method that produces fast results for large, complex graphs. </p>
+                    <p>The <a href="http://js.cytoscape.org/#layouts/cose" target="_blank">COSE</a> (Compound Spring Embedder) layout algortithm is a physics-based method that produces fast results for large, complex graphs. </p>
                     <h3>cose-bilkent</h3>
-                    <p>A <a href="https://github.com/cytoscape/cytoscape.js-cose-bilkent">variation</a> on the cose layout developed by the <a href="http://cs.bilkent.edu.tr/~ivis/">i-Vis group</a> of Bilkent University. It aims for a good balance between looks and speed</p>
+                    <p>A <a href="https://github.com/cytoscape/cytoscape.js-cose-bilkent" target="_blank">variation</a> on the cose layout developed by the <a href="http://cs.bilkent.edu.tr/~ivis/" target="_blank">i-Vis group</a> of Bilkent University. It aims for a good balance between looks and speed</p>
                     <h3>grid</h3>
                     <p>Simple gridwise positioning with no meaningful edge handling. This will provide the fastest possible result, but will have limited utility for complex graphs.</p>
                     <h3>concentric</h3>
@@ -580,6 +583,7 @@ R Amygdala ">Node labels (optional)</label>
                 </div>
                 <div class="modal-body">
                     <p>This visualisation places nodes around a circular arrangement, with edges crossing the circle and optionally bundled by value.</p>
+                    <p>It is an adaptation and extension of the <a href="https://d3js.org/" target="_blank">D3.js</a> example for <a href="http://mbostock.github.io/d3/talk/20111116/bundle.html" target="_blank">hierarchical edge bundling</a>.</p>
                     <h2>Options</h2>
                     <h3>Display all nodes</h3>
                     <p>Toggle whether to include or exclude nodes with no connected edges under the current filter and edge visibility settings.</p>
@@ -588,7 +592,7 @@ R Amygdala ">Node labels (optional)</label>
                     <p>For continuous values this will group into bands.</p>
                     <p>In the case of multi-value attributes, such as nodes in multiple modules, the grouping is for exactly the same composition of values. Nodes with more values will additionally be placed on concentric circles closer to the centre.</p>
                     <h3>Sort</h3>
-                    <p>Assign an attribute used to determine the order of nodes around the cirle. If bundling is applied, this will affect the order within a bunle, but not the bundles themselves.</p>
+                    <p>Assign an attribute used to determine the order of nodes around the circle. If bundling is applied, this will affect the order within a bundle, but not the bundles themselves.</p>
                     <h3>Label</h3>
                     <p>Set the node label to the label data, or alternatively the value of a given attribute.</p>
                     <h3>Histogram</h3>

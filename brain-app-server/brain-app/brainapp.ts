@@ -2323,7 +2323,9 @@ class NeuroMarvl {
         $(TR_VIEW).click(() => this.selectView(TR_VIEW));
         $(BL_VIEW).click(() => this.selectView(BL_VIEW));
         $(BR_VIEW).click(() => this.selectView(BR_VIEW));
-        
+
+        //TODO: Bring this back with multi-view
+        /*
         $('#checkbox_yoking_view').on('change', () => {
             if ($('#checkbox_yoking_view').is(":checked")) {
                 this.input.yokingView = true;
@@ -2332,6 +2334,7 @@ class NeuroMarvl {
                 this.input.yokingView = false;
             }
         });
+        */
 
         $('#checkbox-thickness-by-weight').on('change', () => {
             if ($('#checkbox-thickness-by-weight').is(":checked")) {
