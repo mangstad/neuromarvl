@@ -8,13 +8,13 @@ class Graph2D {
     graph2DClass: string;
 
     // Options menu
-    scale: number = 5;
+    scale: number;
 
-    groupNodesBy = "none";
+    groupNodesBy: string;
     colorMode: string;
     directionMode: string;      // arrow, animation, opacity, gradient, none
     mouseDownEventListenerAdded;
-    layout = "cola";
+    layout: string;
 
     // Data
     config;
@@ -43,9 +43,11 @@ class Graph2D {
     ) {
         this.nodes = [];
         this.links = [];
-                
-        // Use nice layout by default, but switch to faster alternative if graph is too complex
-        if (complexity > 750) this.layout = "cose";
+
+        // Use saved options, if available
+        this.scale = saveObj.saveApps[id].scale2d || 5;
+        this.layout = saveObj.saveApps[id].layout2d || (complexity > 750 ? "cose" : "cola");        // Use nice layout by default, but switch to faster alternative if graph is too complex
+        this.groupNodesBy = saveObj.saveApps[id].bundle2d || "none";
     }
     
     updateGraph() {
@@ -115,6 +117,14 @@ class Graph2D {
                 let value = this.dataSet.attributes.get(this.groupNodesBy)[d.id];
                 nodeObject['bundle'] = getGroup(value);
             }
+            //if (this.groupNodesBy === "none") {
+            //    // Group nodes with no connections
+            //    nodeObject['bundle'] = d.hasVisibleEdges ? undefined : "unconnected";
+            //}
+            //else {
+            //    let value = this.dataSet.attributes.get(this.groupNodesBy)[d.id];
+            //    nodeObject['bundle'] = getGroup(value);
+            //}
 
             this.nodes.push(nodeObject);
         }
@@ -167,6 +177,7 @@ class Graph2D {
                 data: {
                     id: "n_" + d.id,
                     parent: "c_" + (d.bundle || ""),
+                    //parent: d.bundle ? "c_" + d.bundle : undefined,
                     bundle: d.bundle,
                     sourceId: d.id,
                     color: d.color || "#cfcfcf",
@@ -233,6 +244,23 @@ class Graph2D {
                 }))
                 ;
         }
+        //compounds = nodes
+        //    .reduce((acc, d) => {
+        //        let i = acc.length;
+        //        while (i--) if (acc[i] === d.data.parent) return acc;
+        //        acc.push(d.data.parent);
+        //        return acc;
+        //    }, [])
+        //    .map(d => ({
+        //        data: {
+        //            id: d,
+        //            radius: 10,
+        //            border: 2
+        //        },
+        //        classes: "cluster",
+        //        selectable: false
+        //    }))
+        //;
         
 
         let elements = nodes.concat(<any>edges).concat(<any>compounds);
@@ -265,6 +293,15 @@ class Graph2D {
                 layoutOptions.numIter = 15;
                 layoutOptions.idealEdgeLength = this.BASE_RADIUS * 4;
                 break;
+                
+            case "cola-flow":
+                layoutOptions.name = "cola";
+                layoutOptions.unconstrIter = 5;     // Slower than non-flow cola
+                layoutOptions.flow = { 
+                    axis: 'y', 
+                    minSeparation: this.BASE_RADIUS * 5
+                };
+                // No break, uses same other options as cola
             case "cola":
                 layoutOptions.fit = true;
 
@@ -279,7 +316,7 @@ class Graph2D {
                 layoutOptions.userConstIter = 0;
                 layoutOptions.allConstIter = 5;
 
-                layoutOptions.flow = false;
+                //layoutOptions.flow = false;
 
                 break;
             case "grid":
@@ -576,7 +613,12 @@ class Graph2D {
                 .each((i, e) => e.data("radius", e.data("nodeRadius") * this.scale * this.BASE_RADIUS))
                 ;
             this.cy.elements("edge")
-                .each((i, e) => e.data("weight", e.data("edgeWeight") * this.scale * this.BASE_EDGE_WEIGHT))
+                .each((i, e) => {
+                    let width = this.graph3d.edgeList[e.data("edgeListIndex")].shape.scale.x;
+                    this.links[i].width = width;
+                    e.data("edgeWeight", width);
+                    e.data("weight", width * this.scale * this.BASE_EDGE_WEIGHT);
+                })
                 ;
         });
     }
@@ -602,12 +644,14 @@ class Graph2D {
         // Function variables response to changes in settings
         var varEdgeLengthOnChange = () => {
             this.scale = $("#div-scale-slider-alt-" + this.id)['bootstrapSlider']().data('bootstrapSlider').getValue();
+            this.saveObj.saveApps[this.id].scale2d = this.scale;
             this.settingOnChange();
         };
 
         var varGroupNodesOnChange = groupBy => {
             CommonUtilities.launchAlertMessage(CommonUtilities.alertType.INFO, `Updating grouping for ${this.layout} layout...`);
             this.groupNodesBy = groupBy;
+            this.saveObj.saveApps[this.id].bundle2d = groupBy;
             this.updateGraph();
         }
 
@@ -616,6 +660,7 @@ class Graph2D {
         var changeLayout = layout => {
             CommonUtilities.launchAlertMessage(CommonUtilities.alertType.INFO, `Updating ${this.layout} layout...`);
             this.layout = layout;
+            this.saveObj.saveApps[this.id].layout2d = layout;
             this.updateGraph();
         }
 
@@ -624,7 +669,7 @@ class Graph2D {
         let $button = $('<button id="button-graph2d-option-menu-' + this.id + '" class="' + this.graph2DClass + ' btn  btn-sm btn-primary" ' +
             'data-toggle="tooltip" data-placement="right" title="Configure 2D layout">Options</button>')
         ;
-        if ($("#checkbox-tips").is(":checked")) $button.tooltip(<any>{ container: 'body' });
+        if ($("#checkbox-tips").is(":checked")) $button.tooltip(<any>{ container: 'body', trigger: 'hover' });
         $button.css({ 'position': 'relative', 'margin-left': '5px', 'font-size': '12px', 'z-index': 500 })
         this.jDiv.find("#div-graph-controls").append($button);
         $button.click(function () { varMenuButtonOnClick(); });
@@ -649,16 +694,25 @@ class Graph2D {
             .css({ 'margin-left': '5px', 'margin-bottom': '5px', 'font-size': '12px', 'width': '80px', 'background-color': '#feeebd' })
             .on("change", function () { changeLayout($(this).val()); })
         );
-        if ($("#checkbox-tips").is(":checked")) $divLayout.tooltip(<any>{ container: 'body' });
+        if ($("#checkbox-tips").is(":checked")) $divLayout.tooltip(<any>{ container: 'body', trigger: 'hover' });
 
         $('#select-graph2d-layout-' + this.id).empty();
 
         // Full possible layout options: ["cose", "cose-bilkent", "cola", "cola-flow", "grid", "circle", "concentric", "breadthfirst", "random"]
-        for (let layout of ["cola", "cose", "cose-bilkent", "grid", "concentric"]) {
+        for (let layout of ["cola", "cola-flow", "cose", "cose-bilkent", "grid", "concentric"]) {
             var option = document.createElement('option');
             option.text = layout;
             option.value = layout;
             $('#select-graph2d-layout-' + this.id).append(option);
+
+            //let tip = "";
+            //switch (layout) {
+            //    case "cola":
+            //        tip = "Generate layout using colajs";
+            //}
+            //let $option = $(`<option value="${layout}" data-toggle="tooltip" data-placement="right" title="${tip}" >${layout}</option>`);
+            //$('#select-graph2d-layout-' + this.id).append($option);
+            //if ($("#checkbox-tips").is(":checked")) $option.tooltip(<any>{ container: 'body', trigger: 'hover' });
         }
         (<any>document.getElementById("select-graph2d-layout-" + this.id)).value = this.layout;
         $('#select-graph2d-layout-' + this.id).val(this.layout);
@@ -672,7 +726,7 @@ class Graph2D {
                 .css({ 'margin-left': '5px', 'margin-bottom': '5px', 'font-size': '12px', 'width': '80px', 'background-color': '#feeebd' })
                 .on("change", function () { varGroupNodesOnChange($(this).val()); })
         );
-        if ($("#checkbox-tips").is(":checked")) $divBundle.tooltip(<any>{ container: 'body' });
+        if ($("#checkbox-tips").is(":checked")) $divBundle.tooltip(<any>{ container: 'body', trigger: 'hover' });
 
         $('#select-graph2d-group-' + this.id).empty();
 
@@ -694,7 +748,7 @@ class Graph2D {
         // menu - scale
         let $divScale = $('<div data-toggle="tooltip" data-placement="left" title="Adjust node radius and edge thickness">Scale elements<div/>');
         $('#div-graph2d-layout-menu-' + this.id).append($divScale);
-        if ($("#checkbox-tips").is(":checked")) $divScale.tooltip(<any>{ container: 'body' });
+        if ($("#checkbox-tips").is(":checked")) $divScale.tooltip(<any>{ container: 'body', trigger: 'hover' });
         $('#div-graph2d-layout-menu-' + this.id).append($('<input id="div-scale-slider-alt-' + this.id + '" class=' + this.graph2DClass + 'data-slider-id="surface-opacity-slider" type="text"' +
             'data-slider-min="1" data-slider-max="10" data-slider-step="0.5" data-slider-value="5" />')
             .css({ 'position': 'relative', 'width': '150px' }));
@@ -703,6 +757,10 @@ class Graph2D {
         $("#div-scale-slider-alt-" + this.id)['bootstrapSlider']().on('change', varEdgeLengthOnChange);
         
         $("#div-scale-slider-alt-" + this.id)['bootstrapSlider']("setValue", this.scale);
+
+        
+        // Help modal
+        $('#div-graph2d-layout-menu-' + this.id).append('<a href="#" style="display: block; text-align: right"><span class="badge" data-toggle="modal" data-target="#modal-help-layouts">?</span></a>');
 
 
         let targetClass = this.graph2DClass;

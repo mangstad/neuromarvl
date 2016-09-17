@@ -299,7 +299,7 @@ class Graph3D {
 
         // Don't forget to keep edges in sync
         if (this.colorMode === "weight" || this.colorMode === "node") {
-            // update edges' color map
+            // update edges' colour map
             this.setEdgeColorConfig(this.colorMode, this.edgeColorConfig);
         } else {
             this.setEdgeColorConfig(this.colorMode);
@@ -322,7 +322,7 @@ class Graph3D {
             this.nodeMeshes[i].material.color.setHex(DEFAULT_COLOR.color);
             this.nodeMeshes[i].userData.colors = [DEFAULT_COLOR];
         }
-        // Also reset edge color if set to node
+        // Also reset edge colour if set to node
         if (this.colorMode === "node") {
             for (var i = 0; i < this.edgeList.length; i++) {
                 var edge = this.edgeList[i];
@@ -362,7 +362,7 @@ class Graph3D {
                 this.edgeList[i].setOpacity(1, 1);
             }
         } else if (this.edgeDirectionMode === "gradient") {
-            // return to current edge color settings
+            // return to current edge colour settings
             for (var i = 0; i < this.edgeList.length; i++) {
                 this.edgeList[i].directionMode = directionMode;
                 this.edgeList[i].updateColor();
@@ -518,7 +518,6 @@ class Graph3D {
                         edge.setVisible(true);
                     } else {
                         edge.setVisible(false);
-                        //console.log("setEdgeVisibilities", this.nodeMeshes[i].userData, this.nodeMeshes[j].userData);///jm
                     }
                 }
 
@@ -535,7 +534,7 @@ class Graph3D {
         }
 
         if (this.colorMode === "weight" || this.colorMode === "node") {
-            // update edges' color map
+            // update edges' colour map
             this.setEdgeColorConfig(this.colorMode, this.edgeColorConfig);
         } else {
             this.setEdgeColorConfig(this.colorMode);
@@ -608,7 +607,7 @@ class Graph3D {
             this.nodeMeshes[i].userData.colors = colorArray[i];
         }
 
-        // Also reset edge color if set to node
+        // Also reset edge colour if set to node
         if (this.colorMode === "node") {
             for (var i = 0; i < this.edgeList.length; i++) {
                 var edge = this.edgeList[i];
@@ -720,7 +719,7 @@ class Edge {
 
     directionMode: string; // none, animation, arrow, opacity
 
-    // Edge's color
+    // Edge's colour
     colorMode: string; // none, weight, node, node-transitioning
     color: string;
     canvas;
@@ -889,7 +888,7 @@ class Edge {
     updateColor() {
         this.isColorChanged = false;
 
-        // Overwriter current color setting if directionMode is gradient
+        // Overwriter current colour setting if directionMode is gradient
         if (this.directionMode === "gradient") {
             let edgeSettings = this.saveObj.edgeSettings;
             if (!edgeSettings.directionStartColor) edgeSettings.directionStartColor = "#ff0000";
@@ -1014,7 +1013,7 @@ class Edge {
         
         this.shape.quaternion.setFromAxisAngle(axis, angle);
 
-        /* update color of the edge */
+        /* update colour of the edge */
         if (this.isColorChanged) {
             if (this.colorMode === "weight") {
                 this.color = this.colorMapFunction(this.weight);

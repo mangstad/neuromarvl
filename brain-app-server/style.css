@@ -316,6 +316,11 @@ input.select-network-type-input {
     width: 0 !important;
 }
 
+.tooltip-inner {
+    white-space:pre-wrap;
+    text-align: left;
+}
+
 
 /* General fixes */
 

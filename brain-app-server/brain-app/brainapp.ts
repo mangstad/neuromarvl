@@ -159,7 +159,7 @@ class NeuroMarvl {
     */
 
     initUI = () => {
-        // Initialize the view sizes and pin location
+        // Initialise the view sizes and pin location
         this.viewWidth = $('#outer-view-panel').width();
         this.viewHeight = $('#outer-view-panel').height();
         this.pinWidth = $('#pin').width();
@@ -174,7 +174,7 @@ class NeuroMarvl {
             Set up jQuery UI layout objects
         */
         if ($("#checkbox-tips").is(":checked")) {
-            $("[data-toggle='tooltip']").tooltip(<any>{ container: 'body' });
+            $("[data-toggle='tooltip']").tooltip(<any>{ container: 'body', trigger: 'hover' });
         }
         else {
             $("[data-toggle='tooltip']").tooltip("destroy");
@@ -277,7 +277,7 @@ class NeuroMarvl {
         $("#overlay-close").click(this.toggleSplashPage);
         $("#control-panel-bottom-close").click(this.toggleSplashPage);
 
-        // Create color pickers
+        // Create colour pickers
         (<any>$("#input-node-color")).colorpicker({ format: "hex" });
         (<any>$("#input-surface-color")).colorpicker({ format: "hex" });
         (<any>$("#input-min-color")).colorpicker({ format: "hex" });
@@ -379,7 +379,7 @@ class NeuroMarvl {
     }
 
     initDataDependantUI = () => {
-        // init the node size and color given the current UI. The UI needs to be redesigned.
+        // init the node size and colour given the current UI. The UI needs to be redesigned.
         if (this.saveObj.nodeSettings.nodeSizeOrColor && (this.saveObj.nodeSettings.nodeSizeOrColor.length > 0)) {
             if (this.saveObj.nodeSettings.nodeSizeOrColor == "node-size") {
                 this.initNodeColor();
@@ -391,7 +391,7 @@ class NeuroMarvl {
             }
         }
 
-        // init edge size and color.
+        // init edge size and colour.
         if (this.saveObj.edgeSettings) {
             this.initEdgeSizeAndColor();
         }
@@ -404,39 +404,54 @@ class NeuroMarvl {
         this.selectView(TL_VIEW);
     }
 
+    
     batchProcess = (i, numberOfFiles, attributes, matrices) => {
+        document.getElementById("alertModalMessage").innerHTML = "Started load of " + numberOfFiles + " file pairs...";
+
+        let gotAttributes = false;
+        let gotMatrix = false;
+        let onLoaded = (i, numberOfFiles, attributes, matrices) => {
+            if (!gotAttributes || !gotMatrix) return;
+            
+            // Load the new dataset to the app (always use the first viewport - top left);
+            this.setDataset(TL_VIEW);
+
+            // refresh the visualisation with current settings and new data
+            this.apps[0].showNetwork(false, () => {
+                this.setNodeSizeOrColor();
+                this.setEdgeColor();
+                this.apps[0].update(0);
+
+                // Capture and download the visualisation
+                this.exportSVG(0, "svg");
+
+                // update status
+                i++;
+                var percentage = (i / numberOfFiles) * 100;
+                $("#progressBar").css({
+                    "width": percentage + "%"
+                });
+                document.getElementById("alertModalMessage").innerHTML = "Processing " + (i + 1) + " in " + numberOfFiles + " pairs.";
+
+                if (i < numberOfFiles) {
+                    this.batchProcess(i, numberOfFiles, attributes, matrices);
+                } else {
+                    $("#alertModal")["modal"]('hide');
+                }
+            });
+        };
+        
         // Load pair of files into dataset
-        this.loadAttributes(attributes[i], this.referenceDataSet);
-        this.loadSimilarityMatrix(matrices[i], this.referenceDataSet);
-
-        // Load the new dataset to the app (always use the first viewport - top left);
-        this.setDataset(TL_VIEW);
-
-        // refresh the visualisation with current settings and new data
-        this.apps[0].showNetwork(false);
-        this.setEdgeColor();
-        this.setNodeSizeOrColor();
-        this.apps[0].update(0);
-
-        // Capture and download the visualisation
-        this.exportSVG(0, "svg");
-
-        // update status
-        i++;
-        var percentage = (i / numberOfFiles) * 100;
-        $("#progressBar").css({
-            "width": percentage + "%"
+        this.loadAttributes(attributes[i], this.referenceDataSet, () => {
+            gotAttributes = true;
+            onLoaded(i, numberOfFiles, attributes, matrices);
         });
-        document.getElementById("alertModalMessage").innerHTML = "Processing " + (i + 1) + " in " + numberOfFiles + " pairs.";
-
-        if (i < numberOfFiles) {
-            setTimeout(function () {
-                this.batchProcess(i, numberOfFiles, attributes, matrices)
-            }, 1000);
-        } else {
-            $("#alertModal")["modal"]('hide');
-        }
+        this.loadSimilarityMatrix(matrices[i], this.referenceDataSet, () => {
+            gotMatrix = true;
+            onLoaded(i, numberOfFiles, attributes, matrices);
+        });
     }
+
 
     uploadCoords = () => {
         var file = (<any>$('#select-coords').get(0)).files[0];
@@ -921,7 +936,7 @@ class NeuroMarvl {
     }
 
     setEdgeColorByNode = () => {
-        // save edge color setting
+        // save edge colour setting
         this.saveObj.edgeSettings.colorBy = "node";
 
         if (this.apps[0]) this.apps[0].setEdgeColorByNode();
@@ -931,7 +946,7 @@ class NeuroMarvl {
     }
 
     setEdgeNoColor = () => {
-        // save edge color setting 
+        // save edge colour setting 
         this.saveObj.edgeSettings.colorBy = "none";
 
         if (this.apps[0]) this.apps[0].setEdgeNoColor();
@@ -1184,13 +1199,16 @@ class NeuroMarvl {
         image.removeAttribute('xmlns');
         // 2D canvas
         var canvas2d = <HTMLCanvasElement>$(`#div-graph-${id} div.graph2dContainer canvas[data-id='layer2-node']`).get(0);
-        if (canvas2d && (canvas2d.getAttribute("visibility") !== "hidden")) {
+        if (canvas2d && (canvas2d.getAttribute("visibility") !== "hidden") && this.apps[0].canvasGraph.cy) {
             var image2d = document.createElement("image");
             svg.insertBefore(image2d, svg.firstChild);
+            image2d.setAttribute('crossOrigin', 'anonymous');
             image2d.setAttribute('y', '0');
             image2d.setAttribute('x', '0');
             image2d.setAttribute('id', 'brain2D' + id);
-            image2d.setAttribute('xlink:href', canvas2d.toDataURL());
+            image2d.setAttribute('xlink:href', this.apps[0].canvasGraph.cy.png({
+                full: false
+            }));
             image2d.setAttribute('width', canvas2d.width.toString());
             image2d.setAttribute('height', canvas2d.height.toString());
             image2d.removeAttribute('xmlns');
@@ -1269,7 +1287,7 @@ class NeuroMarvl {
 
             var a = document.createElement("a");
             a.setAttribute("download", filename + ".jpg");
-            a.setAttribute("href", canvas.toDataURL('image/jpeg', 0.7));
+            a.setAttribute("href", canvas.toDataURL('image/jpeg', 0.9));
             a.click();
         }
         image.src = URL.createObjectURL(svgBlob);
@@ -1874,7 +1892,7 @@ class NeuroMarvl {
         this.divLoadingNotification.style.padding = '5px';
         this.divLoadingNotification.style.borderRadius = '2px';
         this.divLoadingNotification.style.zIndex = '1';
-        this.divLoadingNotification.style.backgroundColor = '#feeebd'; // the color of the control panel
+        this.divLoadingNotification.style.backgroundColor = '#feeebd'; // the colour of the control panel
 
         var text = document.createElement('div');
         text.innerHTML = "Loading...";
@@ -1941,9 +1959,12 @@ class NeuroMarvl {
 
     // Load the similarity matrix for the specified dataSet
     //TODO: Move into DataSet class
-    loadSimilarityMatrix = (file, dataSet: DataSet) => {
+    loadSimilarityMatrix = (file, dataSet: DataSet, callback?) => {
         var reader = new FileReader();
-        reader.onload = () => this.parseSimilarityMatrix(reader.result, dataSet);
+        reader.onload = () => {
+            this.parseSimilarityMatrix(reader.result, dataSet);
+            if (callback) callback();
+        };
         reader.readAsText(file);
     }
 
@@ -1955,17 +1976,33 @@ class NeuroMarvl {
             if (line.length > 0) {
                 simMatrix.push(line.split(' ').map(parseFloat));
             }
-        })
+        });
+        // Normalise values to range 0...1, files can have very different value ranges
+        let max = simMatrix[0][0];
+        let min = simMatrix[0][0];
+        let i = simMatrix.length;
+        while (i--) {
+            let j = simMatrix[i].length;
+            while (j--) {
+                let weight = simMatrix[i][j];
+                max = Math.max(max, weight);
+                min = Math.min(min, weight);
+            }
+        }
+        let scale = d3.scale.linear().domain([min, max]).range([0, 1]);
+        simMatrix = simMatrix.map(row => row.map(scale));
+
         dataSet.setSimMatrix(simMatrix);
     }
 
     // Load the attributes for the specified dataSet
     //TODO: Move into DataSet class
-    loadAttributes = (file, dataSet: DataSet) => {
+    loadAttributes = (file, dataSet: DataSet, callback?) => {
         var reader = new FileReader();
         reader.onload = () => {
             this.parseAttributes(reader.result, dataSet);
             dataSet.notifyAttributes();
+            if (callback) callback();
         };
         reader.readAsText(file);
     }
@@ -2267,7 +2304,7 @@ class NeuroMarvl {
 
             var keySelection = <any>document.getElementById('select-edge-key');
 
-            // find the coressponding key and retrieve color data
+            // find the coressponding key and retrieve colour data
             for (var i = 0; i < keySelection.length; i++) {
                 if (keySelection.options[i].value == key) {
                     var color = keySelection.options[i].style.backgroundColor;
@@ -2286,7 +2323,9 @@ class NeuroMarvl {
         $(TR_VIEW).click(() => this.selectView(TR_VIEW));
         $(BL_VIEW).click(() => this.selectView(BL_VIEW));
         $(BR_VIEW).click(() => this.selectView(BR_VIEW));
-        
+
+        //TODO: Bring this back with multi-view
+        /*
         $('#checkbox_yoking_view').on('change', () => {
             if ($('#checkbox_yoking_view').is(":checked")) {
                 this.input.yokingView = true;
@@ -2295,6 +2334,7 @@ class NeuroMarvl {
                 this.input.yokingView = false;
             }
         });
+        */
 
         $('#checkbox-thickness-by-weight').on('change', () => {
             if ($('#checkbox-thickness-by-weight').is(":checked")) {

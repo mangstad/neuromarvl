@@ -108,7 +108,7 @@
             <div id="button-save-settings" class="btn btn-primary" data-toggle="tooltip" data-placement="top" title="Save settings for reload in another session">
                 <span class="glyphicon glyphicon glyphicon-floppy-save" aria-hidden="true"></span>
             </div>
-            <div id="button-load-settings" class="btn btn-primary" data-toggle="tooltip" data-placement="top" title="Load settings from a previously saved session file">
+            <div id="button-load-settings" class="btn btn-primary" data-toggle="tooltip" data-placement="top" title="Load settings from a previously saved session file. Will work best when the basic characteristics of the current and initial dataset (e.g., number of nodes, node labels, etc) are the same.">
                 <span class="glyphicon glyphicon glyphicon-floppy-open" aria-hidden="true"></span>
             </div>
             <div id="button-save-app" class="btn btn-primary" data-toggle="tooltip" data-placement="top" title="Share visualisation as a web link">
@@ -122,7 +122,7 @@
             <li id="tab1" role="presentation" class="active" data-toggle="tooltip" data-placement="bottom" title="3D brain model settings">
                 <a href="#tab-1" data-toggle="tab">Surface</a>
             </li>
-            <li id="tab2" role="presentation" data-toggle="tooltip" data-placement="bottom" title="Data source selection and loading">
+            <li id="tab2" role="presentation" data-toggle="tooltip" data-placement="bottom" title="Data source selection, loading, and batch output">
                 <a href="#tab-2" data-toggle="tab">Data</a>
             </li>
             <li id="tab3" role="presentation" data-toggle="tooltip" data-placement="bottom" title="Attribute mappings to visualisation features, including filtering">
@@ -132,7 +132,8 @@
         <div class="tab-content" style="height: 100%; ">
             <div id="tab-1" class="tab-pane active">
                 <br/>
-                <label class="control-label" data-toggle="tooltip" data-placement="right" title="Set the 3D brain model to a preset option or upload new model file">Model</label>
+                <a href="#" style="display: block; text-align: right"><span class="badge" data-toggle="modal" data-target="#modal-help-model">?</span></a>
+                <label class="control-label" data-toggle="tooltip" data-placement="right" title="Set the 3D brain model to a preset option, or upload a new model geometry file in Wavefront OBJ (.obj) format">Model</label>
                 <select id="select-brain3d-model" class="form-control input-sm">
                     <option value="icbm">ICBM152</option>
                     <option value="ch2">CH2</option>
@@ -140,7 +141,7 @@
                     <option value="none">None</option>
                 </select>
                 <br />
-                <label class="control-label" data-toggle="tooltip" data-placement="right" title="Open colour picker for the brain model surface">Color</label>
+                <label class="control-label" data-toggle="tooltip" data-placement="right" title="Open colour selection palette for the brain model surface">Color</label>
                 <p style="margin-bottom: 0;">
                     <div id="input-surface-color" class="input-group colorpicker-component">
                         <input type="text" value="E3E3E3" class="form-control" />
@@ -162,10 +163,11 @@
                 </div>
 
                 <br />
-                <div style="margin-left: 0px; margin-bottom: 10px;">
+                <!-- TODO: Bring back yoking with multi-view -->
+                <!--<div style="margin-left: 0px; margin-bottom: 10px;">
                     view:
                     <input type="checkbox" id="checkbox_yoking_view" style="width: 12px;">yoking orientation
-                </div>
+                </div>-->
 
             </div>
             <div id="tab-2" class="tab-pane">
@@ -183,10 +185,10 @@
                     <div id="div-set-data-tab" class="tab-pane active">
                         <br />
                         <button id="load-example-data" class="btn btn-sm btn-primary" data-toggle="tooltip" data-placement="top" title="Immediately load default data">Load default data</button>
-                        <a id="download-example-data" class="btn btn-sm btn-primary" data-toggle="tooltip" data-placement="top" title="Download example files to create custom data..." href="brain-app/data/example.zip">Get example files</a>
+                        <a id="download-example-data" class="btn btn-sm btn-primary" data-toggle="tooltip" data-placement="top" title="Download input files used for default data, to get an example of the format of the input files..." href="brain-app/data/example.zip">Get example files</a>
                         <br />
                         <br />
-                        <label class="control-label" data-toggle="tooltip" data-placement="right" title="Coordinates of areas (or nodes) in the brain">Node coordinates</label>
+                        <label class="control-label" data-toggle="tooltip" data-placement="right" title="Spatial coordinates of each node. This file should be a matrix comprising N rows and 3 columns, where N is the number of nodes and the columns represent the [x y z] coordinates of each node. The file can be space, tab or comma delimited.">Node coordinates</label>
                         <input id="select-coords" style="display:none;" type="file" />
                         <div class="input-group input-group-sm">
                             <div class="input-group-addon glyphicon glyphicon glyphicon-info-sign status-changed" id="coords-status"
@@ -195,7 +197,7 @@
                         </div>
                         <br />
                         <br />
-                        <label class="control-label" data-toggle="tooltip" data-placement="right" title="Measured similarities (in activity) between nodes">Connectivity matrix</label>
+                        <label class="control-label" data-toggle="tooltip" data-placement="right" title="An N*N adjacency or connectivity matrix, where N is the number of nodes. Can be tab, space or comma delimited. Order of rows/columns should correspond to the row order of the node coordinates.">Connectivity matrix</label>
                         <input id="select-matrix" style="display:none;" type="file" />
                         <div class="input-group input-group-sm">
                             <div class="input-group-addon glyphicon glyphicon glyphicon-info-sign status-changed" id="matrix-status"
@@ -204,7 +206,13 @@
                         </div>
                         <br />
                         <br />
-                        <label class="control-label" data-toggle="tooltip" data-placement="right" title="Numerical attributes for each node">Node attributes</label>
+                        <label class="control-label" data-toggle="tooltip" data-placement="right" title="Attributes measured for each node. Should comprise N+1 rows and M columns. The first row should contain strings representing column headings (i.e., the name of each attribute). Each column represents a different attribute measured at each node (e.g., degree, clustering, module affiliation, etc.). If column names are not specified in the first row, default attribute labels will be assigned. The order of the rows should correspond to the node ordering in the other input files. 
+                               
+If one of the attributes represents module affiliation for an overlapping module decomposition (i.e., a node can belong to more than one module), the module identities should be separated by pipes. e.g., in the following example, node 1 (first row) belongs to modules 1, 2, 5 and 6; node 2 (second row) to modules 2, 3, and 4; and node 3 (third row) to modules 4 and 5 with a stronger affiliation to module 5.  
+
+1|1|0|0|1|1
+0|1|1|1|0|0
+0|0|0|1|2|0">Node attributes</label>
                         <input id="select-attrs" style="display:none;" type="file" />
                         <div class="input-group input-group-sm">
                             <div class="input-group-addon glyphicon glyphicon glyphicon-info-sign status-changed" id="attrs-status"
@@ -213,7 +221,12 @@
                         </div>
                         <br />
                         <br />
-                        <label class="control-label" data-toggle="tooltip" data-placement="right" title="Node names">Node labels (optional)</label>
+                        <label class="control-label" data-toggle="tooltip" data-placement="right" title="A file with N rows, each containing a string that is a label for each individual node. e.g.,
+
+L Hippocampus
+R Hippocampus
+L Amygdala
+R Amygdala ">Node labels (optional)</label>
                         <input id="select-labels" style="display:none;" type="file" />
                         <div class="input-group input-group-sm">
                             <div class="input-group-addon glyphicon glyphicon glyphicon-info-sign status-changed" id="labels-status"
@@ -223,26 +236,24 @@
                         <br />
                     </div>
                     <div id="div-batching-tab" class="tab-pane">
-                       
-                        
                         <br/>
-                        <label class="control-label" data-toggle="tooltip" data-placement="right" title="Select 1 (or more) input matrix files">Connectivity matrices</label>
+                        <label class="control-label" data-toggle="tooltip" data-placement="right" title="Batch mode allows you to apply a given display setting to multiple networks. First, you can select one dataset and generate a particular visualisation. Then you use this button to select a set of other matrices that the visualisation will be applied to. The matrices must have the same dimensions as the original, but may represent different connections. The app will then generate these visualisations and save them as separate files to your desktop.">Connectivity matrices</label>
                         <input id="select-matrices-batching" style="display:none;" type="file" multiple/>
                         <div id="div-batching-tab" class="tab-pane">
                             <div class="input-group input-group-sm">
                                 <div class="input-group-addon glyphicon glyphicon glyphicon-info-sign status-changed" id="matrices-batching-status"
                                      data-toggle="tooltip" data-placement="bottom" title="File is not uploaded"></div>
-                                <button id="button-select-matrices-batching" class="form-control btn-default">Matrices File</button>
+                                <button id="button-select-matrices-batching" class="form-control btn-default">Matrix files</button>
                             </div>
                         </div>
                         <br />
                         <br />
-                        <label class="control-label" data-toggle="tooltip" data-placement="right" title="Select 1 (or more) input attribute files">Node attributes</label>
+                        <label class="control-label" data-toggle="tooltip" data-placement="right" title="Select a corresponding attribute file for the connectivity matrices. There should be one attribute file for each matrix. They should be listed in the same order as the matrices.">Node attributes</label>
                         <input id="select-attrs-batching" style="display:none;" type="file" multiple/>
                         <div class="input-group input-group-sm">
                             <div class="input-group-addon glyphicon glyphicon glyphicon-info-sign status-changed" id="attrs-batching-status"
                                  data-toggle="tooltip" data-placement="bottom" title="File is not uploaded"></div>
-                            <button id="button-select-attrs-batching" class="form-control btn-default">Attribute Files</button>
+                            <button id="button-select-attrs-batching" class="form-control btn-default">Attribute files</button>
                         </div>
                         <br/>
                         <button id="btn-start-batching" class="btn btn-sm btn-primary" data-toggle="tooltip" data-placement="right" title="Create batch images...">Batch</button>
@@ -267,19 +278,19 @@
                     <div id="div-node-attribute-tab" class="tab-pane active">
                         <div>
                             <div id="div-set-node-scale" style="display: none; margin-bottom: 5px; ">
-                                <label class="control-label" data-toggle="tooltip" data-placement="right" title="Physical property to assign">Set</label>
+                                <label class="control-label" data-toggle="tooltip" data-placement="right" title="Select node property to change">Set</label>
                                 <select id="select-node-size-color" class="form-control input-sm">
                                     <option value="node-size">Size</option>
-                                    <option value="node-color">Color</option>
+                                    <option value="node-color">Colour</option>
                                     <option value="node-default">None</option>
                                 </select>
-                                <label class="control-label" data-toggle="tooltip" data-placement="right" title="Corresponding attribute from the data">by</label>
+                                <label class="control-label" data-toggle="tooltip" data-placement="right" title="Change node property according to one of the following attributes">by</label>
                                 <select id="select-attribute" class="form-control input-sm"></select>
                             </div>
                         </div>
                         <div id="div-node-size" style="display:none; margin-top: 20px; margin-left: 20px;">
                             <p>
-                                <label class="control-label">range:</label>
+                                <label class="control-label" data-toggle="tooltip" data-placement="right" title="Scale range of node sizes">range:</label>
                                 <label id="label_node_size_range"></label>
                             </p>
                             <input id="div-node-size-slider" data-slider-id='node-size-slider' type="text"
@@ -335,7 +346,7 @@
                         </p>
                         
                         <p style="margin-top: 5px; margin-bottom: 0;">
-                            <div class="form-group" data-toggle="tooltip" data-placement="right" title="Set a visual indicator of edge direction">
+                            <div class="form-group" data-toggle="tooltip" data-placement="right" title="Set a visual indicator of edge direction. Only appropriate for directed networks.">
                                 <label for="select-edge-direction">Edge direction</label>
                                 <select class="form-control" id="select-edge-direction">
                                     <option value="none">None</option>
@@ -364,8 +375,8 @@
                         </div>
                         <div id="div-edge-color">
                             <p style="margin-top: 5px; margin-bottom: 0;">
-                                <div class="form-group" data-toggle="tooltip" data-placement="right" title="Set edge color to match either the connected nodes orcolor range scaled to strength value">
-                                    <label for="select-edge-color">Color edges by</label>
+                                <div class="form-group" data-toggle="tooltip" data-placement="right" title="Set edge colour either to the colour of the connecting nodes or a colour scale that represents variations in edge weight. If edges are coloured by nodes, you have the option to select a colour for edge attached to nodes of two different colours (e.g., inter-module edges).">
+                                    <label for="select-edge-color">Colour edges by</label>
                                     <select class="form-control" id="select-edge-color">
                                         <option value="none">None</option>
                                         <option value="node">Node</option>
@@ -373,10 +384,10 @@
                                     </select>
                                 </div>
                             </p>
-                            <div id="div-edge-color-by-node-picker" style="display: none; margin-top: 30px; margin-left: 40px;" data-toggle="tooltip" data-placement="right" title="Set an alternative color for edges with end nodes of different values">
-                                <p><input type="checkbox" id="checkbox-color-transitional-edges" style="width: 12px;"><strong> Customize inter-cluster edges</strong></p>
+                            <div id="div-edge-color-by-node-picker" style="display: none; margin-top: 30px; margin-left: 40px;" data-toggle="tooltip" data-placement="right" title="Set an alternative colour for edges with end nodes of different values">
+                                <p><input type="checkbox" id="checkbox-color-transitional-edges" style="width: 12px;"><strong> Customise inter-cluster edges</strong></p>
                                 <p>
-                                    <label for="pick-color-intercluster">Color</label>
+                                    <label for="pick-color-intercluster">Colour</label>
                                     <div id="input-edge-transitional-color" class="input-group colorpicker-component">
                                         <input id="pick-color-intercluster" type="text" value="ee2211" class="form-control" />
                                         <span class="input-group-addon"><i></i></span>
@@ -388,10 +399,10 @@
                             <div id="div-edge-color-pickers" style="display: none; margin-top: 30px; margin-left: 40px;">
                                 <p><input type="checkbox" id="checkbox-edge-color-force-continuous" style="display:none; width: 12px;"><strong>Treat as continuous</strong></p>
                                 <div id="div-edge-color-continuous">
-                                    <p data-toggle="tooltip" data-placement="right" title="Set specific colors for value ranges">
-                                        <input type="checkbox" id="checkbox-edge-color-discretized" style="width: 12px;"><strong> Discretize continuous values</strong>
+                                    <p data-toggle="tooltip" data-placement="right" title="Set specific colours for value ranges">
+                                        <input type="checkbox" id="checkbox-edge-color-discretized" style="width: 12px;"><strong> Discretise continuous values</strong>
                                     </p>
-                                    <div id="div-edge-color-continuous-discretized" data-toggle="tooltip" data-placement="right" title="Set the number and color of divisions based on value ranges">
+                                    <div id="div-edge-color-continuous-discretized" data-toggle="tooltip" data-placement="right" title="Set the number and colour of divisions based on value ranges">
 
                                         <strong>Select number of divisions </strong>
                                         <select id="select-edge-color-number-discretized-category" class="form-control" style="margin-bottom: 10px;">
@@ -518,7 +529,7 @@
         <div id="context-menu-attributes">
         </div>
         <div id="div-context-menu-color-picker" style="visibility:hidden;">
-            color:
+            colour:
             <div id="input-context-menu-node-color" class="input-group colorpicker-component" 
                  style="width: 12em; background-color: #feeebd; border: 1px solid grey; "
             >
@@ -528,6 +539,93 @@
         </div>
     </div>
 
+    <div id="modal-help-layouts" class="modal fade" role="dialog">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                    <h4 class="modal-title">2D graph layouts</h4>
+                </div>
+                <div class="modal-body">
+                    <h2>Layout</h2>
+                    <p>The 2D graph layout can use a selection of layout algorithms to achieve different visual results, in some cases having very different running times.</p>
+                    <h3>cola</h3>
+                    <p>Produces the most attractive layout for most graphs.</p>
+                    <p>The CoLa layout algorithm is implemented with <a href="http://marvl.infotech.monash.edu/webcola/" target="_blank">WebCola</a>, developed by Tim Dwyer of the Monash Adaptive Visualisation Lab (<a href="http://marvl.infotech.monash.edu.au/" target="_blank">MArVL</a>).</p>
+                    <h3>cola-flow</h3>
+                    <p>A variation on the CoLa layout for directed graphs, which will arrange nodes so that edges run generally downward.</p>
+                    <h3>cose</h3>
+                    <p>The <a href="http://js.cytoscape.org/#layouts/cose" target="_blank">COSE</a> (Compound Spring Embedder) layout algortithm is a physics-based method that produces fast results for large, complex graphs. </p>
+                    <h3>cose-bilkent</h3>
+                    <p>A <a href="https://github.com/cytoscape/cytoscape.js-cose-bilkent" target="_blank">variation</a> on the cose layout developed by the <a href="http://cs.bilkent.edu.tr/~ivis/" target="_blank">i-Vis group</a> of Bilkent University. It aims for a good balance between looks and speed</p>
+                    <h3>grid</h3>
+                    <p>Simple gridwise positioning with no meaningful edge handling. This will provide the fastest possible result, but will have limited utility for complex graphs.</p>
+                    <h3>concentric</h3>
+                    <p>Simple positioning into concentric circles. It has similar performance and drawbacks to the grid layout.</p>
+                    <h2>Bundle</h2>
+                    <p>The bundling option is handled differently by each layout option, but generally attempts to group nodes of the same value for the given attribute.</p>
+                    <h2>Controls</h2>
+                    <p>Use shift + click or shift + drag to select multiple nodes, which can then be moved together.</p>
+                    <p>Nodes that have been bundled together can be moved as a group by hovering with their area until a box around the group is visible, then dragging.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-help-circular" class="modal fade" role="dialog">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                    <h4 class="modal-title">Circular layout</h4>
+                </div>
+                <div class="modal-body">
+                    <p>This visualisation places nodes around a circular arrangement, with edges crossing the circle and optionally bundled by value.</p>
+                    <p>It is an adaptation and extension of the <a href="https://d3js.org/" target="_blank">D3.js</a> example for <a href="http://mbostock.github.io/d3/talk/20111116/bundle.html" target="_blank">hierarchical edge bundling</a>.</p>
+                    <h2>Options</h2>
+                    <h3>Display all nodes</h3>
+                    <p>Toggle whether to include or exclude nodes with no connected edges under the current filter and edge visibility settings.</p>
+                    <h3>Bundle</h3>
+                    <p>Group nodes together based on the given attribute value. Edges wil also be bundled together to better differentiate connectivity between bundle groups.</p>
+                    <p>For continuous values this will group into bands.</p>
+                    <p>For attributes where a node can have multiple values (e.g., the assignment of a single node to multiple modules in an overlapping module decomposition), nodes will be grouped with other nodes that have exactly the same set of values. Nodes with more values (e.g., belong to more modules) will be placed in concentric circles closer to the centre.</p>
+                    <h3>Sort</h3>
+                    <p>Assign an attribute used to determine the order of nodes around the circle. If bundling is applied, this will affect the order within a bundle, but not the bundles themselves.</p>
+                    <h3>Label</h3>
+                    <p>Set the node label to the label data, or alternatively the value of a given attribute.</p>
+                    <h3>Histogram</h3>
+                    <p>The histogram option allows for the addition of a bar graph representation of node attributes to be added on the circle's outer edge. Set the number and assignment of attributes, and use the colour palette to set the respective colours.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-help-model" class="modal fade" role="dialog">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                    <h4 class="modal-title">Brain surface model</h4>
+                </div>
+                <div class="modal-body">
+                    <p>The model used to represent the brain surface can changed to a preset model or from a custom model file uploaded by the user.</p>
+                    <p>To use a custom model, select the "Upload" option, specify the file to use with the "Choose File" button, and finally press "Upload" to transfer and apply the new model.</p>
+                    <p>The model must be in <a href="http://paulbourke.net/dataformats/obj/" target="_blank">Wavefront OBJ</a> (.obj) format. Some 3D modelling software such as <a href="http://www.autodesk.com/products/3ds-max/overview", target="_blank">3ds Max</a> can import and export to this format.</p>
+                    <br />
+                    <a id="download-example-model" class="btn btn-sm btn-primary" data-toggle="tooltip" data-placement="top" title="Download an example model file, to get an example of the format..." href="examples/graphdata/BrainMesh_ICBM152.obj">Get example model</a>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <div class="modal" id="alertModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
         <div class="modal-dialog">
@@ -618,7 +716,7 @@
 
     <script src="extern/cola.v3.min.js"></script>
     <!--<script src="extern/cola.v3.js"></script>-->
-    <script src="extern/d3adaptor.js"></script>
+    <!--<script src="extern/d3adaptor.js"></script>-->
 
     <script src="extern/cytoscape.min.js"></script>
     <script src="extern/cytoscape-cola.js"></script>

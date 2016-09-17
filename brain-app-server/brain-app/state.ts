@@ -366,7 +366,7 @@ class SaveFile {
         var yamlObj = {};
         
         yamlObj["Edge Settings"] = {
-            "Color By": this.edgeSettings.colorBy,
+            "Colour By": this.edgeSettings.colorBy,
             "Size": this.edgeSettings.size
         };
 
@@ -375,15 +375,15 @@ class SaveFile {
                 "Type": this.edgeSettings.weight.type
             }
             if (this.edgeSettings.weight.type === "discrete") {
-                yamlObj["Edge Settings"]["Weight"]["Color List"] = this.edgeSettings.weight.discreteSetting.colorArray;
+                yamlObj["Edge Settings"]["Weight"]["Colour List"] = this.edgeSettings.weight.discreteSetting.colorArray;
                 yamlObj["Edge Settings"]["Weight"]["Value List"] = this.edgeSettings.weight.discreteSetting.valueArray;
             } else if (this.edgeSettings.weight.type === "continuous-discretized") {
                 yamlObj["Edge Settings"]["Weight"]["Number of Category"] = this.edgeSettings.weight.discretizedSetting.numCategory;
                 yamlObj["Edge Settings"]["Weight"]["Domain List"] = this.edgeSettings.weight.discretizedSetting.domainArray;
-                yamlObj["Edge Settings"]["Weight"]["Color List"] = this.edgeSettings.weight.discretizedSetting.colorArray;
+                yamlObj["Edge Settings"]["Weight"]["Colour List"] = this.edgeSettings.weight.discretizedSetting.colorArray;
             } else if (this.edgeSettings.weight.type === "continuous-normal") {
-                yamlObj["Edge Settings"]["Weight"]["Max Value Color"] = this.edgeSettings.weight.continuousSetting.maxColor;
-                yamlObj["Edge Settings"]["Weight"]["Min Value Color"] = this.edgeSettings.weight.continuousSetting.minColor;
+                yamlObj["Edge Settings"]["Weight"]["Max Value Colour"] = this.edgeSettings.weight.continuousSetting.maxColor;
+                yamlObj["Edge Settings"]["Weight"]["Min Value Colour"] = this.edgeSettings.weight.continuousSetting.minColor;
             }
         }
 
@@ -399,33 +399,35 @@ class SaveFile {
         yamlObj["Brain Settings"] = {
             "Transparency": this.surfaceSettings.opacity
         };
-        
-        for (let i in this.saveApps) {
-            yamlObj["viewport" + i] = this.saveApps[i].toYaml();
-        }
 
+        //TODO: Restore when multiple views is reimplemented
+        //for (let i in this.saveApps) {
+        //    yamlObj["viewport" + i] = this.saveApps[i].toYaml();
+        //}
+        yamlObj["viewport0"] = this.saveApps[0].toYaml();
+        
         return jsyaml.safeDump(yamlObj);
     }
 
     fromYaml(yaml) {
         var yamlObj = jsyaml.safeLoad(yaml);
         
-        this.edgeSettings.colorBy = yamlObj["edge settings"]["color by"];
+        this.edgeSettings.colorBy = yamlObj["edge settings"]["colour by"];
         this.edgeSettings.size = yamlObj["edge settings"]["size"];
 
         if (this.edgeSettings.colorBy === "weight") {
             this.edgeSettings.weight.type = yamlObj["edge settings"]["weight"]["type"];
 
             if (this.edgeSettings.weight.type === "discrete") {
-                this.edgeSettings.weight.discreteSetting.colorArray = yamlObj["edge settings"]["weight"]["color list"];
+                this.edgeSettings.weight.discreteSetting.colorArray = yamlObj["edge settings"]["weight"]["colour list"];
                 this.edgeSettings.weight.discreteSetting.valueArray = yamlObj["edge settings"]["weight"]["value list"];
             } else if (this.edgeSettings.weight.type === "continuous-discretized") {
                 this.edgeSettings.weight.discretizedSetting.numCategory = yamlObj["edge settings"]["weight"]["number of category"];
                 this.edgeSettings.weight.discretizedSetting.domainArray = yamlObj["edge settings"]["weight"]["domain list"];
-                this.edgeSettings.weight.discretizedSetting.colorArray = yamlObj["edge settings"]["weight"]["color list"];
+                this.edgeSettings.weight.discretizedSetting.colorArray = yamlObj["edge settings"]["weight"]["colour list"];
             } else if (this.edgeSettings.weight.type === "continuous-normal") {
-                this.edgeSettings.weight.continuousSetting.maxColor = yamlObj["edge settings"]["weight"]["max value color"];
-                this.edgeSettings.weight.continuousSetting.minColor = yamlObj["edge settings"]["weight"]["min value color"];
+                this.edgeSettings.weight.continuousSetting.maxColor = yamlObj["edge settings"]["weight"]["max value colour"];
+                this.edgeSettings.weight.continuousSetting.minColor = yamlObj["edge settings"]["weight"]["min value colour"];
             }
         }
 
@@ -435,20 +437,26 @@ class SaveFile {
             nodeSizeMin: yamlObj["node settings"]["max size"],
             nodeSizeMax: yamlObj["node settings"]["min size"],
 
-            nodeColorAttribute: yamlObj["node settings"]["color attribute"],
-            nodeColorContinuousMin: yamlObj["node settings"]["continuous color min"],
-            nodeColorContinuousMax: yamlObj["node settings"]["continuous color max"],
-            nodeColorDiscrete: yamlObj["node settings"]["discrete color list"]
+            nodeColorAttribute: yamlObj["node settings"]["colour attribute"],
+            nodeColorContinuousMin: yamlObj["node settings"]["continuous colour min"],
+            nodeColorContinuousMax: yamlObj["node settings"]["continuous colour max"],
+            nodeColorDiscrete: yamlObj["node settings"]["discrete colour list"]
         };
 
         this.surfaceSettings.opacity = yamlObj["brain settings"]["transparency"];
 
-
+        //TODO: restore this when reinstating multiple viewports
+        /*
         for (var i = 0; i < 4; i++) {
             if (yamlObj["viewport" + i]) {
                 this.saveApps[i] = new SaveApp({});
                 this.saveApps[i].fromYaml(yamlObj["viewport" + i]);
             }
+        }
+        */
+        if (yamlObj["viewport0"]) {
+            this.saveApps[0] = new SaveApp({});
+            this.saveApps[0].fromYaml(yamlObj["viewport0"]);
         }
     }
 }
@@ -474,9 +482,14 @@ class SaveApp {
     // extra option for circular layout:
     circularBundleAttribute: string;
     circularSortAttribute: string;
-    circularLableAttribute: string;
+    circularLabelAttribute: string;
     circularEdgeGradient: boolean;
     circularAttributeBars;
+
+    // Options for 2D layout
+    layout2d: string;
+    bundle2d: string;
+    scale2d: number;
 
     constructor(sourceObject) {
         this.surfaceModel = (sourceObject && sourceObject.surfaceModel) || "";
@@ -486,12 +499,15 @@ class SaveApp {
         //this.setDataSetView = (sourceObject && sourceObject.setDataSetView) || "";
         this.edgeCount = (sourceObject && sourceObject.edgeCount) || 20;
         this.showingTopologyNetwork = (sourceObject && sourceObject.showingTopologyNetwork) || false;
-        this.networkType = (sourceObject && sourceObject.networkType) || "";
+        this.networkType = (sourceObject && sourceObject.networkType && sourceObject.networkType.toLowerCase()) || "";
         this.circularBundleAttribute = (sourceObject && sourceObject.circularBundleAttribute) || "";
         this.circularSortAttribute = (sourceObject && sourceObject.circularSortAttribute) || "";
-        this.circularLableAttribute = (sourceObject && sourceObject.circularLableAttribute) || "";
+        this.circularLabelAttribute = (sourceObject && sourceObject.circularLabelAttribute) || "";
         this.circularEdgeGradient = (sourceObject && sourceObject.circularEdgeGradient) || false;
         this.circularAttributeBars = (sourceObject && sourceObject.circularAttributeBars) || "";
+        this.layout2d = (sourceObject && sourceObject.layout2d) || "cola";
+        this.bundle2d = (sourceObject && sourceObject.bundle2d) || "none";
+        this.scale2d = (sourceObject && sourceObject.scale2d) || 5;
     }
 
 
@@ -509,10 +525,17 @@ class SaveApp {
             yamlObj["circular settings"] = {
                 "Bundle Attribute": this.circularBundleAttribute,
                 "Sort Attribute": this.circularSortAttribute,
-                "Label Attribute": this.circularLableAttribute,
+                "Label Attribute": this.circularLabelAttribute,
                 "Attribute Bars": this.circularAttributeBars
             }
         }
+        else if (this.networkType === "2d") {
+            yamlObj["2d settings"] = {
+                "layout": this.layout2d,
+                "bundle attribute": this.bundle2d,
+                "scale": this.scale2d
+            }
+        };
 
         return yamlObj;
     }
@@ -524,12 +547,17 @@ class SaveApp {
         this.showingTopologyNetwork = (yamlObj["show graph"] === "yes");
         this.networkType = yamlObj["network type"];
 
-        if (this.networkType = "circular") {
+        if (this.networkType === "circular") {
             this.circularBundleAttribute = yamlObj["circular settings"]["bundle attribute"];
             this.circularSortAttribute = yamlObj["circular settings"]["sort attribute"];
-            this.circularLableAttribute = yamlObj["circular settings"]["label attribute"];
+            this.circularLabelAttribute = yamlObj["circular settings"]["label attribute"];
             this.circularAttributeBars = yamlObj["circular settings"]["attribute bars"];
         }
+        else if (this.networkType === "2d") {
+            this.layout2d = yamlObj["2d settings"]["layout"];
+            this.bundle2d = yamlObj["2d settings"]["bundle attribute"];
+            this.scale2d = yamlObj["2d settings"]["scale"];
+        };
     }
 }
 
