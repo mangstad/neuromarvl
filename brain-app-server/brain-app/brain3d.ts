@@ -1109,8 +1109,12 @@ class Brain3DApp implements Application, Loopable {
                 this.canvasGraph.layout = app.layout2d;
                 this.canvasGraph.groupNodesBy = app.bundle2d;
                 this.canvasGraph.scale = app.scale2d;
-                this.canvasGraph.updateGraph();
-                this.canvasGraph.settingOnChange();
+
+                // Don't try to update if it hasn't had the initial layout generation run yet
+                if (this.canvasGraph.nodes.length) {
+                    this.canvasGraph.updateGraph();
+                    this.canvasGraph.settingOnChange();
+                }
             }
         }
         else {
