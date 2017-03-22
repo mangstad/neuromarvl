@@ -15,4 +15,4 @@ Allow neuroscientist to rapidly apply the current configuration to multiple diff
 ### Export visualisations ###
 Visualisations can be exported into SVG format for further editing.
 
-All source code and files in this repository are available for use under the terms of the [GPL](src/LICENSE).
+All source code and files in this repository are available for use under the terms of the [GPL](LICENSE).
