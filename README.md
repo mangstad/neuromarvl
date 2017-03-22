@@ -15,4 +15,4 @@ Allow neuroscientist to rapidly apply the current configuration to multiple diff
 ### Export visualisations ###
 Visualisations can be exported into SVG format for further editing.
 
-All source code and files in this repository are available for use under the terms of the [GPL](https://bitbucket.org/jimmux/neuromarvl/raw/53a6a7e1616794e12a63aa6702738aa1f6e301c3/LICENSE).
+All source code and files in this repository are available for use under the terms of the [GPL](src/LICENSE).
