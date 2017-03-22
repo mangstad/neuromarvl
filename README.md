@@ -1,7 +1,7 @@
 # NeuroMArVL #
 Developed by:
 
-[Tim Dwyer](marvl.infotech.monash.edu/~dwyer), Alex Fornito
+[Tim Dwyer](http://marvl.infotech.monash.edu/~dwyer), Alex Fornito
 
 Thanh Nhan Pham, Mingzheng Shi, Nicholas Smith and James Manley
 
